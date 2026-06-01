@@ -52,8 +52,11 @@ export default function HomePage() {
   };
 
   const handleAddClass = async (name, gradeLevel, genderTrack, students) => {
-    await addClass(name, gradeLevel, genderTrack);
-    toast.success(`נוצרה כיתה ${name}`);
+    const newClassId = await addClass(name, gradeLevel, genderTrack);
+    if (newClassId && students && students.length > 0) {
+      await importStudents(students, newClassId);
+    }
+    toast.success(`נוצרה כיתה ${name}${students?.length ? ` עם ${students.length} תלמידים` : ''}`);
   };
 
   return (

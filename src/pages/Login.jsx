@@ -22,7 +22,7 @@ export default function Login() {
       await base44.auth.loginViaEmailPassword(email, password);
       window.location.href = "/";
     } catch (err) {
-      setError(err.message || "Invalid email or password");
+      setError(err.message || "אימייל או סיסמה שגויים");
     } finally {
       setLoading(false);
     }

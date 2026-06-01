@@ -14,6 +14,7 @@ export default function ReportsPage() {
   const [selectedClass, setSelectedClass] = useState('');
   const [viewMode, setViewMode] = useState('annual');
 
+  const redBelow = data.settings.gradeColorThresholds?.redBelow ?? 55;
   const cls = data.classes.find(c => c.id === selectedClass);
   const students = useMemo(
     () => data.students.filter(s => s.classId === selectedClass).sort((a, b) => a.name.localeCompare(b.name, 'he')),
@@ -65,7 +66,7 @@ export default function ReportsPage() {
         const annual = calculateAnnualGrade(s.id, cTests, data.results, data.behaviorGrades, data.settings, ctsA, ctsB, s.peExempt);
         if (annual.annualGrade !== null) {
           allGrades.push(annual.annualGrade);
-          if (annual.annualGrade < 55) failCount++;
+          if (annual.annualGrade < redBelow) failCount++;
         }
         if (annual.semA.missingTests.length > 0 || annual.semB.missingTests.length > 0) missingCount++;
       });
@@ -81,9 +82,9 @@ export default function ReportsPage() {
     const active = studentGrades.filter(sg => !sg.student.peExempt);
     const grades = active.map(sg => sg.annual.annualGrade).filter(g => g !== null);
     const avg = grades.length > 0 ? Math.round(grades.reduce((a, b) => a + b, 0) / grades.length) : null;
-    const below55 = grades.filter(g => g < 55).length;
+    const below55 = grades.filter(g => g < redBelow).length;
     return { avg, studentsWithGrades: grades.length, below55, total: students.length, exempt: students.length - active.length };
-  }, [studentGrades, students]);
+  }, [studentGrades, students, redBelow]);
 
   return (
     <Layout title="דוחות">
@@ -162,7 +163,7 @@ export default function ReportsPage() {
             <div className="space-y-1 mt-4">
               {studentGrades.map(({ student, annual }) => {
                 const grade = annual.annualGrade;
-                const isLow = grade !== null && grade < 55;
+                const isLow = grade !== null && grade < redBelow;
                 return (
                   <div key={student.id} className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0">
                     <div className="flex items-center gap-2">

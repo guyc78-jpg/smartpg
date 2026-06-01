@@ -38,6 +38,7 @@ export default function BagrutTestsPage() {
   if (!cls) return <Layout title="כיתה לא נמצאה" backTo="/"><p className="text-center text-muted-foreground py-16">הכיתה לא נמצאה</p></Layout>;
   if (components.length === 0) return <Layout title={`בגרות חנ״ג — ${cls.name}`} backTo={`/class/${classId}`}><p className="text-center text-muted-foreground py-16">לא הוגדרו רכיבי בגרות</p></Layout>;
 
+  const redBelow = data.settings.gradeColorThresholds?.redBelow ?? 55;
   const currentComp = components[selectedIdx] ?? components[0];
   const filledCount = students.filter(s => data.bagrutResults.some(r => r.studentId === s.id && r.componentId === currentComp?.id && r.rawScore !== null)).length;
 
@@ -86,8 +87,8 @@ export default function BagrutTestsPage() {
                   ) : (
                     <div className="flex items-center gap-3">
                       {grade !== null && (
-                        <div className={`rounded-lg px-2.5 py-0.5 min-w-[44px] text-center ${grade < 55 ? 'bg-destructive/10' : 'bg-primary/10'}`}>
-                          <span className={`text-sm font-bold ${grade < 55 ? 'text-destructive' : 'text-primary'}`}>{grade}</span>
+                        <div className={`rounded-lg px-2.5 py-0.5 min-w-[44px] text-center ${grade < redBelow ? 'bg-destructive/10' : 'bg-primary/10'}`}>
+                          <span className={`text-sm font-bold ${grade < redBelow ? 'text-destructive' : 'text-primary'}`}>{grade}</span>
                         </div>
                       )}
                       <Input

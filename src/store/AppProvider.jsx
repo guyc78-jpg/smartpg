@@ -147,6 +147,7 @@ export function AppProvider({ children }) {
       ...d,
       classes: [...d.classes, { id: created.id, name: created.name, gradeLevel: created.grade_level, genderTrack: created.gender_track || defaultGenderTrack, homeroomContacts: [] }],
     }));
+    return created.id;
   }, [defaultGenderTrack]);
 
   const deleteClass = useCallback(async (id) => {
@@ -171,8 +172,10 @@ export function AppProvider({ children }) {
   }, []);
 
   const editStudent = useCallback(async (id, name, peExempt, subClassName) => {
-    await base44.entities.Student.update(id, { name, pe_exempt: peExempt, sub_class_name: subClassName || null });
-    setData(d => ({ ...d, students: d.students.map(s => s.id === id ? { ...s, name, peExempt, subClassName } : s) }));
+    const payload = { name, pe_exempt: peExempt };
+    if (subClassName !== undefined) payload.sub_class_name = subClassName || null;
+    await base44.entities.Student.update(id, payload);
+    setData(d => ({ ...d, students: d.students.map(s => s.id === id ? { ...s, name, peExempt, ...(subClassName !== undefined ? { subClassName } : {}) } : s) }));
   }, []);
 
   const importStudents = useCallback(async (names, classId) => {
@@ -333,18 +336,19 @@ export function AppProvider({ children }) {
 
   // --- Delete All ---
   const deleteAllData = useCallback(async () => {
-    const all = await Promise.all([
-      base44.entities.SchoolClass.list(), base44.entities.Student.list(),
-      base44.entities.TestResult.list(), base44.entities.BehaviorGrade.list(),
-      base44.entities.ClassTestStatus.list(), base44.entities.GradeOverride.list(),
-      base44.entities.TestAttempt.list(), base44.entities.BagrutResult.list(),
-    ]);
-    await Promise.all(all.flat().map(r => {
-      const entityMap = { SchoolClass: base44.entities.SchoolClass, Student: base44.entities.Student };
-      // Simply reload after
-    }));
+    const entities = [
+      base44.entities.SchoolClass, base44.entities.Student,
+      base44.entities.TestResult, base44.entities.BehaviorGrade,
+      base44.entities.ClassTestStatus, base44.entities.GradeOverride,
+      base44.entities.TestAttempt, base44.entities.BagrutResult,
+    ];
+    for (const entity of entities) {
+      const rows = await entity.list();
+      await Promise.all((rows || []).map(r => entity.delete(r.id)));
+    }
     setData({ ...DEFAULT_DATA });
-  }, []);
+    await loadAll();
+  }, [loadAll]);
 
   const seedClasses = useCallback(() => {}, []);
   const closeSemester = useCallback(() => {}, []);

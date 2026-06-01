@@ -130,10 +130,10 @@ export default function SchedulePage() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">כיתה</Label>
-              <Select value={form.class_id} onValueChange={v => setForm(f => ({ ...f, class_id: v }))}>
+              <Select value={form.class_id || 'none'} onValueChange={v => setForm(f => ({ ...f, class_id: v === 'none' ? '' : v }))}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="בחר כיתה" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>ללא</SelectItem>
+                  <SelectItem value="none">ללא</SelectItem>
                   {data.classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>

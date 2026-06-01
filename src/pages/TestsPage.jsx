@@ -117,6 +117,7 @@ export default function TestsPage() {
                 const grade = rawScore !== null && currentTest && status === 'completed'
                   ? convertRawToGrade(rawScore, currentTest.conversionTable) : null;
                 const finalGrade = grade !== null ? Math.max(grade, data.settings.minCompletedGrade || 56) : null;
+                const redBelow = data.settings.gradeColorThresholds?.redBelow ?? 55;
                 const isEmpty = rawScore === null;
 
                 return (
@@ -128,8 +129,8 @@ export default function TestsPage() {
                       ) : (
                         <div className="flex items-center gap-3">
                           {finalGrade !== null && (
-                            <div className={`rounded-lg px-2.5 py-0.5 min-w-[44px] text-center ${finalGrade < 55 ? 'bg-destructive/10' : 'bg-primary/10'}`}>
-                              <span className={`text-sm font-bold ${finalGrade < 55 ? 'text-destructive' : 'text-primary'}`}>{finalGrade}</span>
+                            <div className={`rounded-lg px-2.5 py-0.5 min-w-[44px] text-center ${finalGrade < redBelow ? 'bg-destructive/10' : 'bg-primary/10'}`}>
+                              <span className={`text-sm font-bold ${finalGrade < redBelow ? 'text-destructive' : 'text-primary'}`}>{finalGrade}</span>
                             </div>
                           )}
                           <Input

@@ -131,7 +131,8 @@ export default function ClassPage() {
             else if (viewMode === 'A') displayGrade = annual.semA.semesterFinalGrade;
             else displayGrade = annual.semB.semesterFinalGrade;
 
-            const isLow = displayGrade !== null && displayGrade < 55;
+            const redBelow = data.settings.gradeColorThresholds?.redBelow ?? 55;
+            const isLow = displayGrade !== null && displayGrade < redBelow;
 
             return (
               <Card key={student.id} className={`card-3d rounded-xl transition-all ${student.peExempt ? 'opacity-60' : ''}`}>
