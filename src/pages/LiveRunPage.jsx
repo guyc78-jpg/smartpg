@@ -1,11 +1,9 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pause, Play, RotateCcw, Square, TimerReset } from 'lucide-react';
+import { Flag, Pause, Play, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useApp } from '@/store/AppProvider';
 import { useLiveRun } from '@/contexts/LiveRunContext';
 import { convertRawToGrade } from '@/lib/gradeCalc';
@@ -62,7 +60,7 @@ export default function LiveRunPage() {
   };
 
   if (!session) {
-    return <Layout title="ריצה חיה"><RunSetup data={data} onStart={run.startSession} /></Layout>;
+    return <Layout title="ריצה Live" backTo="/"><RunSetup data={data} onStart={run.startSession} /></Layout>;
   }
 
   if (session.phase === 'summary') {
@@ -84,29 +82,31 @@ export default function LiveRunPage() {
   const sortedStudents = sortRunStudents(selectedStudents, session.participants);
 
   return (
-    <Layout title="ריצה חיה" subtitle={`${currentClass?.name || ''} · ${currentTest?.name || ''}`}>
-      <div className="max-w-5xl mx-auto p-3 md:p-4 space-y-4" dir="rtl">
-        <Card className="card-3d rounded-3xl p-4 text-center space-y-4 sticky top-24 z-20 glass-surface">
-          <div className="font-mono text-5xl md:text-7xl font-black tracking-tight" dir="ltr">{formatRunTime(elapsedMs)}</div>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <Badge variant="secondary" className="justify-center py-1">רצים {counts.running}</Badge>
-            <Badge variant="secondary" className="justify-center py-1">סיימו {counts.finished}</Badge>
-            <Badge variant="secondary" className="justify-center py-1">לא סיימו {counts.not_completed}</Badge>
-            <Badge variant="secondary" className="justify-center py-1">לא השתתפו {counts.not_participated}</Badge>
+    <Layout title="ריצה Live" subtitle={`${currentClass?.name || ''} · ${currentTest?.name || ''}`}>
+      <div className="max-w-[470px] mx-auto px-2 pt-4 pb-24 space-y-4" dir="rtl">
+        <section className="text-center space-y-3 sticky top-24 z-20 bg-background/95 backdrop-blur pb-3 border-b border-border/40">
+          <div className="font-mono text-5xl font-black tracking-[0.08em] text-foreground" dir="ltr">{formatRunTime(elapsedMs).slice(0, 8)}</div>
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary" /> רצים: {counts.running}</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-600" /> סיימו: {counts.finished}</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {!session.running ? (
-              <Button onClick={run.startTimer} className="h-12 font-bold btn-3d"><Play className="w-4 h-4" /> {elapsedMs ? 'המשך' : 'התחל'}</Button>
+          <div className="grid grid-cols-2 gap-3 px-14">
+            {session.running ? (
+              <Button onClick={run.pauseTimer} className="h-14 rounded-xl bg-red-600 hover:bg-red-700 text-white text-lg font-bold shadow-md">
+                <Square className="w-4 h-4" /> עצור
+              </Button>
             ) : (
-              <Button onClick={run.pauseTimer} variant="outline" className="h-12 font-bold"><Pause className="w-4 h-4" /> עצור</Button>
+              <Button onClick={run.startTimer} className="h-14 rounded-xl bg-primary text-primary-foreground text-lg font-bold shadow-md">
+                <Play className="w-4 h-4" /> {elapsedMs ? 'המשך' : 'התחל'}
+              </Button>
             )}
-            <Button variant="outline" onClick={() => window.confirm('לאפס את הריצה ולמחוק את המדידה הנוכחית?') && run.resetSession()} className="h-12 font-bold"><RotateCcw className="w-4 h-4" /> איפוס</Button>
-            <Button variant="outline" onClick={() => counts.running === 0 || window.confirm('יש תלמידים שעדיין רצים. לסיים ולסמן אותם כלא סיימו?') ? run.finishRun() : null} className="h-12 font-bold sm:col-span-2"><Square className="w-4 h-4" /> סיום ריצה</Button>
-            <Button variant="ghost" onClick={() => navigate('/')} className="h-12 font-bold"><TimerReset className="w-4 h-4" /> מזער</Button>
+            <Button variant="outline" onClick={() => counts.running === 0 || window.confirm('יש תלמידים שעדיין רצים. לסיים ולסמן אותם כלא סיימו?') ? run.finishRun() : null} className="h-14 rounded-xl bg-card text-lg font-bold shadow-md">
+              <Flag className="w-4 h-4" /> סיים ריצה
+            </Button>
           </div>
-        </Card>
+        </section>
 
-        <div className="space-y-3 pb-20">
+        <div className="space-y-2">
           {sortedStudents.map(student => (
             <RunStudentCard
               key={student.id}
