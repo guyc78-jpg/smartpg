@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, createContext, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
 import { DEFAULT_DATA, DEFAULT_TESTS } from '@/lib/types';
+import { useAuth } from '@/lib/AuthContext';
 
 function jsonToConversionTable(json) {
   if (!Array.isArray(json)) return [];
@@ -25,6 +26,7 @@ export function useApp() {
 }
 
 export function AppProvider({ children }) {
+  const { isAuthenticated } = useAuth();
   const [data, setData] = useState({ ...DEFAULT_DATA });
   const [loading, setLoading] = useState(true);
   const [defaultGenderTrack, setDefaultGenderTrack] = useState('boys');
@@ -132,11 +134,13 @@ export function AppProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!loadedRef.current) {
+    if (isAuthenticated && !loadedRef.current) {
       loadedRef.current = true;
       loadAll();
+    } else if (!isAuthenticated) {
+      setLoading(false);
     }
-  }, [loadAll]);
+  }, [isAuthenticated, loadAll]);
 
   // --- Classes ---
   const addClass = useCallback(async (name, gradeLevel, genderTrack) => {
