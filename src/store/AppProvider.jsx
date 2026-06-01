@@ -324,7 +324,7 @@ export function AppProvider({ children }) {
     const created = await base44.entities.TestDefinition.create({
       name: test.name, test_type: test.testType || 'other', weight: test.weight,
       grade_level: test.gradeLevel, class_id: test.classId || '', gender_track: test.genderTrack || 'boys',
-      semester: test.semester || '', test_date: test.testDate || '', unit: test.unit || '',
+      semester: test.semester || undefined, test_date: test.testDate || undefined, unit: test.unit || '',
       conversion_table: test.conversionTable,
     });
     const newTest = {
@@ -340,7 +340,7 @@ export function AppProvider({ children }) {
     await base44.entities.TestDefinition.update(test.id, {
       name: test.name, test_type: test.testType || 'other', weight: test.weight,
       grade_level: test.gradeLevel, class_id: test.classId || '', gender_track: test.genderTrack,
-      semester: test.semester || '', test_date: test.testDate || '', unit: test.unit || '',
+      semester: test.semester || undefined, test_date: test.testDate || undefined, unit: test.unit || '',
       conversion_table: test.conversionTable,
     });
     setData(d => ({ ...d, tests: d.tests.map(t => t.id === test.id ? test : t) }));
