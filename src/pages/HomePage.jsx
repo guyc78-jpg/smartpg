@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '@/store/AppProvider';
 import Layout from '@/components/app/Layout';
@@ -6,208 +6,162 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Edit2, Users, Check, X, Copy, Archive, Eye, ClipboardList, UserCheck, BarChart3, Timer, Award } from 'lucide-react';
-import { GRADE_LEVELS, GENDER_TRACK_LABELS } from '@/lib/types';
-import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
-import AddClassDialog from '@/components/app/AddClassDialog';
-import { toast } from 'sonner';
+import { CalendarDays, ClipboardList, Timer, Search, BarChart3, Plus, UserCheck, AlertCircle, Activity } from 'lucide-react';
+import { formatStudentName } from '@/lib/studentName';
 
-const EMPTY_EDIT = { name: '', gradeLevel: 'ז', genderTrack: 'boys', homeroomTeacher: '', notes: '', status: 'active' };
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function QuickAction({ to, icon: Icon, label }) {
   return (
-    <Link to={to} className="flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background/70 py-2 text-[11px] font-medium text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors">
-      <Icon className="w-4 h-4" />
-      <span>{label}</span>
+    <Link to={to} className="rounded-2xl border border-border bg-card p-3 text-center shadow-sm transition-colors hover:border-primary/40 hover:text-primary">
+      <Icon className="mx-auto mb-1 h-5 w-5" />
+      <span className="text-xs font-semibold">{label}</span>
     </Link>
   );
 }
 
+function SummaryCard({ icon: Icon, label, value }) {
+  return (
+    <Card className="card-3d rounded-2xl p-3">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Icon className="h-4 w-4" />
+        <span className="text-xs">{label}</span>
+      </div>
+      <div className="mt-2 text-2xl font-bold text-foreground">{value}</div>
+    </Card>
+  );
+}
+
 export default function HomePage() {
-  const { data, addClass, deleteClass, editClass, archiveClass, duplicateClass, importStudents, defaultGenderTrack } = useApp();
-  const [deleteClassTarget, setDeleteClassTarget] = useState(null);
-  const [addClassOpen, setAddClassOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [editData, setEditData] = useState(EMPTY_EDIT);
-  const [filterGradeLevel, setFilterGradeLevel] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('active');
+  const { data } = useApp();
+  const [studentSearch, setStudentSearch] = useState('');
+  const today = todayKey();
 
-  const classStudentCounts = useMemo(() => {
-    const counts = {};
-    data.students.forEach(s => { counts[s.classId] = (counts[s.classId] || 0) + 1; });
-    return counts;
-  }, [data.students]);
+  const activeClassesById = useMemo(
+    () => Object.fromEntries((data.classes || []).filter(c => (c.status || 'active') === 'active').map(c => [c.id, c])),
+    [data.classes]
+  );
 
-  const filteredClasses = useMemo(() => {
-    const base = data.classes.filter(c => {
-      const gradeOk = filterGradeLevel === 'all' || c.gradeLevel === filterGradeLevel;
-      const statusOk = statusFilter === 'all' || (c.status || 'active') === statusFilter;
-      return gradeOk && statusOk;
-    });
-    return base.slice().sort((a, b) => {
-      const idxA = GRADE_LEVELS.indexOf(a.gradeLevel);
-      const idxB = GRADE_LEVELS.indexOf(b.gradeLevel);
-      if (idxA !== idxB) return idxA - idxB;
-      return a.name.localeCompare(b.name, 'he');
-    });
-  }, [data.classes, filterGradeLevel, statusFilter]);
+  const todayLessons = useMemo(
+    () => (data.lessonTopics || [])
+      .filter(lesson => lesson.date === today && !lesson.isTemplate)
+      .sort((a, b) => (a.period || 0) - (b.period || 0)),
+    [data.lessonTopics, today]
+  );
 
-  const totalStudents = data.students.length;
-  const activeClasses = data.classes.filter(c => (c.status || 'active') === 'active').length;
+  const todayTests = useMemo(
+    () => (data.tests || []).filter(test => test.date === today || test.testDate === today),
+    [data.tests, today]
+  );
 
-  const startEdit = (cls) => {
-    setEditingId(cls.id);
-    setEditData({
-      name: cls.name || '',
-      gradeLevel: cls.gradeLevel || 'ז',
-      genderTrack: cls.genderTrack || 'boys',
-      homeroomTeacher: cls.homeroomTeacher || '',
-      notes: cls.notes || '',
-      status: cls.status || 'active',
-    });
-  };
+  const todayClassIds = useMemo(() => {
+    const ids = new Set();
+    todayLessons.forEach(lesson => lesson.classId && ids.add(lesson.classId));
+    todayTests.forEach(test => test.classId && ids.add(test.classId));
+    return [...ids].filter(id => activeClassesById[id]);
+  }, [todayLessons, todayTests, activeClassesById]);
 
-  const saveEdit = async () => {
-    if (editingId && editData.name.trim()) {
-      await editClass(editingId, { ...editData, name: editData.name.trim() });
-      toast.success('הכיתה עודכנה');
-    }
-    setEditingId(null);
-  };
+  const todayClasses = todayClassIds.map(id => activeClassesById[id]).filter(Boolean);
 
-  const handleAddClass = async (classData, students) => {
-    const newClassId = await addClass(classData);
-    if (newClassId && students?.length > 0) await importStudents(students, newClassId);
-    toast.success(`נוצרה כיתה ${classData.name}${students?.length ? ` עם ${students.length} תלמידים` : ''}`);
-  };
+  const plannedRuns = useMemo(() => {
+    const runTests = todayTests.filter(test => test.testType === 'running' || test.name?.includes('ריצה'));
+    const runLessons = todayLessons.filter(lesson => [lesson.topic, lesson.activityType, lesson.notes].filter(Boolean).some(text => text.includes('ריצה')));
+    return { tests: runTests, lessons: runLessons, total: runTests.length + runLessons.length };
+  }, [todayTests, todayLessons]);
 
-  const handleDuplicate = async (cls) => {
-    await duplicateClass(cls.id);
-    toast.success('הכיתה שוכפלה ללא תלמידים');
-  };
+  const todayStudents = useMemo(
+    () => (data.students || []).filter(student => todayClassIds.includes(student.classId)),
+    [data.students, todayClassIds]
+  );
 
-  const handleArchive = async (cls) => {
-    await archiveClass(cls.id);
-    toast.success('הכיתה הועברה לארכיון');
-  };
+  const exemptStudents = todayStudents.filter(student => student.peExempt);
+  const missingResults = (data.results || []).filter(result =>
+    todayTests.some(test => test.id === result.testId) &&
+    ['pending', 'not_participated', 'not_completed'].includes(result.status)
+  );
+
+  const hasTodayActivity = todayLessons.length > 0 || todayTests.length > 0 || plannedRuns.total > 0;
+
+  const firstActiveClass = (data.classes || []).find(c => (c.status || 'active') === 'active');
+  const testEntryLink = firstActiveClass ? `/class/${firstActiveClass.id}/tests` : '/manage-tests';
+
+  const searchResults = useMemo(() => {
+    const q = studentSearch.trim();
+    if (!q) return [];
+    return (data.students || [])
+      .filter(student => formatStudentName(student).includes(q))
+      .slice(0, 5);
+  }, [data.students, studentSearch]);
 
   return (
-    <Layout title="ניהול כיתות חנ״ג">
-      <div className="max-w-4xl mx-auto space-y-4 p-4" dir="rtl">
-        <div className="grid grid-cols-3 gap-2">
-          <Badge variant="secondary" className="justify-center gap-1 py-2"><Users className="w-3 h-3" /> {activeClasses} פעילות</Badge>
-          <Badge variant="outline" className="justify-center py-2">{data.classes.length} כיתות</Badge>
-          <Badge variant="outline" className="justify-center py-2">{totalStudents} תלמידים</Badge>
-        </div>
+    <Layout title="דשבורד יומן חנ״ג" subtitle={new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}>
+      <div className="mx-auto max-w-4xl space-y-4 p-4" dir="rtl">
+        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <SummaryCard icon={CalendarDays} label="שיעורים היום" value={todayLessons.length} />
+          <SummaryCard icon={UserCheck} label="כיתות פעילות" value={todayClasses.length} />
+          <SummaryCard icon={ClipboardList} label="מבדקים היום" value={todayTests.length} />
+          <SummaryCard icon={Timer} label="ריצות מתוכננות" value={plannedRuns.total} />
+        </section>
 
-        <Button onClick={() => setAddClassOpen(true)} className="w-full h-12 rounded-xl btn-3d font-semibold gap-2">
-          <Plus className="w-5 h-5" /> הוסף כיתה
-        </Button>
-
-        <div className="space-y-2">
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            <Button size="sm" variant={filterGradeLevel === 'all' ? 'default' : 'outline'} onClick={() => setFilterGradeLevel('all')} className="h-8 text-xs rounded-full shrink-0">הכל</Button>
-            {GRADE_LEVELS.map(gl => (
-              <Button key={gl} size="sm" variant={filterGradeLevel === gl ? 'default' : 'outline'} onClick={() => setFilterGradeLevel(gl)} className="h-8 text-xs rounded-full shrink-0">{gl}׳</Button>
-            ))}
+        <Card className="card-3d rounded-2xl p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-base font-bold"><AlertCircle className="h-5 w-5 text-primary" /> מה חשוב היום</h2>
+            <Badge variant="secondary" className="text-[10px]">היום בלבד</Badge>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <Button size="sm" variant={statusFilter === 'active' ? 'default' : 'outline'} onClick={() => setStatusFilter('active')} className="h-9 text-xs rounded-xl">פעילות</Button>
-            <Button size="sm" variant={statusFilter === 'archived' ? 'default' : 'outline'} onClick={() => setStatusFilter('archived')} className="h-9 text-xs rounded-xl">ארכיון</Button>
-            <Button size="sm" variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => setStatusFilter('all')} className="h-9 text-xs rounded-xl">כל הסטטוסים</Button>
-          </div>
-        </div>
 
-        <div className="space-y-3">
-          {filteredClasses.map(cls => {
-            const studentCount = classStudentCounts[cls.id] || 0;
-            const isEditing = editingId === cls.id;
-            const archived = (cls.status || 'active') === 'archived';
-
-            return (
-              <Card key={cls.id} className={`card-3d rounded-2xl overflow-hidden ${archived ? 'opacity-70' : ''}`}>
-                {isEditing ? (
-                  <div className="p-4 space-y-3">
-                    <Input value={editData.name} onChange={e => setEditData(d => ({ ...d, name: e.target.value }))} className="h-10 text-sm" autoFocus />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Select value={editData.gradeLevel} onValueChange={v => setEditData(d => ({ ...d, gradeLevel: v }))}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>{GRADE_LEVELS.map(gl => <SelectItem key={gl} value={gl}>{gl}׳</SelectItem>)}</SelectContent>
-                      </Select>
-                      <Select value={editData.genderTrack} onValueChange={v => setEditData(d => ({ ...d, genderTrack: v }))}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent><SelectItem value="boys">בנים</SelectItem><SelectItem value="girls">בנות</SelectItem></SelectContent>
-                      </Select>
-                    </div>
-                    <Input value={editData.homeroomTeacher} onChange={e => setEditData(d => ({ ...d, homeroomTeacher: e.target.value }))} placeholder="מחנך/ת" className="h-10 text-sm" />
-                    <Input value={editData.notes} onChange={e => setEditData(d => ({ ...d, notes: e.target.value }))} placeholder="הערות פנימיות לחנ״ג" className="h-10 text-sm" />
-                    <Select value={editData.status} onValueChange={v => setEditData(d => ({ ...d, status: v }))}>
-                      <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value="active">פעילה</SelectItem><SelectItem value="archived">ארכיון</SelectItem></SelectContent>
-                    </Select>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={saveEdit} className="h-9 gap-1 flex-1"><Check className="w-3 h-3" /> שמור</Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="h-9 px-4"><X className="w-3 h-3" /> ביטול</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-base truncate">{cls.name}</h3>
-                          <Badge variant={archived ? 'outline' : 'secondary'} className="text-[10px]">{archived ? 'בארכיון' : 'פעילה'}</Badge>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground mt-1">
-                          <span>שכבה {cls.gradeLevel}׳</span>
-                          <span>•</span>
-                          <span>{GENDER_TRACK_LABELS[cls.genderTrack] || 'בנים'}</span>
-                          <span>•</span>
-                          <span>{studentCount} תלמידים</span>
-                        </div>
-                        {cls.homeroomTeacher && <p className="text-xs text-muted-foreground mt-1">מחנך/ת: {cls.homeroomTeacher}</p>}
-                        {cls.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{cls.notes}</p>}
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(cls)}><Edit2 className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDuplicate(cls)}><Copy className="w-3.5 h-3.5" /></Button>
-                        {!archived && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleArchive(cls)}><Archive className="w-3.5 h-3.5" /></Button>}
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteClassTarget({ id: cls.id, name: cls.name, studentCount })}><Trash2 className="w-3.5 h-3.5 text-destructive/70" /></Button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                      <QuickAction to={`/class/${cls.id}`} icon={Eye} label="תלמידים" />
-                      <QuickAction to={`/class/${cls.id}`} icon={UserCheck} label="נוכחות" />
-                      <QuickAction to={`/class/${cls.id}/tests`} icon={ClipboardList} label="מבדקים" />
-                      <QuickAction to={`/class/${cls.id}`} icon={Award} label="ציונים" />
-                      <QuickAction to="/schedule" icon={UserCheck} label="נוכחות" />
-                      <QuickAction to="/live-run" icon={Timer} label="ריצה חיה" />
-                      <QuickAction to="/reports" icon={BarChart3} label="דוחות" />
-                    </div>
-                  </div>
-                )}
-              </Card>
-            );
-          })}
-
-          {filteredClasses.length === 0 && (
-            <p className="text-center text-muted-foreground py-16 text-sm">
-              {data.classes.length === 0 ? 'אין כיתות עדיין. הוסף כיתה חדשה כדי להתחיל.' : 'אין כיתות מתאימות לסינון הנוכחי.'}
-            </p>
+          {!hasTodayActivity ? (
+            <p className="rounded-xl bg-muted/50 p-4 text-center text-sm font-semibold text-muted-foreground">אין משימות להיום</p>
+          ) : (
+            <div className="space-y-2">
+              {todayLessons.map(lesson => (
+                <Link key={lesson.id} to="/schedule" className="block rounded-xl bg-muted/40 p-3 text-sm hover:bg-muted">
+                  <div className="font-semibold">שיעור: {lesson.topic || 'שיעור חנ״ג'}</div>
+                  <div className="text-xs text-muted-foreground">{activeClassesById[lesson.classId]?.name || 'כיתה'}{lesson.period ? ` • שעה ${lesson.period}` : ''}{lesson.location ? ` • ${lesson.location}` : ''}</div>
+                </Link>
+              ))}
+              {todayTests.map(test => (
+                <Link key={test.id} to={test.classId ? `/class/${test.classId}/tests` : '/manage-tests'} className="block rounded-xl bg-primary/10 p-3 text-sm hover:bg-primary/15">
+                  <div className="font-semibold text-primary">מבדק: {test.name}</div>
+                  <div className="text-xs text-muted-foreground">{activeClassesById[test.classId]?.name || `שכבה ${test.gradeLevel || ''}`} {test.unit ? `• ${test.unit}` : ''}</div>
+                </Link>
+              ))}
+            </div>
           )}
-        </div>
+        </Card>
 
-        <AddClassDialog open={addClassOpen} onOpenChange={setAddClassOpen} onAdd={handleAddClass} defaultGenderTrack={defaultGenderTrack} />
+        <section className="grid grid-cols-3 gap-2">
+          <QuickAction to="/schedule" icon={UserCheck} label="הזנת נוכחות" />
+          <QuickAction to={testEntryLink} icon={ClipboardList} label="הזנת מבדק" />
+          <QuickAction to="/live-run" icon={Timer} label="ריצה חיה" />
+          <QuickAction to="#student-search" icon={Search} label="חיפוש תלמיד" />
+          <QuickAction to="/reports" icon={BarChart3} label="דוחות" />
+          <QuickAction to="/schedule" icon={Plus} label="הוספת שיעור" />
+        </section>
 
-        <ConfirmDeleteDialog
-          open={!!deleteClassTarget}
-          onOpenChange={() => setDeleteClassTarget(null)}
-          title={`מחיקת כיתה ${deleteClassTarget?.name}`}
-          description={`פעולה זו תמחק רק את רשומת הכיתה מרשימת הכיתות ולא תמחק ציונים או מבדקים. בכיתה קיימים ${deleteClassTarget?.studentCount || 0} תלמידים, ולכן מומלץ לארכב במקום למחוק אם רוצים לשמור שיוך כיתה פעיל. האם למחוק בכל זאת?`}
-          onConfirm={() => { deleteClass(deleteClassTarget.id); setDeleteClassTarget(null); toast.success('הכיתה נמחקה'); }}
-        />
+        <Card id="student-search" className="card-3d rounded-2xl p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-bold"><Search className="h-5 w-5 text-primary" /> חיפוש תלמיד</h2>
+          <Input value={studentSearch} onChange={e => setStudentSearch(e.target.value)} placeholder="הקלד/י שם משפחה או שם פרטי" className="h-11" />
+          {searchResults.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              {searchResults.map(student => (
+                <Link key={student.id} to={`/class/${student.classId}`} className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2 text-sm hover:bg-muted">
+                  <span className="font-semibold">{formatStudentName(student)}</span>
+                  <span className="text-xs text-muted-foreground">{activeClassesById[student.classId]?.name || 'כיתה'}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <Card className="card-3d rounded-2xl p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-bold"><Activity className="h-5 w-5 text-primary" /> סיכום קצר</h2>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="rounded-xl bg-muted/40 p-3"><span className="text-muted-foreground">תלמידים פטורים היום</span><div className="text-xl font-bold">{exemptStudents.length}</div></div>
+            <div className="rounded-xl bg-muted/40 p-3"><span className="text-muted-foreground">חסרים במבדקי היום</span><div className="text-xl font-bold">{missingResults.length}</div></div>
+          </div>
+        </Card>
       </div>
     </Layout>
   );

@@ -5,11 +5,16 @@ import { useAuth } from '@/lib/AuthContext';
 
 function jsonToConversionTable(json) {
   if (!Array.isArray(json)) return [];
-  return json.map(entry => ({
-    minResult: Number(entry.minResult ?? entry.min_result ?? 0),
-    maxResult: Number(entry.maxResult ?? entry.max_result ?? 0),
-    grade: Number(entry.grade ?? 0),
-  }));
+  return json.map(entry => {
+    const minResult = entry.minResult ?? entry.min_result;
+    const maxResult = entry.maxResult ?? entry.max_result;
+    const grade = entry.grade;
+    return {
+      minResult: minResult === null || minResult === undefined ? null : Number(minResult),
+      maxResult: maxResult === null || maxResult === undefined ? null : Number(maxResult),
+      grade: grade === null || grade === undefined ? null : Number(grade),
+    };
+  });
 }
 
 let idCounter = 0;

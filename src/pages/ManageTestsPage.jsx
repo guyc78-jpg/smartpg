@@ -44,12 +44,12 @@ export default function ManageTestsPage() {
   const updateEntry = (testId, entryIdx, field, value) => {
     const test = data.tests.find(t => t.id === testId);
     if (!test) return;
-    const newTable = [...test.conversionTable];
+    const newTable = [...(test.conversionTable || [])];
     if (value.trim() === '') {
       newTable[entryIdx] = { ...newTable[entryIdx], [field]: null };
     } else {
       const num = parseFloat(value);
-      if (isNaN(num)) return;
+      if (Number.isNaN(num)) return;
       newTable[entryIdx] = { ...newTable[entryIdx], [field]: num };
     }
     updateTest({ ...test, conversionTable: newTable });
@@ -58,19 +58,18 @@ export default function ManageTestsPage() {
   const addEntry = (testId) => {
     const test = data.tests.find(t => t.id === testId);
     if (!test) return;
-    updateTest({ ...test, conversionTable: [...test.conversionTable, { minResult: null, maxResult: null, grade: null }] });
+    updateTest({ ...test, conversionTable: [...(test.conversionTable || []), { minResult: null, maxResult: null, grade: null }] });
   };
 
   const removeEntry = (testId, entryIdx) => {
     const test = data.tests.find(t => t.id === testId);
     if (!test) return;
-    updateTest({ ...test, conversionTable: test.conversionTable.filter((_, i) => i !== entryIdx) });
+    updateTest({ ...test, conversionTable: (test.conversionTable || []).filter((_, i) => i !== entryIdx) });
   };
 
   return (
     <Layout title="מבדקים">
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
-        {/* Filters */}
         <div className="space-y-1.5">
           <div className="text-[11px] text-muted-foreground px-1">
             מוצגים רק מבדקי {GENDER_TRACK_LABELS[selectedGenderTrack]}
@@ -84,7 +83,6 @@ export default function ManageTestsPage() {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-1.5 items-center flex-wrap">
           <Button onClick={handleAddTest} size="sm" className="h-7 px-2.5 text-xs rounded-full">
             <Plus className="w-3.5 h-3.5 ml-1" /> הוסף
@@ -94,13 +92,12 @@ export default function ManageTestsPage() {
           </Button>
         </div>
 
-        {/* Test Cards */}
         <div className="space-y-1.5">
           {filteredTests.map(test => {
             const isExpanded = expandedTest === test.id;
             return (
               <Card key={test.id} className="card-3d rounded-xl overflow-hidden">
-                <button onClick={() => setExpandedTest(isExpanded ? null : test.id)} className="w-full flex items-center justify-between px-3 py-2.5 text-right">
+                <button type="button" onClick={() => setExpandedTest(isExpanded ? null : test.id)} className="w-full flex items-center justify-between px-3 py-2.5 text-right">
                   <div>
                     <div className="font-bold text-sm">{test.name}</div>
                     <div className="text-[11px] text-muted-foreground">
@@ -130,8 +127,8 @@ export default function ManageTestsPage() {
 
                     <div className="text-[11px] font-semibold mt-2">טבלת המרה</div>
                     <div className="space-y-1">
-                      {test.conversionTable?.map((entry, idx) => (
-                        <div key={idx} className="flex gap-1.5 items-center">
+                      {(test.conversionTable || []).map((entry, idx) => (
+                        <div key={`${test.id}-${idx}`} className="flex gap-1.5 items-center">
                           <Input placeholder="מ-" value={entry.minResult ?? ''} onChange={e => updateEntry(test.id, idx, 'minResult', e.target.value)} className="h-7 text-xs flex-1 text-center" />
                           <Input placeholder="עד" value={entry.maxResult ?? ''} onChange={e => updateEntry(test.id, idx, 'maxResult', e.target.value)} className="h-7 text-xs flex-1 text-center" />
                           <Input placeholder="ציון" value={entry.grade ?? ''} onChange={e => updateEntry(test.id, idx, 'grade', e.target.value)} className="h-7 text-xs flex-1 text-center" />
