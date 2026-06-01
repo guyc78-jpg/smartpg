@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { convertRawToGrade } from '@/lib/gradeCalc';
 import { RUN_STATUS_LABELS, formatRunTime, secondsFromMs, sortRunStudents } from './runUtils';
+import { formatStudentName } from '@/lib/studentName';
 
 export default function RunSummary({ session, students, test, settings, onEdit, onBack, onSave }) {
   const sorted = sortRunStudents(students, session.participants);
@@ -36,7 +37,7 @@ export default function RunSummary({ session, students, test, settings, onEdit, 
             <Card key={student.id} className="rounded-2xl p-3">
               <div className="grid grid-cols-1 md:grid-cols-[1fr_150px_120px_130px_120px] gap-3 items-center">
                 <div>
-                  <div className="font-bold">{student.name}</div>
+                  <div className="font-bold">{formatStudentName(student)}</div>
                   <div className="text-xs text-muted-foreground">{participant.laps}/{session.setup.lapsRequired} הקפות</div>
                 </div>
                 <select value={participant.status} onChange={e => onEdit(student.id, { status: e.target.value, finishTimeMs: e.target.value === 'finished' ? participant.finishTimeMs || session.elapsedBeforePause : null })} className="h-10 rounded-md border border-input bg-background px-2 text-sm">

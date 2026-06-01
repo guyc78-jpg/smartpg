@@ -5,12 +5,35 @@
     "name": {
       "type": "string"
     },
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "boys",
+        "girls",
+        "other"
+      ]
+    },
     "class_id": {
       "type": "string"
     },
     "pe_exempt": {
       "type": "boolean",
       "default": false
+    },
+    "medical_limitations": {
+      "type": "string"
+    },
+    "pe_notes": {
+      "type": "string"
+    },
+    "study_group": {
+      "type": "string"
     },
     "sub_class_name": {
       "type": "string"

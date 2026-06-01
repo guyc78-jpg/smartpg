@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { formatStudentName } from '@/lib/studentName';
 
 export default function BagrutTestsPage() {
   const { classId } = useParams();
@@ -15,7 +16,7 @@ export default function BagrutTestsPage() {
 
   const cls = data.classes.find(c => c.id === classId);
   const students = useMemo(
-    () => data.students.filter(s => s.classId === classId).sort((a, b) => a.name.localeCompare(b.name, 'he')),
+    () => data.students.filter(s => s.classId === classId).sort((a, b) => formatStudentName(a).localeCompare(formatStudentName(b), 'he')),
     [data.students, classId]
   );
 
@@ -81,7 +82,7 @@ export default function BagrutTestsPage() {
             return (
               <div key={student.id} className={`card-3d rounded-xl px-3 py-2.5 ${student.peExempt ? 'opacity-60' : rawScore === null ? 'bg-muted/30' : ''}`}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-[15px] truncate">{student.name}</span>
+                  <span className="font-bold text-[15px] truncate">{formatStudentName(student)}</span>
                   {student.peExempt ? (
                     <Badge variant="outline" className="text-[9px] border-destructive/40 text-destructive">פטור</Badge>
                   ) : (

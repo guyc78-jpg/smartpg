@@ -1,5 +1,6 @@
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatStudentName } from '@/lib/studentName';
 
 function LapChip({ label, active, disabled, onClick }) {
   return (
@@ -32,7 +33,7 @@ export default function RunStudentCard({ student, participant, lapsRequired, onL
         </div>
 
         <div className="flex-1 min-w-0 text-right">
-          <h3 className="font-extrabold text-[15px] truncate">{student.name}</h3>
+          <h3 className="font-extrabold text-[15px] truncate">{formatStudentName(student)}</h3>
           <div className="flex items-center justify-end gap-2 mt-2">
             <span className="text-xs text-muted-foreground" dir="ltr">{participant.laps}/{lapsRequired}</span>
             <div className="flex flex-row-reverse gap-1.5">

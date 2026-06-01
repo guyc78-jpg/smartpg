@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart3, Users, TrendingUp, AlertTriangle, Download } from 'lucide-react';
 import { SEMESTER_LABELS } from '@/lib/types';
+import { formatStudentName } from '@/lib/studentName';
 
 export default function ReportsPage() {
   const { data } = useApp();
@@ -17,7 +18,7 @@ export default function ReportsPage() {
   const redBelow = data.settings.gradeColorThresholds?.redBelow ?? 55;
   const cls = data.classes.find(c => c.id === selectedClass);
   const students = useMemo(
-    () => data.students.filter(s => s.classId === selectedClass).sort((a, b) => a.name.localeCompare(b.name, 'he')),
+    () => data.students.filter(s => s.classId === selectedClass).sort((a, b) => formatStudentName(a).localeCompare(formatStudentName(b), 'he')),
     [data.students, selectedClass]
   );
 
@@ -167,7 +168,7 @@ export default function ReportsPage() {
                 return (
                   <div key={student.id} className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{student.name}</span>
+                      <span className="text-sm font-medium">{formatStudentName(student)}</span>
                       {student.peExempt && <Badge variant="outline" className="text-[8px] px-1 py-0">פטור</Badge>}
                     </div>
                     {grade !== null && (

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SEMESTER_LABELS } from '@/lib/types';
 import { compareStudentsByLastName } from './runUtils';
+import { formatStudentName } from '@/lib/studentName';
 
 function Field({ label, children }) {
   return (
@@ -133,7 +134,7 @@ export default function RunSetup({ data, onStart }) {
                   <span className={`w-5 h-5 rounded-full border flex items-center justify-center ${checked ? 'bg-primary border-primary text-primary-foreground' : 'border-primary'}`}>
                     {checked && <Check className="w-3.5 h-3.5" />}
                   </span>
-                  <span className="font-medium">{student.name}</span>
+                  <span className="font-medium">{formatStudentName(student)}</span>
                 </button>
               );
             })}

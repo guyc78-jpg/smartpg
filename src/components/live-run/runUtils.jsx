@@ -1,3 +1,5 @@
+import { formatStudentName } from '@/lib/studentName';
+
 export const RUN_STATUS_LABELS = {
   running: 'רץ/ה',
   finished: 'סיים/ה',
@@ -25,9 +27,7 @@ export function splitHebrewName(name = '') {
 }
 
 export function compareStudentsByLastName(a, b) {
-  const an = splitHebrewName(a.name);
-  const bn = splitHebrewName(b.name);
-  return an.last.localeCompare(bn.last, 'he') || an.first.localeCompare(bn.first, 'he') || a.name.localeCompare(b.name, 'he');
+  return formatStudentName(a).localeCompare(formatStudentName(b), 'he');
 }
 
 export function sortRunStudents(students, participants) {

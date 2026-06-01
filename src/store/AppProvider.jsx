@@ -57,7 +57,10 @@ export function AppProvider({ children }) {
       }));
 
       const students = (studentsData || []).map(s => ({
-        id: s.id, name: s.name, classId: s.class_id, peExempt: s.pe_exempt ?? false, subClassName: s.sub_class_name,
+        id: s.id, name: s.name, firstName: s.first_name || '', lastName: s.last_name || '',
+        gender: s.gender || '', classId: s.class_id, peExempt: s.pe_exempt ?? false,
+        medicalLimitations: s.medical_limitations || '', peNotes: s.pe_notes || '',
+        studyGroup: s.study_group || '', subClassName: s.sub_class_name,
       }));
 
       let tests = (testsData || []).map(t => ({
@@ -215,9 +218,29 @@ export function AppProvider({ children }) {
   }, [addClass, data.classes]);
 
   // --- Students ---
-  const addStudent = useCallback(async (name, classId) => {
-    const created = await base44.entities.Student.create({ name, class_id: classId });
-    setData(d => ({ ...d, students: [...d.students, { id: created.id, name, classId }] }));
+  const addStudent = useCallback(async (studentData, classId) => {
+    const payloadData = typeof studentData === 'object' ? studentData : { name: studentData, classId };
+    const fullName = payloadData.name || [payloadData.lastName, payloadData.firstName].filter(Boolean).join(' ');
+    const payload = {
+      name: fullName,
+      first_name: payloadData.firstName || '',
+      last_name: payloadData.lastName || '',
+      gender: payloadData.gender || '',
+      class_id: payloadData.classId || classId,
+      pe_exempt: payloadData.peExempt || false,
+      medical_limitations: payloadData.medicalLimitations || '',
+      pe_notes: payloadData.peNotes || '',
+      study_group: payloadData.studyGroup || '',
+      sub_class_name: payloadData.studyGroup || payloadData.subClassName || '',
+    };
+    const created = await base44.entities.Student.create(payload);
+    setData(d => ({ ...d, students: [...d.students, {
+      id: created.id, name: created.name, firstName: created.first_name || '', lastName: created.last_name || '',
+      gender: created.gender || '', classId: created.class_id, peExempt: created.pe_exempt ?? false,
+      medicalLimitations: created.medical_limitations || '', peNotes: created.pe_notes || '',
+      studyGroup: created.study_group || '', subClassName: created.sub_class_name,
+    }] }));
+    return created.id;
   }, []);
 
   const deleteStudent = useCallback(async (id) => {
@@ -225,20 +248,57 @@ export function AppProvider({ children }) {
     setData(d => ({ ...d, students: d.students.filter(s => s.id !== id) }));
   }, []);
 
-  const editStudent = useCallback(async (id, name, peExempt, subClassName) => {
-    const payload = { name, pe_exempt: peExempt };
-    if (subClassName !== undefined) payload.sub_class_name = subClassName || null;
+  const editStudent = useCallback(async (id, studentData, peExempt, subClassName) => {
+    const payloadData = typeof studentData === 'object' ? studentData : { name: studentData, peExempt, subClassName };
+    const fullName = payloadData.name || [payloadData.lastName, payloadData.firstName].filter(Boolean).join(' ');
+    const payload = {
+      name: fullName,
+      first_name: payloadData.firstName || '',
+      last_name: payloadData.lastName || '',
+      gender: payloadData.gender || '',
+      class_id: payloadData.classId,
+      pe_exempt: payloadData.peExempt || false,
+      medical_limitations: payloadData.medicalLimitations || '',
+      pe_notes: payloadData.peNotes || '',
+      study_group: payloadData.studyGroup || '',
+      sub_class_name: payloadData.studyGroup || payloadData.subClassName || '',
+    };
     await base44.entities.Student.update(id, payload);
-    setData(d => ({ ...d, students: d.students.map(s => s.id === id ? { ...s, name, peExempt, ...(subClassName !== undefined ? { subClassName } : {}) } : s) }));
+    setData(d => ({ ...d, students: d.students.map(s => s.id === id ? {
+      ...s, name: fullName, firstName: payloadData.firstName || '', lastName: payloadData.lastName || '',
+      gender: payloadData.gender || '', classId: payloadData.classId || s.classId,
+      peExempt: payloadData.peExempt || false, medicalLimitations: payloadData.medicalLimitations || '',
+      peNotes: payloadData.peNotes || '', studyGroup: payloadData.studyGroup || '', subClassName: payload.sub_class_name,
+    } : s) }));
   }, []);
 
-  const importStudents = useCallback(async (names, classId) => {
-    const existing = data.students.filter(s => s.classId === classId).map(s => s.name);
-    const newNames = names.filter(n => !existing.includes(n));
-    if (newNames.length === 0) return 0;
-    const created = await base44.entities.Student.bulkCreate(newNames.map(n => ({ name: n, class_id: classId })));
-    setData(d => ({ ...d, students: [...d.students, ...created.map(s => ({ id: s.id, name: s.name, classId: s.class_id }))] }));
-    return newNames.length;
+  const importStudents = useCallback(async (items, classId) => {
+    const existing = new Set(data.students.filter(s => s.classId === classId).map(s => s.name));
+    const payloads = items.map(item => {
+      const payloadData = typeof item === 'object' ? item : { name: item };
+      const fullName = payloadData.name || [payloadData.lastName, payloadData.firstName].filter(Boolean).join(' ');
+      return {
+        name: fullName,
+        first_name: payloadData.firstName || '',
+        last_name: payloadData.lastName || '',
+        gender: payloadData.gender || '',
+        class_id: payloadData.classId || classId,
+        pe_exempt: payloadData.peExempt || false,
+        medical_limitations: payloadData.medicalLimitations || '',
+        pe_notes: payloadData.peNotes || '',
+        study_group: payloadData.studyGroup || '',
+        sub_class_name: payloadData.studyGroup || '',
+      };
+    }).filter(p => p.name && !existing.has(p.name));
+    if (payloads.length === 0) return 0;
+    const created = await base44.entities.Student.bulkCreate(payloads);
+    setData(d => ({ ...d, students: [...d.students, ...created.map(s => ({
+      id: s.id, name: s.name, firstName: s.first_name || '', lastName: s.last_name || '',
+      gender: s.gender || '', classId: s.class_id, peExempt: s.pe_exempt ?? false,
+      medicalLimitations: s.medical_limitations || '', peNotes: s.pe_notes || '',
+      studyGroup: s.study_group || '', subClassName: s.sub_class_name,
+    }))] }));
+    return payloads.length;
   }, [data.students]);
 
   // --- Tests ---
