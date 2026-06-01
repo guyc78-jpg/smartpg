@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, FileText, ArrowRight, LogOut, Moon, Sun, Settings, CalendarDays } from 'lucide-react';
+import { Home, ClipboardList, FileText, ArrowRight, LogOut, Moon, Sun, Settings, CalendarDays, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 function useTheme() {
@@ -20,6 +20,7 @@ function useTheme() {
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'ראשי' },
   { to: '/schedule', icon: CalendarDays, label: 'מערכת' },
+  { to: '/live-run', icon: Timer, label: 'ריצה' },
   { to: '/manage-tests', icon: ClipboardList, label: 'מבדקים' },
   { to: '/reports', icon: FileText, label: 'דוחות' },
 ];

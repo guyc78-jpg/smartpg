@@ -6,6 +6,8 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { AppProvider } from '@/store/AppProvider';
+import { LiveRunProvider } from '@/contexts/LiveRunContext';
+import FloatingRunTimer from '@/components/live-run/FloatingRunTimer';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -20,6 +22,7 @@ import AppSettingsPage from './pages/AppSettingsPage';
 import ReportsPage from './pages/ReportsPage';
 import BagrutTestsPage from './pages/BagrutTestsPage';
 import SchedulePage from './pages/SchedulePage';
+import LiveRunPage from './pages/LiveRunPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -49,6 +52,7 @@ const AuthenticatedApp = () => {
 
   return (
     <AppProvider>
+      <LiveRunProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -61,11 +65,14 @@ const AuthenticatedApp = () => {
           <Route path="/class/:classId/bagrut" element={<BagrutTestsPage />} />
           <Route path="/manage-tests" element={<ManageTestsPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/live-run" element={<LiveRunPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<AppSettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <FloatingRunTimer />
+      </LiveRunProvider>
     </AppProvider>
   );
 };

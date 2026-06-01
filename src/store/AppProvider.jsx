@@ -78,6 +78,8 @@ export function AppProvider({ children }) {
       const results = (resultsData || []).map(r => ({
         studentId: r.student_id, testId: r.test_id, semester: r.semester, rawScore: r.raw_score ?? null,
         status: r.status || 'completed', attemptCount: r.attempt_count ?? 1,
+        testDate: r.test_date, runTimeSeconds: r.run_time_seconds, lapsCompleted: r.laps_completed,
+        routeName: r.route_name, liveRunId: r.live_run_id,
       }));
 
       const testAttempts = (attemptsData || []).map(a => ({
@@ -215,21 +217,25 @@ export function AppProvider({ children }) {
   }, []);
 
   // --- Test Results ---
-  const setTestResult = useCallback(async (studentId, testId, semester, rawScore, status) => {
-    const existing = data.results.find(r => r.studentId === studentId && r.testId === testId && r.semester === semester);
+  const setTestResult = useCallback(async (studentId, testId, semester, rawScore, status, metadata = {}) => {
     const allExisting = await base44.entities.TestResult.filter({ student_id: studentId, test_id: testId, semester });
+    const payload = { student_id: studentId, test_id: testId, semester, raw_score: rawScore, status, ...metadata };
     
     if (allExisting.length > 0) {
-      await base44.entities.TestResult.update(allExisting[0].id, { raw_score: rawScore, status });
+      await base44.entities.TestResult.update(allExisting[0].id, payload);
     } else {
-      await base44.entities.TestResult.create({ student_id: studentId, test_id: testId, semester, raw_score: rawScore, status });
+      await base44.entities.TestResult.create(payload);
     }
     
     setData(d => {
       const filtered = d.results.filter(r => !(r.studentId === studentId && r.testId === testId && r.semester === semester));
-      return { ...d, results: [...filtered, { studentId, testId, semester, rawScore, status }] };
+      return { ...d, results: [...filtered, {
+        studentId, testId, semester, rawScore, status,
+        testDate: metadata.test_date, runTimeSeconds: metadata.run_time_seconds,
+        lapsCompleted: metadata.laps_completed, routeName: metadata.route_name, liveRunId: metadata.live_run_id,
+      }] };
     });
-  }, [data.results]);
+  }, []);
 
   // --- Behavior Grades ---
   const setBehaviorGrade = useCallback(async (studentId, quarter, grade) => {

@@ -51,7 +51,7 @@ export function calculateSemesterGrades(studentId, tests, results, behaviorGrade
       } else {
         missingTests.push(test.name);
       }
-    } else if (status === 'not_completed') {
+    } else if (status === 'not_completed' || status === 'not_participated') {
       weightedSum += (settings.penaltyScore || 15) * test.weight;
       totalWeight += test.weight;
     } else {

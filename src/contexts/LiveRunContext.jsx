@@ -1,0 +1,190 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+
+const STORAGE_KEY = 'pe_live_run_session_v1';
+const LiveRunContext = createContext(null);
+
+function readStoredSession() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getElapsed(session) {
+  if (!session) return 0;
+  return session.running ? Date.now() - session.startedAt + session.elapsedBeforePause : session.elapsedBeforePause;
+}
+
+function withHistory(participant, next) {
+  return { ...next, history: [...(participant.history || []), { ...participant, history: [] }].slice(-8) };
+}
+
+export function LiveRunProvider({ children }) {
+  const [session, setSession] = useState(readStoredSession);
+  const [tick, setTick] = useState(Date.now());
+
+  useEffect(() => {
+    if (!session) {
+      localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  }, [session]);
+
+  useEffect(() => {
+    if (!session?.running) return;
+    const id = setInterval(() => setTick(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [session?.running]);
+
+  const elapsedMs = useMemo(() => getElapsed(session), [session, tick]);
+
+  const startSession = useCallback((setup, students) => {
+    const participants = Object.fromEntries(students.map(student => [
+      student.id,
+      { studentId: student.id, laps: 0, status: 'running', finishTimeMs: null, history: [] }
+    ]));
+    setSession({
+      id: `run_${Date.now()}`,
+      setup,
+      participants,
+      selectedIds: students.map(s => s.id),
+      running: false,
+      startedAt: null,
+      elapsedBeforePause: 0,
+      phase: 'running',
+      createdAt: new Date().toISOString(),
+    });
+  }, []);
+
+  const startTimer = useCallback(() => {
+    setSession(prev => prev && !prev.running ? { ...prev, running: true, startedAt: Date.now() } : prev);
+  }, []);
+
+  const pauseTimer = useCallback(() => {
+    setSession(prev => prev?.running ? { ...prev, running: false, elapsedBeforePause: getElapsed(prev), startedAt: null } : prev);
+  }, []);
+
+  const resumeTimer = startTimer;
+
+  const resetSession = useCallback(() => setSession(null), []);
+  const closeSession = useCallback(() => setSession(null), []);
+
+  const markLap = useCallback((studentId) => {
+    setSession(prev => {
+      if (!prev) return prev;
+      const participant = prev.participants[studentId];
+      if (!participant || participant.status !== 'running') return prev;
+      const elapsed = getElapsed(prev);
+      const laps = participant.laps + 1;
+      const finished = laps >= Number(prev.setup.lapsRequired || 1);
+      const nextParticipant = withHistory(participant, {
+        ...participant,
+        laps,
+        status: finished ? 'finished' : 'running',
+        finishTimeMs: finished ? elapsed : participant.finishTimeMs,
+      });
+      return { ...prev, participants: { ...prev.participants, [studentId]: nextParticipant } };
+    });
+  }, []);
+
+  const finishStudent = useCallback((studentId) => {
+    setSession(prev => {
+      if (!prev) return prev;
+      const participant = prev.participants[studentId];
+      if (!participant || participant.status === 'finished') return prev;
+      const elapsed = getElapsed(prev);
+      const nextParticipant = withHistory(participant, {
+        ...participant,
+        laps: Math.max(participant.laps, Number(prev.setup.lapsRequired || 1)),
+        status: 'finished',
+        finishTimeMs: elapsed,
+      });
+      return { ...prev, participants: { ...prev.participants, [studentId]: nextParticipant } };
+    });
+  }, []);
+
+  const setStudentStatus = useCallback((studentId, status) => {
+    setSession(prev => {
+      if (!prev) return prev;
+      const participant = prev.participants[studentId];
+      if (!participant) return prev;
+      const nextParticipant = withHistory(participant, {
+        ...participant,
+        status,
+        finishTimeMs: status === 'finished' ? participant.finishTimeMs ?? getElapsed(prev) : null,
+      });
+      return { ...prev, participants: { ...prev.participants, [studentId]: nextParticipant } };
+    });
+  }, []);
+
+  const undoStudent = useCallback((studentId) => {
+    setSession(prev => {
+      const participant = prev?.participants?.[studentId];
+      const history = participant?.history || [];
+      if (!prev || history.length === 0) return prev;
+      const previous = history[history.length - 1];
+      return {
+        ...prev,
+        participants: {
+          ...prev.participants,
+          [studentId]: { ...previous, history: history.slice(0, -1) },
+        },
+      };
+    });
+  }, []);
+
+  const finishRun = useCallback(() => {
+    setSession(prev => {
+      if (!prev) return prev;
+      const elapsed = getElapsed(prev);
+      const participants = Object.fromEntries(Object.entries(prev.participants).map(([id, p]) => [
+        id,
+        p.status === 'running' ? { ...p, status: 'not_completed', finishTimeMs: null } : p
+      ]));
+      return { ...prev, running: false, startedAt: null, elapsedBeforePause: elapsed, phase: 'summary', participants };
+    });
+  }, []);
+
+  const reopenRun = useCallback(() => {
+    setSession(prev => prev ? { ...prev, phase: 'running' } : prev);
+  }, []);
+
+  const updateSummaryResult = useCallback((studentId, patch) => {
+    setSession(prev => {
+      if (!prev) return prev;
+      const participant = prev.participants[studentId];
+      if (!participant) return prev;
+      return { ...prev, participants: { ...prev.participants, [studentId]: { ...participant, ...patch } } };
+    });
+  }, []);
+
+  const value = {
+    session,
+    elapsedMs,
+    hasActiveRun: Boolean(session),
+    startSession,
+    startTimer,
+    pauseTimer,
+    resumeTimer,
+    resetSession,
+    closeSession,
+    markLap,
+    finishStudent,
+    setStudentStatus,
+    undoStudent,
+    finishRun,
+    reopenRun,
+    updateSummaryResult,
+  };
+
+  return <LiveRunContext.Provider value={value}>{children}</LiveRunContext.Provider>;
+}
+
+export function useLiveRun() {
+  const ctx = useContext(LiveRunContext);
+  if (!ctx) throw new Error('useLiveRun must be used within LiveRunProvider');
+  return ctx;
+}

@@ -6,6 +6,7 @@ export const TEST_STATUS_LABELS = {
   completed: 'בוצע',
   pending: 'חסר זמני',
   not_completed: 'לא הושלם',
+  not_participated: 'לא השתתף/ה',
   exempt: 'פטור',
   not_relevant: 'לא רלוונטי',
   not_included: 'לא נכלל',

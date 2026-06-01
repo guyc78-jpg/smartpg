@@ -24,6 +24,7 @@
         "completed",
         "pending",
         "not_completed",
+        "not_participated",
         "exempt",
         "not_relevant",
         "not_included"
@@ -33,6 +34,22 @@
     "attempt_count": {
       "type": "number",
       "default": 1
+    },
+    "test_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "run_time_seconds": {
+      "type": "number"
+    },
+    "laps_completed": {
+      "type": "number"
+    },
+    "route_name": {
+      "type": "string"
+    },
+    "live_run_id": {
+      "type": "string"
     }
   },
   "required": [
