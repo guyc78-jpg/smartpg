@@ -65,18 +65,23 @@ export function AppProvider({ children }) {
       }));
 
       let tests = (testsData || []).map(t => ({
-        id: t.id, name: t.name, weight: t.weight, gradeLevel: t.grade_level, genderTrack: t.gender_track || 'boys',
+        id: t.id, name: t.name, testType: t.test_type || 'other', weight: t.weight,
+        gradeLevel: t.grade_level, classId: t.class_id || '', genderTrack: t.gender_track || 'boys',
+        semester: t.semester || '', testDate: t.test_date || '', unit: t.unit || '',
         conversionTable: jsonToConversionTable(t.conversion_table),
       }));
 
       if (tests.length === 0) {
         const seeded = await Promise.all(
           DEFAULT_TESTS.map(t => base44.entities.TestDefinition.create({
-            name: t.name, weight: t.weight, grade_level: t.gradeLevel, gender_track: t.genderTrack, conversion_table: t.conversionTable,
+            name: t.name, test_type: t.testType || 'other', weight: t.weight, grade_level: t.gradeLevel,
+            gender_track: t.genderTrack, unit: t.unit || '', conversion_table: t.conversionTable,
           }))
         );
         tests = seeded.map(t => ({
-          id: t.id, name: t.name, weight: t.weight, gradeLevel: t.grade_level, genderTrack: t.gender_track || 'boys',
+          id: t.id, name: t.name, testType: t.test_type || 'other', weight: t.weight,
+          gradeLevel: t.grade_level, classId: t.class_id || '', genderTrack: t.gender_track || 'boys',
+          semester: t.semester || '', testDate: t.test_date || '', unit: t.unit || '',
           conversionTable: jsonToConversionTable(t.conversion_table),
         }));
       }
@@ -312,16 +317,25 @@ export function AppProvider({ children }) {
   // --- Tests ---
   const addTest = useCallback(async (test) => {
     const created = await base44.entities.TestDefinition.create({
-      name: test.name, weight: test.weight, grade_level: test.gradeLevel, gender_track: test.genderTrack || 'boys',
+      name: test.name, test_type: test.testType || 'other', weight: test.weight,
+      grade_level: test.gradeLevel, class_id: test.classId || '', gender_track: test.genderTrack || 'boys',
+      semester: test.semester || '', test_date: test.testDate || '', unit: test.unit || '',
       conversion_table: test.conversionTable,
     });
-    const newTest = { id: created.id, name: created.name, weight: created.weight, gradeLevel: created.grade_level, genderTrack: created.gender_track || 'boys', conversionTable: jsonToConversionTable(created.conversion_table) };
+    const newTest = {
+      id: created.id, name: created.name, testType: created.test_type || 'other', weight: created.weight,
+      gradeLevel: created.grade_level, classId: created.class_id || '', genderTrack: created.gender_track || 'boys',
+      semester: created.semester || '', testDate: created.test_date || '', unit: created.unit || '',
+      conversionTable: jsonToConversionTable(created.conversion_table),
+    };
     setData(d => ({ ...d, tests: [...d.tests, newTest] }));
   }, []);
 
   const updateTest = useCallback(async (test) => {
     await base44.entities.TestDefinition.update(test.id, {
-      name: test.name, weight: test.weight, grade_level: test.gradeLevel, gender_track: test.genderTrack,
+      name: test.name, test_type: test.testType || 'other', weight: test.weight,
+      grade_level: test.gradeLevel, class_id: test.classId || '', gender_track: test.genderTrack,
+      semester: test.semester || '', test_date: test.testDate || '', unit: test.unit || '',
       conversion_table: test.conversionTable,
     });
     setData(d => ({ ...d, tests: d.tests.map(t => t.id === test.id ? test : t) }));

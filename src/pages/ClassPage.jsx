@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
 import ImportStudentsDialog from '@/components/students/ImportStudentsDialog';
+import StudentGradeBreakdown from '@/components/grades/StudentGradeBreakdown';
 import { SEMESTER_LABELS, GENDER_TRACK_LABELS } from '@/lib/types';
 import { formatStudentName } from '@/lib/studentName';
 
@@ -213,6 +214,8 @@ export default function ClassPage() {
                   <InfoChip icon={CalendarDays} label="שיעורים" value={classLessons.length} />
                   <InfoChip icon={TrendingUp} label="התקדמות" value={progress} />
                 </div>
+
+                <StudentGradeBreakdown annual={annual} viewMode={viewMode} />
 
                 {(student.medicalLimitations || student.peNotes) && (
                   <div className="space-y-1 rounded-xl bg-muted/40 p-2 text-xs text-muted-foreground">

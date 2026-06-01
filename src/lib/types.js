@@ -2,12 +2,23 @@ export const GRADE_LEVELS = ['ז', 'ח', 'ט', 'י', 'יא', 'יב'];
 
 export const GENDER_TRACK_LABELS = { boys: 'בנים', girls: 'בנות' };
 
+export const TEST_TYPES = {
+  running: 'ריצה',
+  strength: 'כוח',
+  muscular_endurance: 'סבולת שריר',
+  flexibility: 'גמישות',
+  agility: 'זריזות',
+  coordination: 'קואורדינציה',
+  theory: 'מבחן עיוני',
+  other: 'מבדק חנ״ג אחר',
+};
+
 export const TEST_STATUS_LABELS = {
-  completed: 'בוצע',
+  completed: 'ביצע/ה',
   pending: 'חסר זמני',
-  not_completed: 'לא הושלם',
-  not_participated: 'לא השתתף/ה',
-  exempt: 'פטור',
+  not_completed: 'לא סיים/ה',
+  not_participated: 'לא ביצע/ה',
+  exempt: 'פטור/ה',
   not_relevant: 'לא רלוונטי',
   not_included: 'לא נכלל',
 };
@@ -52,12 +63,12 @@ export const CONTACT_ROLE_LABELS = {
 };
 
 export const DEFAULT_TESTS = [
-  { name: 'ריצת 2000 מטר', weight: 25, gradeLevel: 'ז', genderTrack: 'boys', conversionTable: [] },
-  { name: 'ריצת 2000 מטר', weight: 25, gradeLevel: 'ח', genderTrack: 'boys', conversionTable: [] },
-  { name: 'ריצת 2000 מטר', weight: 25, gradeLevel: 'ט', genderTrack: 'boys', conversionTable: [] },
-  { name: 'ריצת 2000 מטר', weight: 25, gradeLevel: 'י', genderTrack: 'boys', conversionTable: [] },
-  { name: 'ריצת 2000 מטר', weight: 25, gradeLevel: 'יא', genderTrack: 'boys', conversionTable: [] },
-  { name: 'ריצת 2000 מטר', weight: 25, gradeLevel: 'יב', genderTrack: 'boys', conversionTable: [] },
+  { name: 'ריצת 2000 מטר', testType: 'running', weight: 25, gradeLevel: 'ז', genderTrack: 'boys', unit: 'שניות', conversionTable: [] },
+  { name: 'ריצת 2000 מטר', testType: 'running', weight: 25, gradeLevel: 'ח', genderTrack: 'boys', unit: 'שניות', conversionTable: [] },
+  { name: 'ריצת 2000 מטר', testType: 'running', weight: 25, gradeLevel: 'ט', genderTrack: 'boys', unit: 'שניות', conversionTable: [] },
+  { name: 'ריצת 2000 מטר', testType: 'running', weight: 25, gradeLevel: 'י', genderTrack: 'boys', unit: 'שניות', conversionTable: [] },
+  { name: 'ריצת 2000 מטר', testType: 'running', weight: 25, gradeLevel: 'יא', genderTrack: 'boys', unit: 'שניות', conversionTable: [] },
+  { name: 'ריצת 2000 מטר', testType: 'running', weight: 25, gradeLevel: 'יב', genderTrack: 'boys', unit: 'שניות', conversionTable: [] },
 ];
 
 export const DEFAULT_DATA = {
