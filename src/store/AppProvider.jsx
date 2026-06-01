@@ -51,6 +51,8 @@ export function AppProvider({ children }) {
 
       const classes = (classesData || []).map(c => ({
         id: c.id, name: c.name, gradeLevel: c.grade_level, genderTrack: c.gender_track || 'boys',
+        homeroomTeacher: c.homeroom_teacher || '', studentCount: c.student_count ?? 0,
+        notes: c.notes || '', status: c.status || 'active',
         homeroomContacts: Array.isArray(c.homeroom_contacts) ? c.homeroom_contacts : [],
       }));
 
@@ -145,13 +147,28 @@ export function AppProvider({ children }) {
   }, [isAuthenticated, loadAll]);
 
   // --- Classes ---
-  const addClass = useCallback(async (name, gradeLevel, genderTrack) => {
+  const addClass = useCallback(async (classData, gradeLevel, genderTrack) => {
+    const payloadData = typeof classData === 'object'
+      ? classData
+      : { name: classData, gradeLevel, genderTrack, status: 'active' };
     const created = await base44.entities.SchoolClass.create({
-      name, grade_level: gradeLevel || null, gender_track: genderTrack || defaultGenderTrack, homeroom_contacts: [],
+      name: payloadData.name,
+      grade_level: payloadData.gradeLevel || null,
+      gender_track: payloadData.genderTrack || defaultGenderTrack,
+      homeroom_teacher: payloadData.homeroomTeacher || '',
+      student_count: payloadData.studentCount || 0,
+      notes: payloadData.notes || '',
+      status: payloadData.status || 'active',
+      homeroom_contacts: [],
     });
     setData(d => ({
       ...d,
-      classes: [...d.classes, { id: created.id, name: created.name, gradeLevel: created.grade_level, genderTrack: created.gender_track || defaultGenderTrack, homeroomContacts: [] }],
+      classes: [...d.classes, {
+        id: created.id, name: created.name, gradeLevel: created.grade_level,
+        genderTrack: created.gender_track || defaultGenderTrack,
+        homeroomTeacher: created.homeroom_teacher || '', studentCount: created.student_count ?? 0,
+        notes: created.notes || '', status: created.status || 'active', homeroomContacts: [],
+      }],
     }));
     return created.id;
   }, [defaultGenderTrack]);
@@ -161,10 +178,41 @@ export function AppProvider({ children }) {
     setData(d => ({ ...d, classes: d.classes.filter(c => c.id !== id), students: d.students.filter(s => s.classId !== id) }));
   }, []);
 
-  const editClass = useCallback(async (id, name, gradeLevel, genderTrack) => {
-    await base44.entities.SchoolClass.update(id, { name, grade_level: gradeLevel || null, gender_track: genderTrack });
-    setData(d => ({ ...d, classes: d.classes.map(c => c.id === id ? { ...c, name, gradeLevel, genderTrack } : c) }));
+  const editClass = useCallback(async (id, classData, gradeLevel, genderTrack) => {
+    const payloadData = typeof classData === 'object'
+      ? classData
+      : { name: classData, gradeLevel, genderTrack };
+    await base44.entities.SchoolClass.update(id, {
+      name: payloadData.name,
+      grade_level: payloadData.gradeLevel || null,
+      gender_track: payloadData.genderTrack,
+      homeroom_teacher: payloadData.homeroomTeacher || '',
+      notes: payloadData.notes || '',
+      status: payloadData.status || 'active',
+    });
+    setData(d => ({
+      ...d,
+      classes: d.classes.map(c => c.id === id ? { ...c, ...payloadData } : c),
+    }));
   }, []);
+
+  const archiveClass = useCallback(async (id) => {
+    await base44.entities.SchoolClass.update(id, { status: 'archived' });
+    setData(d => ({ ...d, classes: d.classes.map(c => c.id === id ? { ...c, status: 'archived' } : c) }));
+  }, []);
+
+  const duplicateClass = useCallback(async (id) => {
+    const source = data.classes.find(c => c.id === id);
+    if (!source) return null;
+    return addClass({
+      name: `${source.name} - עותק`,
+      gradeLevel: source.gradeLevel,
+      genderTrack: source.genderTrack,
+      homeroomTeacher: source.homeroomTeacher,
+      notes: source.notes,
+      status: 'active',
+    });
+  }, [addClass, data.classes]);
 
   // --- Students ---
   const addStudent = useCallback(async (name, classId) => {
@@ -365,7 +413,7 @@ export function AppProvider({ children }) {
 
   const value = {
     data, loading, defaultGenderTrack,
-    addClass, deleteClass, editClass,
+    addClass, deleteClass, editClass, archiveClass, duplicateClass,
     addStudent, deleteStudent, editStudent, importStudents,
     addTest, updateTest, deleteTest,
     setTestResult, setBehaviorGrade, setClassTestStatus,

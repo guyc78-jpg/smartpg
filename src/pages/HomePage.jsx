@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '@/store/AppProvider';
 import Layout from '@/components/app/Layout';
@@ -7,142 +7,184 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Edit2, Users, Check, X, Award } from 'lucide-react';
+import { Plus, Trash2, Edit2, Users, Check, X, Copy, Archive, Eye, ClipboardList, BookOpen, BarChart3, Timer } from 'lucide-react';
 import { GRADE_LEVELS, GENDER_TRACK_LABELS } from '@/lib/types';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import AddClassDialog from '@/components/app/AddClassDialog';
 import { toast } from 'sonner';
 
+const EMPTY_EDIT = { name: '', gradeLevel: 'ז', genderTrack: 'boys', homeroomTeacher: '', notes: '', status: 'active' };
+
+function QuickAction({ to, icon: Icon, label }) {
+  return (
+    <Link to={to} className="flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background/70 py-2 text-[11px] font-medium text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors">
+      <Icon className="w-4 h-4" />
+      <span>{label}</span>
+    </Link>
+  );
+}
+
 export default function HomePage() {
-  const { data, addClass, deleteClass, editClass, importStudents, defaultGenderTrack } = useApp();
+  const { data, addClass, deleteClass, editClass, archiveClass, duplicateClass, importStudents, defaultGenderTrack } = useApp();
   const [deleteClassTarget, setDeleteClassTarget] = useState(null);
   const [addClassOpen, setAddClassOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [editName, setEditName] = useState('');
-  const [editGradeLevel, setEditGradeLevel] = useState('ז');
-  const [editGenderTrack, setEditGenderTrack] = useState('boys');
+  const [editData, setEditData] = useState(EMPTY_EDIT);
   const [filterGradeLevel, setFilterGradeLevel] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('active');
+
+  const classStudentCounts = useMemo(() => {
+    const counts = {};
+    data.students.forEach(s => { counts[s.classId] = (counts[s.classId] || 0) + 1; });
+    return counts;
+  }, [data.students]);
 
   const filteredClasses = useMemo(() => {
-    const base = filterGradeLevel === 'all'
-      ? data.classes
-      : data.classes.filter(c => c.gradeLevel === filterGradeLevel);
+    const base = data.classes.filter(c => {
+      const gradeOk = filterGradeLevel === 'all' || c.gradeLevel === filterGradeLevel;
+      const statusOk = statusFilter === 'all' || (c.status || 'active') === statusFilter;
+      return gradeOk && statusOk;
+    });
     return base.slice().sort((a, b) => {
       const idxA = GRADE_LEVELS.indexOf(a.gradeLevel);
       const idxB = GRADE_LEVELS.indexOf(b.gradeLevel);
       if (idxA !== idxB) return idxA - idxB;
       return a.name.localeCompare(b.name, 'he');
     });
-  }, [data.classes, filterGradeLevel]);
+  }, [data.classes, filterGradeLevel, statusFilter]);
 
   const totalStudents = data.students.length;
+  const activeClasses = data.classes.filter(c => (c.status || 'active') === 'active').length;
 
-  const startEdit = (id, name, gradeLevel, genderTrack) => {
-    setEditingId(id);
-    setEditName(name);
-    setEditGradeLevel(gradeLevel || 'ז');
-    setEditGenderTrack(genderTrack || 'boys');
+  const startEdit = (cls) => {
+    setEditingId(cls.id);
+    setEditData({
+      name: cls.name || '',
+      gradeLevel: cls.gradeLevel || 'ז',
+      genderTrack: cls.genderTrack || 'boys',
+      homeroomTeacher: cls.homeroomTeacher || '',
+      notes: cls.notes || '',
+      status: cls.status || 'active',
+    });
   };
 
-  const saveEdit = () => {
-    if (editingId && editName.trim()) {
-      editClass(editingId, editName.trim(), editGradeLevel, editGenderTrack);
+  const saveEdit = async () => {
+    if (editingId && editData.name.trim()) {
+      await editClass(editingId, { ...editData, name: editData.name.trim() });
+      toast.success('הכיתה עודכנה');
     }
     setEditingId(null);
   };
 
-  const handleAddClass = async (name, gradeLevel, genderTrack, students) => {
-    const newClassId = await addClass(name, gradeLevel, genderTrack);
-    if (newClassId && students && students.length > 0) {
-      await importStudents(students, newClassId);
-    }
-    toast.success(`נוצרה כיתה ${name}${students?.length ? ` עם ${students.length} תלמידים` : ''}`);
+  const handleAddClass = async (classData, students) => {
+    const newClassId = await addClass(classData);
+    if (newClassId && students?.length > 0) await importStudents(students, newClassId);
+    toast.success(`נוצרה כיתה ${classData.name}${students?.length ? ` עם ${students.length} תלמידים` : ''}`);
+  };
+
+  const handleDuplicate = async (cls) => {
+    await duplicateClass(cls.id);
+    toast.success('הכיתה שוכפלה ללא תלמידים');
+  };
+
+  const handleArchive = async (cls) => {
+    await archiveClass(cls.id);
+    toast.success('הכיתה הועברה לארכיון');
   };
 
   return (
-    <Layout title="ראשי">
-      <div className="max-w-3xl mx-auto space-y-4 p-4" dir="rtl">
-        {/* Stats Bar */}
-        <div className="flex items-center gap-3 text-sm">
-          <Badge variant="secondary" className="gap-1">
-            <Users className="w-3 h-3" />
-            {data.classes.length} כיתות
-          </Badge>
-          <Badge variant="outline" className="gap-1">
-            {totalStudents} תלמידים
-          </Badge>
+    <Layout title="ניהול כיתות">
+      <div className="max-w-4xl mx-auto space-y-4 p-4" dir="rtl">
+        <div className="grid grid-cols-3 gap-2">
+          <Badge variant="secondary" className="justify-center gap-1 py-2"><Users className="w-3 h-3" /> {activeClasses} פעילות</Badge>
+          <Badge variant="outline" className="justify-center py-2">{data.classes.length} כיתות</Badge>
+          <Badge variant="outline" className="justify-center py-2">{totalStudents} תלמידים</Badge>
         </div>
 
-        {/* Grade Level Filter */}
-        <div className="flex gap-1.5 flex-wrap">
-          <Button size="sm" variant={filterGradeLevel === 'all' ? 'default' : 'outline'} onClick={() => setFilterGradeLevel('all')} className="h-8 text-xs rounded-full">הכל</Button>
-          {GRADE_LEVELS.map(gl => (
-            <Button key={gl} size="sm" variant={filterGradeLevel === gl ? 'default' : 'outline'} onClick={() => setFilterGradeLevel(gl)} className="h-8 text-xs rounded-full">
-              {gl}׳
-            </Button>
-          ))}
-        </div>
-
-        {/* Add Class Button */}
-        <Button onClick={() => setAddClassOpen(true)} className="w-full h-11 rounded-xl btn-3d font-semibold gap-2">
-          <Plus className="w-5 h-5" />
-          הוסף כיתה
+        <Button onClick={() => setAddClassOpen(true)} className="w-full h-12 rounded-xl btn-3d font-semibold gap-2">
+          <Plus className="w-5 h-5" /> הוסף כיתה
         </Button>
 
-        {/* Class Cards */}
         <div className="space-y-2">
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            <Button size="sm" variant={filterGradeLevel === 'all' ? 'default' : 'outline'} onClick={() => setFilterGradeLevel('all')} className="h-8 text-xs rounded-full shrink-0">הכל</Button>
+            {GRADE_LEVELS.map(gl => (
+              <Button key={gl} size="sm" variant={filterGradeLevel === gl ? 'default' : 'outline'} onClick={() => setFilterGradeLevel(gl)} className="h-8 text-xs rounded-full shrink-0">{gl}׳</Button>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Button size="sm" variant={statusFilter === 'active' ? 'default' : 'outline'} onClick={() => setStatusFilter('active')} className="h-9 text-xs rounded-xl">פעילות</Button>
+            <Button size="sm" variant={statusFilter === 'archived' ? 'default' : 'outline'} onClick={() => setStatusFilter('archived')} className="h-9 text-xs rounded-xl">ארכיון</Button>
+            <Button size="sm" variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => setStatusFilter('all')} className="h-9 text-xs rounded-xl">כל הסטטוסים</Button>
+          </div>
+        </div>
+
+        <div className="space-y-3">
           {filteredClasses.map(cls => {
-            const studentCount = data.students.filter(s => s.classId === cls.id).length;
+            const studentCount = classStudentCounts[cls.id] || 0;
             const isEditing = editingId === cls.id;
+            const archived = (cls.status || 'active') === 'archived';
 
             return (
-              <Card key={cls.id} className="card-3d rounded-xl overflow-hidden">
+              <Card key={cls.id} className={`card-3d rounded-2xl overflow-hidden ${archived ? 'opacity-70' : ''}`}>
                 {isEditing ? (
-                  <div className="p-3 space-y-2">
-                    <div className="flex gap-2 items-end">
-                      <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-9 text-sm flex-1" autoFocus />
-                      <Select value={editGradeLevel} onValueChange={setEditGradeLevel}>
-                        <SelectTrigger className="w-[68px] h-9 text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {GRADE_LEVELS.map(gl => <SelectItem key={gl} value={gl}>{gl}׳</SelectItem>)}
-                        </SelectContent>
+                  <div className="p-4 space-y-3">
+                    <Input value={editData.name} onChange={e => setEditData(d => ({ ...d, name: e.target.value }))} className="h-10 text-sm" autoFocus />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Select value={editData.gradeLevel} onValueChange={v => setEditData(d => ({ ...d, gradeLevel: v }))}>
+                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>{GRADE_LEVELS.map(gl => <SelectItem key={gl} value={gl}>{gl}׳</SelectItem>)}</SelectContent>
                       </Select>
-                      <Select value={editGenderTrack} onValueChange={setEditGenderTrack}>
-                        <SelectTrigger className="w-[80px] h-9 text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="boys">בנים</SelectItem>
-                          <SelectItem value="girls">בנות</SelectItem>
-                        </SelectContent>
+                      <Select value={editData.genderTrack} onValueChange={v => setEditData(d => ({ ...d, genderTrack: v }))}>
+                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="boys">בנים</SelectItem><SelectItem value="girls">בנות</SelectItem></SelectContent>
                       </Select>
                     </div>
+                    <Input value={editData.homeroomTeacher} onChange={e => setEditData(d => ({ ...d, homeroomTeacher: e.target.value }))} placeholder="מחנך/ת" className="h-10 text-sm" />
+                    <Input value={editData.notes} onChange={e => setEditData(d => ({ ...d, notes: e.target.value }))} placeholder="הערות" className="h-10 text-sm" />
+                    <Select value={editData.status} onValueChange={v => setEditData(d => ({ ...d, status: v }))}>
+                      <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="active">פעילה</SelectItem><SelectItem value="archived">ארכיון</SelectItem></SelectContent>
+                    </Select>
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={saveEdit} className="h-8 gap-1"><Check className="w-3 h-3" /> שמור</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}><X className="w-3 h-3" /></Button>
+                      <Button size="sm" onClick={saveEdit} className="h-9 gap-1 flex-1"><Check className="w-3 h-3" /> שמור</Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="h-9 px-4"><X className="w-3 h-3" /> ביטול</Button>
                     </div>
                   </div>
                 ) : (
-                  <Link to={`/class/${cls.id}`} className="block p-3 active:bg-muted/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="min-w-0">
-                          <div className="font-bold text-sm truncate">{cls.name}</div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                            <span>{studentCount} תלמידים</span>
-                            <span>•</span>
-                            <span>{GENDER_TRACK_LABELS[cls.genderTrack] || 'בנים'}</span>
-                          </div>
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-base truncate">{cls.name}</h3>
+                          <Badge variant={archived ? 'outline' : 'secondary'} className="text-[10px]">{archived ? 'בארכיון' : 'פעילה'}</Badge>
                         </div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground mt-1">
+                          <span>שכבה {cls.gradeLevel}׳</span>
+                          <span>•</span>
+                          <span>{GENDER_TRACK_LABELS[cls.genderTrack] || 'בנים'}</span>
+                          <span>•</span>
+                          <span>{studentCount} תלמידים</span>
+                        </div>
+                        {cls.homeroomTeacher && <p className="text-xs text-muted-foreground mt-1">מחנך/ת: {cls.homeroomTeacher}</p>}
+                        {cls.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{cls.notes}</p>}
                       </div>
-                      <div className="flex items-center gap-1 shrink-0" onClick={e => e.preventDefault()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startEdit(cls.id, cls.name, cls.gradeLevel, cls.genderTrack); }}>
-                          <Edit2 className="w-3.5 h-3.5 text-muted-foreground" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteClassTarget({ id: cls.id, name: cls.name }); }}>
-                          <Trash2 className="w-3.5 h-3.5 text-destructive/60" />
-                        </Button>
+                      <div className="flex gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(cls)}><Edit2 className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDuplicate(cls)}><Copy className="w-3.5 h-3.5" /></Button>
+                        {!archived && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleArchive(cls)}><Archive className="w-3.5 h-3.5" /></Button>}
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteClassTarget({ id: cls.id, name: cls.name, studentCount })}><Trash2 className="w-3.5 h-3.5 text-destructive/70" /></Button>
                       </div>
                     </div>
-                  </Link>
+
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                      <QuickAction to={`/class/${cls.id}`} icon={Eye} label="תלמידים" />
+                      <QuickAction to={`/class/${cls.id}/tests`} icon={ClipboardList} label="מבדקים" />
+                      <QuickAction to="/schedule" icon={BookOpen} label="יומן" />
+                      <QuickAction to="/reports" icon={BarChart3} label="דוחות" />
+                      <QuickAction to="/live-run" icon={Timer} label="ריצה Live" />
+                    </div>
+                  </div>
                 )}
               </Card>
             );
@@ -150,23 +192,18 @@ export default function HomePage() {
 
           {filteredClasses.length === 0 && (
             <p className="text-center text-muted-foreground py-16 text-sm">
-              {data.classes.length === 0 ? 'אין כיתות עדיין. הוסף כיתה חדשה כדי להתחיל.' : 'אין כיתות בשכבה זו.'}
+              {data.classes.length === 0 ? 'אין כיתות עדיין. הוסף כיתה חדשה כדי להתחיל.' : 'אין כיתות מתאימות לסינון הנוכחי.'}
             </p>
           )}
         </div>
 
-        <AddClassDialog
-          open={addClassOpen}
-          onOpenChange={setAddClassOpen}
-          onAdd={handleAddClass}
-          defaultGenderTrack={defaultGenderTrack}
-        />
+        <AddClassDialog open={addClassOpen} onOpenChange={setAddClassOpen} onAdd={handleAddClass} defaultGenderTrack={defaultGenderTrack} />
 
         <ConfirmDeleteDialog
           open={!!deleteClassTarget}
           onOpenChange={() => setDeleteClassTarget(null)}
           title={`מחיקת כיתה ${deleteClassTarget?.name}`}
-          description="כל התלמידים והציונים של הכיתה ימחקו. האם להמשיך?"
+          description={`פעולה זו תמחק את רשומת הכיתה מרשימת הכיתות. בכיתה קיימים ${deleteClassTarget?.studentCount || 0} תלמידים, ולכן מומלץ לארכב במקום למחוק אם יש נתונים חשובים. האם למחוק בכל זאת?`}
           onConfirm={() => { deleteClass(deleteClassTarget.id); setDeleteClassTarget(null); toast.success('הכיתה נמחקה'); }}
         />
       </div>

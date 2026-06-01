@@ -18,6 +18,24 @@
       ],
       "default": "boys"
     },
+    "homeroom_teacher": {
+      "type": "string"
+    },
+    "student_count": {
+      "type": "number",
+      "default": 0
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "archived"
+      ],
+      "default": "active"
+    },
     "homeroom_contacts": {
       "type": "array",
       "items": {
