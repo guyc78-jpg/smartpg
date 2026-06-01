@@ -182,6 +182,7 @@ export default function HomePage() {
                       <QuickAction to={`/class/${cls.id}`} icon={UserCheck} label="נוכחות" />
                       <QuickAction to={`/class/${cls.id}/tests`} icon={ClipboardList} label="מבדקים" />
                       <QuickAction to={`/class/${cls.id}`} icon={Award} label="ציונים" />
+                      <QuickAction to="/schedule" icon={UserCheck} label="נוכחות" />
                       <QuickAction to="/live-run" icon={Timer} label="ריצה חיה" />
                       <QuickAction to="/reports" icon={BarChart3} label="דוחות" />
                     </div>

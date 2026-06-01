@@ -35,7 +35,7 @@ export function AppProvider({ children }) {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [classesData, studentsData, testsData, resultsData, behaviorData, settingsData, bagrutCompData, bagrutResultsData, classTestStatusData, gradeOverridesData, attemptsData] = await Promise.all([
+      const [classesData, studentsData, testsData, resultsData, behaviorData, settingsData, bagrutCompData, bagrutResultsData, classTestStatusData, gradeOverridesData, attemptsData, lessonData] = await Promise.all([
         base44.entities.SchoolClass.list(),
         base44.entities.Student.list(),
         base44.entities.TestDefinition.list(),
@@ -47,6 +47,7 @@ export function AppProvider({ children }) {
         base44.entities.ClassTestStatus.list(),
         base44.entities.GradeOverride.list(),
         base44.entities.TestAttempt.list(),
+        base44.entities.LessonTopic.list(),
       ]);
 
       const classes = (classesData || []).map(c => ({
@@ -126,10 +127,17 @@ export function AppProvider({ children }) {
         studentId: r.student_id, classId: r.class_id, overrideType: r.override_type, grade: r.grade,
       }));
 
+      const lessonTopics = (lessonData || []).map(r => ({
+        id: r.id, classId: r.class_id, date: r.date, period: r.period, semester: r.semester || '',
+        topic: r.topic || '', location: r.location || '', objective: r.objective || '',
+        equipment: r.equipment || '', activityType: r.activity_type || '', notes: r.notes || '',
+        isTemplate: r.is_template || false, templateName: r.template_name || '',
+      }));
+
       setData({
         classes, students, tests, results, testAttempts, behaviorGrades, settings,
         bagrutComponents, bagrutResults, bagrutSettings: { enabled: false, autoCalculate: true, showInSummary: true },
-        classTestStatuses, gradeOverrides,
+        classTestStatuses, gradeOverrides, lessonTopics,
       });
       setLoading(false);
       return true;
@@ -272,80 +280,33 @@ export function AppProvider({ children }) {
     } : s) }));
   }, []);
 
-  const importStudents = useCallback(async (items, fallbackClassId) => {
-    const summary = { added: 0, updated: 0, skipped: 0, errors: [] };
-    const seenInFile = new Set();
-    const existingByKey = new Map(data.students.map(s => [`${s.classId}::${(s.lastName || '').trim()}::${(s.firstName || '').trim()}`, s]));
-
-    const payloads = [];
-    const updates = [];
-
-    items.forEach((item, index) => {
+  const importStudents = useCallback(async (items, classId) => {
+    const existing = new Set(data.students.filter(s => s.classId === classId).map(s => s.name));
+    const payloads = items.map(item => {
       const payloadData = typeof item === 'object' ? item : { name: item };
-      const firstName = (payloadData.firstName || '').trim();
-      const lastName = (payloadData.lastName || '').trim();
-      const rowClassId = payloadData.classId || fallbackClassId;
-
-      if (!lastName || !firstName || !rowClassId) {
-        summary.errors.push(`שורה ${index + 1}: חסרים שם משפחה, שם פרטי או כיתה`);
-        summary.skipped += 1;
-        return;
-      }
-
-      const key = `${rowClassId}::${lastName}::${firstName}`;
-      if (seenInFile.has(key)) {
-        summary.skipped += 1;
-        return;
-      }
-      seenInFile.add(key);
-
-      const payload = {
-        name: [lastName, firstName].join(' '),
-        first_name: firstName,
-        last_name: lastName,
+      const fullName = payloadData.name || [payloadData.lastName, payloadData.firstName].filter(Boolean).join(' ');
+      return {
+        name: fullName,
+        first_name: payloadData.firstName || '',
+        last_name: payloadData.lastName || '',
         gender: payloadData.gender || '',
-        class_id: rowClassId,
+        class_id: payloadData.classId || classId,
         pe_exempt: payloadData.peExempt || false,
         medical_limitations: payloadData.medicalLimitations || '',
         pe_notes: payloadData.peNotes || '',
         study_group: payloadData.studyGroup || '',
         sub_class_name: payloadData.studyGroup || '',
       };
-
-      const existing = existingByKey.get(key);
-      if (existing) updates.push({ existing, payload });
-      else payloads.push(payload);
-    });
-
-    const created = payloads.length ? await base44.entities.Student.bulkCreate(payloads) : [];
-    await Promise.all(updates.map(({ existing, payload }) => base44.entities.Student.update(existing.id, payload)));
-
-    summary.added = created.length;
-    summary.updated = updates.length;
-
-    const updatedStudents = updates.map(({ existing, payload }) => ({
-      id: existing.id, name: payload.name, firstName: payload.first_name, lastName: payload.last_name,
-      gender: payload.gender, classId: payload.class_id, peExempt: payload.pe_exempt,
-      medicalLimitations: payload.medical_limitations, peNotes: payload.pe_notes,
-      studyGroup: payload.study_group, subClassName: payload.sub_class_name,
-    }));
-
-    const newStudents = created.map(s => ({
+    }).filter(p => p.name && !existing.has(p.name));
+    if (payloads.length === 0) return 0;
+    const created = await base44.entities.Student.bulkCreate(payloads);
+    setData(d => ({ ...d, students: [...d.students, ...created.map(s => ({
       id: s.id, name: s.name, firstName: s.first_name || '', lastName: s.last_name || '',
       gender: s.gender || '', classId: s.class_id, peExempt: s.pe_exempt ?? false,
       medicalLimitations: s.medical_limitations || '', peNotes: s.pe_notes || '',
       studyGroup: s.study_group || '', subClassName: s.sub_class_name,
-    }));
-
-    setData(d => ({
-      ...d,
-      students: [
-        ...d.students.map(student => updatedStudents.find(u => u.id === student.id) || student),
-        ...newStudents,
-      ],
-    }));
-
-    return summary;
+    }))] }));
+    return payloads.length;
   }, [data.students]);
 
   // --- Tests ---
@@ -502,10 +463,11 @@ export function AppProvider({ children }) {
   // --- Delete All ---
   const deleteAllData = useCallback(async () => {
     const entities = [
-      base44.entities.SchoolClass, base44.entities.Student,
-      base44.entities.TestResult, base44.entities.BehaviorGrade,
-      base44.entities.ClassTestStatus, base44.entities.GradeOverride,
-      base44.entities.TestAttempt, base44.entities.BagrutResult,
+    base44.entities.SchoolClass, base44.entities.Student,
+    base44.entities.TestResult, base44.entities.BehaviorGrade,
+    base44.entities.ClassTestStatus, base44.entities.GradeOverride,
+    base44.entities.TestAttempt, base44.entities.BagrutResult,
+    base44.entities.LessonTopic,
     ];
     for (const entity of entities) {
       const rows = await entity.list();

@@ -19,7 +19,7 @@ function useTheme() {
 
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'ראשי' },
-  { to: '/schedule', icon: CalendarDays, label: 'מערכת' },
+  { to: '/schedule', icon: CalendarDays, label: 'יומן' },
   { to: '/manage-tests', icon: ClipboardList, label: 'מבדקים' },
   { to: '/reports', icon: FileText, label: 'דוחות' },
 ];

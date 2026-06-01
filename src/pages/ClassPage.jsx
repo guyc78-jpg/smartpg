@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit2, Search, ClipboardList, ShieldOff, Award, Upload, UserCheck, Timer, TrendingUp, MessageSquare } from 'lucide-react';
+import { Plus, Trash2, Edit2, Search, ClipboardList, ShieldOff, Award, Upload, UserCheck, Timer, TrendingUp, MessageSquare, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
@@ -69,6 +69,13 @@ export default function ClassPage() {
     return students.filter(s => [formatStudentName(s), s.studyGroup, s.medicalLimitations, s.peNotes].filter(Boolean).some(v => v.includes(search)));
   }, [students, search]);
 
+  const classLessons = useMemo(
+    () => (data.lessonTopics || [])
+      .filter(l => l.classId === classId && !l.isTemplate)
+      .sort((a, b) => (b.date || '').localeCompare(a.date || '')),
+    [data.lessonTopics, classId]
+  );
+
   if (!cls) {
     return (
       <Layout title="כיתה לא נמצאה" backTo="/">
@@ -98,9 +105,8 @@ export default function ClassPage() {
   };
 
   const handleImport = async (studentsToImport) => {
-    const summary = await importStudents(studentsToImport, classId);
-    toast.success(`ייבוא הסתיים: ${summary.added} נוספו, ${summary.updated} עודכנו, ${summary.skipped} דולגו`);
-    return summary;
+    const count = await importStudents(studentsToImport.map(s => ({ ...s, classId })), classId);
+    toast.success(`יובאו ${count} תלמידים`);
   };
 
   return (
@@ -143,6 +149,22 @@ export default function ClassPage() {
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="חיפוש תלמיד, קבוצה או הערה..." className="h-10 pr-9 text-sm" />
         </div>
+
+        <Card className="card-3d rounded-2xl p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-sm"><CalendarDays className="w-4 h-4 text-primary" /> היסטוריית שיעורי חנ״ג</div>
+            <Badge variant="secondary" className="text-[10px]">{classLessons.length} שיעורים</Badge>
+          </div>
+          <div className="space-y-1">
+            {classLessons.slice(0, 3).map(lesson => (
+              <div key={lesson.id} className="flex items-center justify-between gap-2 text-xs rounded-lg bg-muted/40 px-2 py-1.5">
+                <span className="font-medium truncate">{lesson.topic}</span>
+                <span className="text-muted-foreground shrink-0">{new Date(lesson.date).toLocaleDateString('he-IL')}</span>
+              </div>
+            ))}
+            {classLessons.length === 0 && <p className="text-xs text-muted-foreground">אין עדיין שיעורים שמורים לכיתה זו.</p>}
+          </div>
+        </Card>
 
         <div className="space-y-2">
           {filtered.map(student => {
@@ -188,6 +210,7 @@ export default function ClassPage() {
                   <InfoChip icon={Award} label="ציונים" value={displayGrade ?? '—'} />
                   <InfoChip icon={Timer} label="ריצה חיה" />
                   <InfoChip icon={MessageSquare} label="הערות" value={student.peNotes ? 'יש' : '—'} />
+                  <InfoChip icon={CalendarDays} label="שיעורים" value={classLessons.length} />
                   <InfoChip icon={TrendingUp} label="התקדמות" value={progress} />
                 </div>
 
@@ -217,13 +240,7 @@ export default function ClassPage() {
           onSave={handleSaveStudent}
         />
 
-        <ImportStudentsDialog
-          open={importDialogOpen}
-          onOpenChange={setImportDialogOpen}
-          onImport={handleImport}
-          classes={data.classes.filter(c => (c.status || 'active') === 'active')}
-          defaultClassId={classId}
-        />
+        <ImportStudentsDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} />
 
         <ConfirmDeleteDialog
           open={!!deleteStudentTarget}
