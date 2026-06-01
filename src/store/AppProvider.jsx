@@ -175,7 +175,7 @@ export function AppProvider({ children }) {
 
   const deleteClass = useCallback(async (id) => {
     await base44.entities.SchoolClass.delete(id);
-    setData(d => ({ ...d, classes: d.classes.filter(c => c.id !== id), students: d.students.filter(s => s.classId !== id) }));
+    setData(d => ({ ...d, classes: d.classes.filter(c => c.id !== id) }));
   }, []);
 
   const editClass = useCallback(async (id, classData, gradeLevel, genderTrack) => {

@@ -67,8 +67,8 @@ export default function AddClassDialog({ open, onOpenChange, onAdd, defaultGende
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[11px] text-muted-foreground">הערות</Label>
-            <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="הערה קצרה לכיתה" className="h-10 text-sm" />
+            <Label className="text-[11px] text-muted-foreground">הערות פנימיות לחנ״ג</Label>
+            <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="הערה קצרה לצוות חנ״ג" className="h-10 text-sm" />
           </div>
 
           <div className="space-y-1">

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Edit2, Users, Check, X, Copy, Archive, Eye, ClipboardList, BookOpen, BarChart3, Timer } from 'lucide-react';
+import { Plus, Trash2, Edit2, Users, Check, X, Copy, Archive, Eye, ClipboardList, UserCheck, BarChart3, Timer, Award } from 'lucide-react';
 import { GRADE_LEVELS, GENDER_TRACK_LABELS } from '@/lib/types';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import AddClassDialog from '@/components/app/AddClassDialog';
@@ -93,7 +93,7 @@ export default function HomePage() {
   };
 
   return (
-    <Layout title="ניהול כיתות">
+    <Layout title="ניהול כיתות חנ״ג">
       <div className="max-w-4xl mx-auto space-y-4 p-4" dir="rtl">
         <div className="grid grid-cols-3 gap-2">
           <Badge variant="secondary" className="justify-center gap-1 py-2"><Users className="w-3 h-3" /> {activeClasses} פעילות</Badge>
@@ -141,7 +141,7 @@ export default function HomePage() {
                       </Select>
                     </div>
                     <Input value={editData.homeroomTeacher} onChange={e => setEditData(d => ({ ...d, homeroomTeacher: e.target.value }))} placeholder="מחנך/ת" className="h-10 text-sm" />
-                    <Input value={editData.notes} onChange={e => setEditData(d => ({ ...d, notes: e.target.value }))} placeholder="הערות" className="h-10 text-sm" />
+                    <Input value={editData.notes} onChange={e => setEditData(d => ({ ...d, notes: e.target.value }))} placeholder="הערות פנימיות לחנ״ג" className="h-10 text-sm" />
                     <Select value={editData.status} onValueChange={v => setEditData(d => ({ ...d, status: v }))}>
                       <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
                       <SelectContent><SelectItem value="active">פעילה</SelectItem><SelectItem value="archived">ארכיון</SelectItem></SelectContent>
@@ -177,12 +177,13 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                       <QuickAction to={`/class/${cls.id}`} icon={Eye} label="תלמידים" />
+                      <QuickAction to={`/class/${cls.id}`} icon={UserCheck} label="נוכחות" />
                       <QuickAction to={`/class/${cls.id}/tests`} icon={ClipboardList} label="מבדקים" />
-                      <QuickAction to="/schedule" icon={BookOpen} label="יומן" />
+                      <QuickAction to={`/class/${cls.id}`} icon={Award} label="ציונים" />
+                      <QuickAction to="/live-run" icon={Timer} label="ריצה חיה" />
                       <QuickAction to="/reports" icon={BarChart3} label="דוחות" />
-                      <QuickAction to="/live-run" icon={Timer} label="ריצה Live" />
                     </div>
                   </div>
                 )}
@@ -203,7 +204,7 @@ export default function HomePage() {
           open={!!deleteClassTarget}
           onOpenChange={() => setDeleteClassTarget(null)}
           title={`מחיקת כיתה ${deleteClassTarget?.name}`}
-          description={`פעולה זו תמחק את רשומת הכיתה מרשימת הכיתות. בכיתה קיימים ${deleteClassTarget?.studentCount || 0} תלמידים, ולכן מומלץ לארכב במקום למחוק אם יש נתונים חשובים. האם למחוק בכל זאת?`}
+          description={`פעולה זו תמחק רק את רשומת הכיתה מרשימת הכיתות ולא תמחק ציונים או מבדקים. בכיתה קיימים ${deleteClassTarget?.studentCount || 0} תלמידים, ולכן מומלץ לארכב במקום למחוק אם רוצים לשמור שיוך כיתה פעיל. האם למחוק בכל זאת?`}
           onConfirm={() => { deleteClass(deleteClassTarget.id); setDeleteClassTarget(null); toast.success('הכיתה נמחקה'); }}
         />
       </div>
