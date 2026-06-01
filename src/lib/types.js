@@ -82,4 +82,5 @@ export const DEFAULT_DATA = {
   bagrutSettings: { enabled: false, autoCalculate: true, showInSummary: true },
   classTestStatuses: [],
   gradeOverrides: [],
+  lessonTopics: [],
 };

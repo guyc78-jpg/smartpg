@@ -98,8 +98,9 @@ export default function ClassPage() {
   };
 
   const handleImport = async (studentsToImport) => {
-    const count = await importStudents(studentsToImport.map(s => ({ ...s, classId })), classId);
-    toast.success(`יובאו ${count} תלמידים`);
+    const summary = await importStudents(studentsToImport, classId);
+    toast.success(`ייבוא הסתיים: ${summary.added} נוספו, ${summary.updated} עודכנו, ${summary.skipped} דולגו`);
+    return summary;
   };
 
   return (
@@ -216,7 +217,13 @@ export default function ClassPage() {
           onSave={handleSaveStudent}
         />
 
-        <ImportStudentsDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} />
+        <ImportStudentsDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+          onImport={handleImport}
+          classes={data.classes.filter(c => (c.status || 'active') === 'active')}
+          defaultClassId={classId}
+        />
 
         <ConfirmDeleteDialog
           open={!!deleteStudentTarget}

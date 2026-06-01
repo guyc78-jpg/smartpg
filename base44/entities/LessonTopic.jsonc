@@ -12,10 +12,36 @@
     "period": {
       "type": "number"
     },
+    "semester": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B"
+      ]
+    },
     "topic": {
       "type": "string"
     },
+    "location": {
+      "type": "string"
+    },
+    "objective": {
+      "type": "string"
+    },
+    "equipment": {
+      "type": "string"
+    },
+    "activity_type": {
+      "type": "string"
+    },
     "notes": {
+      "type": "string"
+    },
+    "is_template": {
+      "type": "boolean",
+      "default": false
+    },
+    "template_name": {
       "type": "string"
     }
   },
