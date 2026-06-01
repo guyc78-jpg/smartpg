@@ -1,0 +1,36 @@
+{
+  "name": "BagrutResult",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "component_id": {
+      "type": "string"
+    },
+    "raw_score": {
+      "type": "number"
+    },
+    "score": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "entered",
+        "missing",
+        "exempt",
+        "not_relevant",
+        "completed_late"
+      ],
+      "default": "missing"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "component_id"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "BehaviorGrade",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "quarter": {
+      "type": "string",
+      "enum": [
+        "parentA",
+        "semesterA",
+        "parentB",
+        "semesterB"
+      ]
+    },
+    "grade": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "student_id",
+    "quarter"
+  ]
+}

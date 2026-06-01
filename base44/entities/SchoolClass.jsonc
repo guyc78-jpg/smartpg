@@ -1,0 +1,32 @@
+{
+  "name": "SchoolClass",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Class name"
+    },
+    "grade_level": {
+      "type": "string",
+      "description": "Grade level"
+    },
+    "gender_track": {
+      "type": "string",
+      "enum": [
+        "boys",
+        "girls"
+      ],
+      "default": "boys"
+    },
+    "homeroom_contacts": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

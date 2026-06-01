@@ -62,6 +62,7 @@ module.exports = {
   			}
   		},
   		fontFamily: {
+  			heebo: ['Heebo', 'ui-sans-serif', 'system-ui', 'sans-serif'],
   			heading: ['var(--font-heading)'],
   			body: ['var(--font-body)'],
   			display: ['var(--font-display)'],

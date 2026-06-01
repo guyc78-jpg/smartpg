@@ -1,0 +1,30 @@
+{
+  "name": "GradeOverride",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "class_id": {
+      "type": "string"
+    },
+    "override_type": {
+      "type": "string",
+      "enum": [
+        "semA",
+        "semB",
+        "annual",
+        "bagrut"
+      ]
+    },
+    "grade": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "student_id",
+    "class_id",
+    "override_type",
+    "grade"
+  ]
+}

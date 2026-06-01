@@ -1,0 +1,43 @@
+{
+  "name": "TestResult",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "test_id": {
+      "type": "string"
+    },
+    "semester": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B"
+      ]
+    },
+    "raw_score": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "pending",
+        "not_completed",
+        "exempt",
+        "not_relevant",
+        "not_included"
+      ],
+      "default": "completed"
+    },
+    "attempt_count": {
+      "type": "number",
+      "default": 1
+    }
+  },
+  "required": [
+    "student_id",
+    "test_id",
+    "semester"
+  ]
+}

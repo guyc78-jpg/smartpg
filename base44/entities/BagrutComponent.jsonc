@@ -1,0 +1,36 @@
+{
+  "name": "BagrutComponent",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "number"
+    },
+    "sort_order": {
+      "type": "number"
+    },
+    "is_required": {
+      "type": "boolean",
+      "default": true
+    },
+    "gender_track": {
+      "type": "string",
+      "enum": [
+        "boys",
+        "girls"
+      ],
+      "default": "boys"
+    },
+    "conversion_table": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "LessonTopic",
+  "type": "object",
+  "properties": {
+    "class_id": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "period": {
+      "type": "number"
+    },
+    "topic": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "class_id",
+    "date"
+  ]
+}

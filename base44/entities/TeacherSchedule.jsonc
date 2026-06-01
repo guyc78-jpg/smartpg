@@ -1,0 +1,22 @@
+{
+  "name": "TeacherSchedule",
+  "type": "object",
+  "properties": {
+    "day_of_week": {
+      "type": "number"
+    },
+    "period": {
+      "type": "number"
+    },
+    "class_id": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "day_of_week",
+    "period"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "name": "ClassTestStatus",
+  "type": "object",
+  "properties": {
+    "class_id": {
+      "type": "string"
+    },
+    "test_id": {
+      "type": "string"
+    },
+    "semester": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_conducted",
+        "partial",
+        "conducted",
+        "not_included"
+      ],
+      "default": "not_conducted"
+    }
+  },
+  "required": [
+    "class_id",
+    "test_id",
+    "semester"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "TeacherSettings",
+  "type": "object",
+  "properties": {
+    "parent_behavior_weight": {
+      "type": "number",
+      "default": 30
+    },
+    "semester_behavior_weight": {
+      "type": "number",
+      "default": 30
+    },
+    "tests_weight": {
+      "type": "number",
+      "default": 40
+    },
+    "penalty_score": {
+      "type": "number",
+      "default": 15
+    },
+    "auto_convert_missing": {
+      "type": "boolean",
+      "default": false
+    },
+    "completion_penalty_factor": {
+      "type": "number",
+      "default": 0
+    },
+    "min_completed_grade": {
+      "type": "number",
+      "default": 56
+    },
+    "grade_color_thresholds": {
+      "type": "object"
+    },
+    "default_gender_track": {
+      "type": "string",
+      "enum": [
+        "boys",
+        "girls"
+      ],
+      "default": "boys"
+    }
+  },
+  "required": []
+}

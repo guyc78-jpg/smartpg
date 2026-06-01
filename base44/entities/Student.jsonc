@@ -1,0 +1,23 @@
+{
+  "name": "Student",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "class_id": {
+      "type": "string"
+    },
+    "pe_exempt": {
+      "type": "boolean",
+      "default": false
+    },
+    "sub_class_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "class_id"
+  ]
+}

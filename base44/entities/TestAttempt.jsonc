@@ -1,0 +1,31 @@
+{
+  "name": "TestAttempt",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "test_id": {
+      "type": "string"
+    },
+    "semester": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B"
+      ]
+    },
+    "raw_score": {
+      "type": "number"
+    },
+    "attempt_number": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "student_id",
+    "test_id",
+    "semester",
+    "raw_score"
+  ]
+}

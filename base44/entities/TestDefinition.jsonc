@@ -1,0 +1,33 @@
+{
+  "name": "TestDefinition",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "number"
+    },
+    "grade_level": {
+      "type": "string"
+    },
+    "gender_track": {
+      "type": "string",
+      "enum": [
+        "boys",
+        "girls"
+      ],
+      "default": "boys"
+    },
+    "conversion_table": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "name",
+    "weight"
+  ]
+}
