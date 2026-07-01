@@ -53,6 +53,8 @@ export default function LiveRunPage() {
     const existing = await base44.entities.RunMeasurement.filter({ class_id: classId, date, period, measurement_type: measurementType });
     const existingByStudent = Object.fromEntries(existing.map(r => [r.student_id, r]));
 
+    const toCreate = [];
+    const toUpdate = [];
     for (const student of selectedStudents) {
       const participant = session.participants[student.id];
       const completed = participant.status === 'finished';
@@ -64,9 +66,11 @@ export default function LiveRunPage() {
         status: completed ? 'finished' : 'not_participated',
       };
       const match = existingByStudent[student.id];
-      if (match) await base44.entities.RunMeasurement.update(match.id, payload);
-      else await base44.entities.RunMeasurement.create(payload);
+      if (match) toUpdate.push({ id: match.id, ...payload });
+      else toCreate.push(payload);
     }
+    if (toCreate.length > 0) await base44.entities.RunMeasurement.bulkCreate(toCreate);
+    if (toUpdate.length > 0) await base44.entities.RunMeasurement.bulkUpdate(toUpdate);
     run.markSaved();
     run.closeSession();
     toast.success('התוצאות נשמרו');

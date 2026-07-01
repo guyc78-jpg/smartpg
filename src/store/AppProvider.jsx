@@ -42,19 +42,19 @@ export function AppProvider({ children }) {
     setLoading(true);
     try {
       const [classesData, studentsData, testsData, resultsData, behaviorData, settingsData, bagrutCompData, bagrutResultsData, classTestStatusData, gradeOverridesData, attemptsData, lessonData, scheduleData] = await Promise.all([
-        base44.entities.SchoolClass.list(),
-        base44.entities.Student.list(),
-        base44.entities.TestDefinition.list(),
-        base44.entities.TestResult.list(),
-        base44.entities.BehaviorGrade.list(),
-        base44.entities.TeacherSettings.list(),
-        base44.entities.BagrutComponent.list(),
-        base44.entities.BagrutResult.list(),
-        base44.entities.ClassTestStatus.list(),
-        base44.entities.GradeOverride.list(),
-        base44.entities.TestAttempt.list(),
-        base44.entities.LessonTopic.list(),
-        base44.entities.TeacherSchedule.list(),
+        base44.entities.SchoolClass.list('-created_date', 500),
+        base44.entities.Student.list('-created_date', 500),
+        base44.entities.TestDefinition.list('-created_date', 500),
+        base44.entities.TestResult.list('-created_date', 1000),
+        base44.entities.BehaviorGrade.list('-created_date', 1000),
+        base44.entities.TeacherSettings.list('-created_date', 100),
+        base44.entities.BagrutComponent.list('-created_date', 500),
+        base44.entities.BagrutResult.list('-created_date', 1000),
+        base44.entities.ClassTestStatus.list('-created_date', 1000),
+        base44.entities.GradeOverride.list('-created_date', 1000),
+        base44.entities.TestAttempt.list('-created_date', 1000),
+        base44.entities.LessonTopic.list('-created_date', 1000),
+        base44.entities.TeacherSchedule.list('-created_date', 1000),
       ]);
 
       const classes = (classesData || []).map(c => ({
@@ -557,10 +557,10 @@ export function AppProvider({ children }) {
     base44.entities.ClassTestStatus, base44.entities.GradeOverride,
     base44.entities.TestAttempt, base44.entities.BagrutResult,
     base44.entities.LessonTopic, base44.entities.TeacherSchedule,
+    base44.entities.RunMeasurement, base44.entities.PeStopwatchLog,
     ];
     for (const entity of entities) {
-      const rows = await entity.list();
-      await Promise.all((rows || []).map(r => entity.delete(r.id)));
+      await entity.deleteMany({});
     }
     setData({ ...DEFAULT_DATA });
     await loadAll();
