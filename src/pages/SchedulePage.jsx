@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import ImportScheduleDialog from '@/components/schedule/ImportScheduleDialog';
+import WeeklyPeSchedule from '@/components/schedule/WeeklyPeSchedule';
+import DailyPeSchedule from '@/components/schedule/DailyPeSchedule';
 import { GRADE_LEVELS, SEMESTER_LABELS } from '@/lib/types';
-import { DAY_LABELS } from '@/lib/scheduleImport';
 import { CalendarDays, ClipboardList, Copy, Edit2, Loader2, Plus, Save, Timer, Trash2, UserCheck, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -108,15 +109,11 @@ export default function SchedulePage() {
   }, []);
 
   const classById = useMemo(() => Object.fromEntries(data.classes.map(c => [c.id, c])), [data.classes]);
-  const scheduleByDay = useMemo(() => {
-    return (data.scheduleLessons || [])
-      .slice()
-      .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.period - b.period)
-      .reduce((acc, item) => {
-        (acc[item.dayOfWeek] = acc[item.dayOfWeek] || []).push(item);
-        return acc;
-      }, {});
-  }, [data.scheduleLessons]);
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todaysScheduleLessons = useMemo(
+    () => (data.scheduleLessons || []).filter(l => l.dayOfWeek === new Date().getDay()),
+    [data.scheduleLessons]
+  );
   const visibleLessons = useMemo(() => {
     return lessons
       .filter(l => !l.isTemplate)
@@ -141,6 +138,16 @@ export default function SchedulePage() {
     setEditingLesson(null);
     setForm({ ...EMPTY_FORM, classId: classFilter !== 'all' ? classFilter : data.classes[0]?.id || '' });
     setDialogOpen(true);
+  };
+
+  const openDailyEdit = (scheduleLesson, topic) => {
+    if (topic) {
+      openEdit(topic);
+    } else {
+      setEditingLesson(null);
+      setForm({ ...EMPTY_FORM, classId: scheduleLesson.classId, period: scheduleLesson.period, date: todayIso });
+      setDialogOpen(true);
+    }
   };
 
   const openEdit = (lesson) => {
@@ -200,29 +207,29 @@ export default function SchedulePage() {
       </div>
     }>
       <div className="max-w-4xl mx-auto p-4 space-y-4" dir="rtl">
-        {Object.keys(scheduleByDay).length > 0 && (
-          <Card id="weekly-schedule" className="card-3d rounded-2xl p-4 space-y-3">
-            <div className="flex items-center gap-2 text-sm font-bold">
-              <CalendarDays className="w-4 h-4 text-primary" />
-              מערכת שעות חנ״ג (מקור אמת מסונן)
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {Object.entries(scheduleByDay).map(([day, items]) => (
-                <div key={day} className="rounded-xl bg-muted/40 p-3 space-y-1.5">
-                  <p className="text-xs font-bold text-muted-foreground">יום {DAY_LABELS[Number(day)]}</p>
-                  {items.map(item => (
-                    <div key={item.id} className="flex items-center justify-between text-sm">
-                      <span>{classById[item.classId]?.name || item.className}</span>
-                      <Badge variant="secondary" className="text-[10px]">שעה {item.period}</Badge>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
+        <Card id="weekly-schedule" className="card-3d rounded-2xl p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-bold">
+            <CalendarDays className="w-4 h-4 text-primary" />
+            מערכת שבועית - שיעורי חינוך גופני (א׳-ה׳)
+          </div>
+          <WeeklyPeSchedule scheduleLessons={data.scheduleLessons} classById={classById} />
+        </Card>
 
-        <Card id="daily-journal" className="card-3d rounded-2xl p-3 space-y-3">
+        <Card id="daily-journal" className="card-3d rounded-2xl p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-bold">
+            <CalendarDays className="w-4 h-4 text-primary" />
+            מערכת יומית - שיעורי חנ״ג להיום
+          </div>
+          <DailyPeSchedule
+            lessons={todaysScheduleLessons}
+            classById={classById}
+            lessonTopics={lessons}
+            dateIso={todayIso}
+            onEdit={openDailyEdit}
+          />
+        </Card>
+
+        <Card className="card-3d rounded-2xl p-3 space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Select value={classFilter} onValueChange={setClassFilter}>
               <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="כיתה" /></SelectTrigger>

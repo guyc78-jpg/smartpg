@@ -7,7 +7,7 @@ import HomeHeader from '@/components/home/HomeHeader';
 import ClassCard from '@/components/home/ClassCard';
 import TodayPeHeader from '@/components/home/TodayPeHeader';
 import QuickActionsGrid from '@/components/home/QuickActionsGrid';
-import TodayLessonsList from '@/components/home/TodayLessonsList';
+import DailyPeSchedule from '@/components/schedule/DailyPeSchedule';
 import AddClassDialog from '@/components/app/AddClassDialog';
 import EditClassDialog from '@/components/app/EditClassDialog';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
@@ -68,7 +68,7 @@ export default function HomePage() {
 
         <QuickActionsGrid />
 
-        <TodayLessonsList todaysLessons={todaysLessons} classById={classById} lessonTopics={data.lessonTopics} todayIso={todayIso} />
+        <DailyPeSchedule lessons={todaysLessons} classById={classById} lessonTopics={data.lessonTopics} dateIso={todayIso} />
 
         <div className="flex items-center justify-between px-1 pt-2">
           <div className="flex items-center gap-1">
