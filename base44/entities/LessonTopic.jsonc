@@ -37,6 +37,10 @@
     "notes": {
       "type": "string"
     },
+    "post_lesson_notes": {
+      "type": "string",
+      "description": "Documentation filled in after the lesson took place"
+    },
     "is_template": {
       "type": "boolean",
       "default": false

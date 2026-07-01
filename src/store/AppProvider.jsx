@@ -143,6 +143,7 @@ export function AppProvider({ children }) {
         id: r.id, classId: r.class_id, date: r.date, period: r.period, semester: r.semester || '',
         topic: r.topic || '', location: r.location || '', objective: r.objective || '',
         equipment: r.equipment || '', activityType: r.activity_type || '', notes: r.notes || '',
+        postLessonNotes: r.post_lesson_notes || '',
         isTemplate: r.is_template || false, templateName: r.template_name || '',
       }));
 

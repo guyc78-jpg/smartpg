@@ -3,7 +3,13 @@ import { formatPeriodStart } from '@/lib/periodTimes';
 
 const WEEKDAYS = [0, 1, 2, 3, 4]; // Sunday-Thursday only, no Friday/Saturday
 
-export default function WeeklyPeSchedule({ scheduleLessons, classById }) {
+function latestTopicFor(lessonTopics, classId, period) {
+  return (lessonTopics || [])
+    .filter(t => t.classId === classId && Number(t.period) === Number(period) && t.topic)
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+}
+
+export default function WeeklyPeSchedule({ scheduleLessons, classById, lessonTopics }) {
   const byDay = WEEKDAYS.reduce((acc, day) => {
     acc[day] = (scheduleLessons || [])
       .filter(l => l.dayOfWeek === day)
@@ -22,18 +28,22 @@ export default function WeeklyPeSchedule({ scheduleLessons, classById }) {
         <div key={day} className="rounded-xl bg-muted/40 p-3 space-y-1.5">
           <p className="text-xs font-bold text-muted-foreground">יום {DAY_LABELS[day]}</p>
           <div className="space-y-1.5">
-            {byDay[day].map(lesson => (
-              <div key={lesson.id} className="rounded-lg bg-card p-2 flex items-center gap-2">
-                <div className="text-center shrink-0 w-11">
-                  <p className="text-xs font-bold">{formatPeriodStart(lesson.period)}</p>
-                  <p className="text-[9px] text-muted-foreground">שיעור {lesson.period}</p>
+            {byDay[day].map(lesson => {
+              const topic = latestTopicFor(lessonTopics, lesson.classId, lesson.period);
+              return (
+                <div key={lesson.id} className="rounded-lg bg-card p-2 flex items-center gap-2">
+                  <div className="text-center shrink-0 w-11">
+                    <p className="text-xs font-bold">{formatPeriodStart(lesson.period)}</p>
+                    <p className="text-[9px] text-muted-foreground">שיעור {lesson.period}</p>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-muted-foreground break-words">{lesson.subject || 'חינוך גופני'}</p>
+                    <p className="text-sm font-bold break-words">{classById[lesson.classId]?.name || lesson.className}</p>
+                    {topic && <p className="text-[11px] text-primary break-words">{topic.topic}</p>}
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-muted-foreground break-words">{lesson.subject || 'חינוך גופני'}</p>
-                  <p className="text-sm font-bold break-words">{classById[lesson.classId]?.name || lesson.className}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Edit2, Timer, Activity, ChevronLeft } from 'lucide-react';
 import { formatPeriodStart } from '@/lib/periodTimes';
 
-export default function DailyPeSchedule({ lessons, classById, lessonTopics, dateIso, onEdit }) {
+export default function DailyPeSchedule({ lessons, classById, lessonTopics, dateIso }) {
   if (!lessons || lessons.length === 0) {
     return <p className="text-center text-sm text-muted-foreground py-8">אין שיעורי חנ״ג היום</p>;
   }
@@ -12,7 +12,8 @@ export default function DailyPeSchedule({ lessons, classById, lessonTopics, date
       {[...lessons].sort((a, b) => a.period - b.period).map(lesson => {
         const cls = classById[lesson.classId];
         const topic = (lessonTopics || []).find(t => t.classId === lesson.classId && t.date === dateIso && Number(t.period) === Number(lesson.period));
-        const manageUrl = `/schedule?classId=${lesson.classId}&period=${lesson.period}&date=${dateIso}`;
+        const editUrl = `/lesson-edit?classId=${lesson.classId}&period=${lesson.period}&date=${dateIso}`;
+        const manageUrl = `/lesson-manage?classId=${lesson.classId}&period=${lesson.period}&date=${dateIso}`;
 
         return (
           <div key={lesson.id} className="rounded-2xl bg-card shadow-sm p-3 space-y-2">
@@ -27,21 +28,10 @@ export default function DailyPeSchedule({ lessons, classById, lessonTopics, date
               </div>
             </div>
             <div className="grid grid-cols-4 gap-1.5">
-              {onEdit ? (
-                <button
-                  type="button"
-                  onClick={() => onEdit(lesson, topic)}
-                  className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  עריכה
-                </button>
-              ) : (
-                <Link to={manageUrl} className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
-                  <Edit2 className="w-3.5 h-3.5" />
-                  עריכה
-                </Link>
-              )}
+              <Link to={editUrl} className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
+                <Edit2 className="w-3.5 h-3.5" />
+                עריכה
+              </Link>
               <Link to="/live-run" className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
                 <Timer className="w-3.5 h-3.5" />
                 סטופר

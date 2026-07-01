@@ -23,6 +23,8 @@ import ReportsPage from './pages/ReportsPage';
 import BagrutTestsPage from './pages/BagrutTestsPage';
 import SchedulePage from './pages/SchedulePage';
 import LiveRunPage from './pages/LiveRunPage';
+import LessonManagePage from './pages/LessonManagePage';
+import LessonEditPage from './pages/LessonEditPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -65,6 +67,8 @@ const AuthenticatedApp = () => {
           <Route path="/class/:classId/bagrut" element={<BagrutTestsPage />} />
           <Route path="/manage-tests" element={<ManageTestsPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/lesson-manage" element={<LessonManagePage />} />
+          <Route path="/lesson-edit" element={<LessonEditPage />} />
           <Route path="/live-run" element={<LiveRunPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<AppSettingsPage />} />

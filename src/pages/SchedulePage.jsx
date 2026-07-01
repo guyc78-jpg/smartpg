@@ -94,14 +94,6 @@ export default function SchedulePage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('import') === '1') setImportOpen(true);
-    const classId = params.get('classId');
-    const period = params.get('period');
-    const date = params.get('date');
-    if (classId && period && date) {
-      setEditingLesson(null);
-      setForm({ ...EMPTY_FORM, classId, period: Number(period), date });
-      setDialogOpen(true);
-    }
     if (window.location.hash) {
       const el = document.getElementById(window.location.hash.slice(1));
       if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
@@ -137,33 +129,6 @@ export default function SchedulePage() {
   const openAdd = () => {
     setEditingLesson(null);
     setForm({ ...EMPTY_FORM, classId: classFilter !== 'all' ? classFilter : data.classes[0]?.id || '' });
-    setDialogOpen(true);
-  };
-
-  const openDailyEdit = (scheduleLesson, topic) => {
-    if (topic) {
-      openEdit(topic);
-    } else {
-      setEditingLesson(null);
-      setForm({ ...EMPTY_FORM, classId: scheduleLesson.classId, period: scheduleLesson.period, date: todayIso });
-      setDialogOpen(true);
-    }
-  };
-
-  const openEdit = (lesson) => {
-    setEditingLesson(lesson);
-    setForm({
-      date: lesson.date,
-      classId: lesson.classId,
-      period: lesson.period || 1,
-      semester: lesson.semester || 'A',
-      topic: lesson.topic,
-      location: lesson.location,
-      objective: lesson.objective,
-      equipment: lesson.equipment,
-      activityType: lesson.activityType,
-      notes: lesson.notes,
-    });
     setDialogOpen(true);
   };
 
@@ -212,7 +177,7 @@ export default function SchedulePage() {
             <CalendarDays className="w-4 h-4 text-primary" />
             מערכת שבועית - שיעורי חינוך גופני (א׳-ה׳)
           </div>
-          <WeeklyPeSchedule scheduleLessons={data.scheduleLessons} classById={classById} />
+          <WeeklyPeSchedule scheduleLessons={data.scheduleLessons} classById={classById} lessonTopics={lessons} />
         </Card>
 
         <Card id="daily-journal" className="card-3d rounded-2xl p-4 space-y-3">
@@ -225,7 +190,6 @@ export default function SchedulePage() {
             classById={classById}
             lessonTopics={lessons}
             dateIso={todayIso}
-            onEdit={openDailyEdit}
           />
         </Card>
 
@@ -273,7 +237,9 @@ export default function SchedulePage() {
                           <p className="text-xs text-muted-foreground mt-1">{cls?.name || 'כיתה לא ידועה'}{lesson.location ? ` • ${lesson.location}` : ''}{lesson.activityType ? ` • ${lesson.activityType}` : ''}</p>
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(lesson)}><Edit2 className="w-3.5 h-3.5" /></Button>
+                          <Link to={`/lesson-edit?classId=${lesson.classId}&period=${lesson.period}&date=${lesson.date}`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8"><Edit2 className="w-3.5 h-3.5" /></Button>
+                          </Link>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDuplicate(lesson)}><Copy className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSaveTemplate(lesson)}><Save className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteLessonTarget(lesson)}><Trash2 className="w-3.5 h-3.5 text-destructive/70" /></Button>
