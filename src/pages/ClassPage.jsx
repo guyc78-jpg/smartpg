@@ -107,8 +107,9 @@ export default function ClassPage() {
   };
 
   const handleImport = async (studentsToImport) => {
-    const count = await importStudents(studentsToImport.map(s => ({ ...s, classId })), classId);
-    toast.success(`יובאו ${count} תלמידים`);
+    const result = await importStudents(studentsToImport.map(s => ({ ...s, classId })), classId);
+    toast.success(`יובאו ${result.added} תלמידים`);
+    return result;
   };
 
   return (
@@ -212,8 +213,8 @@ export default function ClassPage() {
                         <span className={`text-sm font-bold ${isLow ? 'text-destructive' : 'text-primary'}`}>{displayGrade}</span>
                       </div>
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(student)}><Edit2 className="w-3.5 h-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteStudentTarget({ id: student.id, name: formatStudentName(student) })}><Trash2 className="w-3.5 h-3.5 text-destructive/70" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="עריכת תלמיד" onClick={() => openEdit(student)}><Edit2 className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="מחיקת תלמיד" onClick={() => setDeleteStudentTarget({ id: student.id, name: formatStudentName(student) })}><Trash2 className="w-3.5 h-3.5 text-destructive/70" /></Button>
                   </div>
                 </div>
 
@@ -255,7 +256,13 @@ export default function ClassPage() {
           onSave={handleSaveStudent}
         />
 
-        <ImportStudentsDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} />
+        <ImportStudentsDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+          onImport={handleImport}
+          classes={data.classes.filter(c => (c.status || 'active') === 'active')}
+          defaultClassId={classId}
+        />
 
         <ConfirmDeleteDialog
           open={!!deleteStudentTarget}

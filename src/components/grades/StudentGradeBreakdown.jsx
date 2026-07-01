@@ -15,39 +15,24 @@ function SummaryBox({ label, value, mutedLabel }) {
 }
 
 function SemesterDetails({ semesterData, label }) {
+  const hasMissing = semesterData.missingTests?.length > 0;
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-xs font-bold">{label}</h4>
-        <Badge variant="secondary" className="text-[10px]">{semesterData.includedCount || 0}/{semesterData.conductedCount || 0} נכנסו</Badge>
+        <Badge variant="secondary" className="text-[10px]">{semesterData.conductedCount || 0} מבדקים נכללים</Badge>
       </div>
 
       <div className="grid grid-cols-3 gap-1.5">
-        <SummaryBox label="ממוצע מבדקים" value={semesterData.testsAvg} mutedLabel={semesterData.ungradedTests?.length ? 'דורש טבלה' : '—'} />
-        <SummaryBox label="ציון מחצית" value={semesterData.semesterFinalGrade} mutedLabel={semesterData.ungradedTests?.length ? 'דורש טבלה' : '—'} />
+        <SummaryBox label="ממוצע מבדקים" value={semesterData.testsAvg} mutedLabel={hasMissing ? 'חסרים נתונים' : '—'} />
+        <SummaryBox label="ציון מחצית" value={semesterData.semesterFinalGrade} mutedLabel={hasMissing ? 'חסרים נתונים' : '—'} />
         <SummaryBox label="התנהגות" value={semesterData.behaviorGrade} />
       </div>
 
-      {semesterData.explanation?.length > 0 && (
+      {hasMissing && (
         <div className="rounded-xl bg-muted/40 p-2 text-[11px] text-muted-foreground space-y-1">
-          {semesterData.explanation.map((line, index) => <p key={index}>• {line}</p>)}
-        </div>
-      )}
-
-      {semesterData.testDetails?.length > 0 && (
-        <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
-          {semesterData.testDetails.map(detail => (
-            <div key={`${detail.testId}-${detail.status}`} className="flex items-center justify-between gap-2 rounded-lg bg-muted/30 px-2 py-1.5 text-[11px]">
-              <div className="min-w-0">
-                <div className="font-semibold truncate">{detail.testName}</div>
-                <div className="text-muted-foreground truncate">{detail.statusLabel} • {detail.reason}</div>
-              </div>
-              <div className="shrink-0 text-left">
-                {detail.rawScore !== null && detail.rawScore !== undefined && <div className="text-muted-foreground">תוצאה {detail.rawScore}</div>}
-                <div className={detail.included ? 'font-bold text-primary' : 'font-semibold text-muted-foreground'}>{detail.finalGrade ?? 'לא נכנס'}</div>
-              </div>
-            </div>
-          ))}
+          <p className="font-semibold text-foreground">מבדקים שטרם הוזן להם ציון:</p>
+          <p>{semesterData.missingTests.join(', ')}</p>
         </div>
       )}
     </div>

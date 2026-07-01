@@ -194,7 +194,12 @@ export function AppProvider({ children }) {
     let reloadTimer = null;
     const scheduleReload = () => {
       if (reloadTimer) clearTimeout(reloadTimer);
-      reloadTimer = setTimeout(() => loadAll(), 1500);
+      reloadTimer = setTimeout(() => {
+        const active = document.activeElement;
+        const isTyping = active && ['INPUT', 'TEXTAREA'].includes(active.tagName);
+        if (isTyping) scheduleReload();
+        else loadAll();
+      }, 1500);
     };
     const entitiesToWatch = [
       'SchoolClass', 'Student', 'TestResult', 'BehaviorGrade',
@@ -352,7 +357,7 @@ export function AppProvider({ children }) {
         sub_class_name: payloadData.studyGroup || '',
       };
     }).filter(p => p.name && !existing.has(p.name));
-    if (payloads.length === 0) return 0;
+    if (payloads.length === 0) return { added: 0, updated: 0, skipped: items.length, errors: [] };
     const created = await base44.entities.Student.bulkCreate(payloads);
     setData(d => ({ ...d, students: [...d.students, ...created.map(s => ({
       id: s.id, name: s.name, firstName: s.first_name || '', lastName: s.last_name || '',
@@ -360,7 +365,7 @@ export function AppProvider({ children }) {
       medicalLimitations: s.medical_limitations || '', peNotes: s.pe_notes || '',
       studyGroup: s.study_group || '', subClassName: s.sub_class_name,
     }))] }));
-    return payloads.length;
+    return { added: payloads.length, updated: 0, skipped: items.length - payloads.length, errors: [] };
   }, [data.students]);
 
   // --- Tests ---

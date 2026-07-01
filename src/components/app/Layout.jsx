@@ -40,7 +40,7 @@ export default function Layout({ children, title, backTo, subtitle, titleAction 
           </Link>
         </div>
         <div className="flex-1" />
-        <button onClick={toggle} className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-md hover:bg-secondary/50 transition-colors">
+        <button onClick={toggle} aria-label="החלף מצב תצוגה" className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-md hover:bg-secondary/50 transition-colors">
           {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
       </header>

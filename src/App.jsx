@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { AppProvider } from '@/store/AppProvider';
 import { LiveRunProvider } from '@/contexts/LiveRunContext';
 import FloatingRunTimer from '@/components/live-run/FloatingRunTimer';
@@ -57,6 +58,7 @@ const AuthenticatedApp = () => {
   }
 
   return (
+    <ErrorBoundary>
     <AppProvider>
       <LiveRunProvider>
       <StopwatchProvider>
@@ -87,6 +89,7 @@ const AuthenticatedApp = () => {
       </StopwatchProvider>
       </LiveRunProvider>
     </AppProvider>
+    </ErrorBoundary>
   );
 };
 

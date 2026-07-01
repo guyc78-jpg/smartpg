@@ -1,5 +1,10 @@
 import { formatStudentName } from '@/lib/studentName';
 
+function sanitizeCsvCell(value) {
+  const str = String(value ?? '');
+  return /^[=+\-@]/.test(str) ? `'${str}` : str;
+}
+
 export function exportClassReportCSV(className, studentGrades) {
   const headers = ['שם התלמיד', 'מחצית א׳', 'מחצית ב׳', 'שנתי', 'סטטוס'];
   const rows = studentGrades.map(({ student, annual }) => [
@@ -11,7 +16,7 @@ export function exportClassReportCSV(className, studentGrades) {
   ]);
 
   const csv = [headers, ...rows]
-    .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    .map(row => row.map(cell => `"${sanitizeCsvCell(cell).replace(/"/g, '""')}"`).join(','))
     .join('\n');
 
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
