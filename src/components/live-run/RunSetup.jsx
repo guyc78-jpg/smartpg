@@ -15,9 +15,12 @@ export default function RunSetup({ data, initial, onStart }) {
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(initial?.date || today);
   const peClassIds = useMemo(() => getPeClassIdsForDate(data.scheduleLessons, date), [data.scheduleLessons, date]);
-  const peClasses = useMemo(() => data.classes.filter(c => peClassIds.includes(c.id)), [data.classes, peClassIds]);
+  const scheduledClasses = useMemo(() => data.classes.filter(c => peClassIds.includes(c.id)), [data.classes, peClassIds]);
+  const allActiveClasses = useMemo(() => data.classes.filter(c => (c.status || 'active') === 'active'), [data.classes]);
+  const peClasses = scheduledClasses.length > 0 ? scheduledClasses : allActiveClasses;
   const [classId, setClassId] = useState(initial?.classId || '');
-  const periods = useMemo(() => getPeriodsForClassAndDate(data.scheduleLessons, date, classId), [data.scheduleLessons, date, classId]);
+  const scheduledPeriods = useMemo(() => getPeriodsForClassAndDate(data.scheduleLessons, date, classId), [data.scheduleLessons, date, classId]);
+  const periods = scheduledPeriods.length > 0 ? scheduledPeriods : [1, 2, 3, 4, 5, 6, 7, 8];
   const [period, setPeriod] = useState(initial?.period ? Number(initial.period) : '');
   const [measurementType, setMeasurementType] = useState('distance_1500');
 
@@ -60,7 +63,7 @@ export default function RunSetup({ data, initial, onStart }) {
           </Select>
         </Field>
       </section>
-      {peClasses.length === 0 && <p className="text-xs text-muted-foreground text-center">אין שיעורי חנ״ג בתאריך שנבחר.</p>}
+      {peClasses.length === 0 && <p className="text-xs text-muted-foreground text-center">אין כיתות פעילות להצגה.</p>}
 
       <section className="space-y-1.5">
         <label className="text-sm font-bold block text-right">סוג מדידה</label>
