@@ -1,5 +1,6 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, FileText, ArrowRight, LogOut, Moon, Sun, Settings, CalendarDays, Timer, Activity } from 'lucide-react';
+import { Home, ClipboardList, FileText, ArrowRight, Moon, Sun, Settings, CalendarDays, Timer, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import BottomNav from '@/components/app/BottomNav';
@@ -27,42 +28,60 @@ function NavItem({ to, icon: Icon, label }) {
 export default function Layout({ children, title, backTo, subtitle, titleAction }) {
   const { dark, toggle } = useTheme();
   const location = useLocation();
+  const headerRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const updateHeight = () => setHeaderHeight(el.offsetHeight);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [title, subtitle, backTo, titleAction]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir="rtl">
-      {/* Desktop Header */}
-      <header className="hidden md:flex items-center gap-3 px-4 h-14 border-b border-border/40 glass-nav sticky top-0 z-40">
-        <div className="flex items-center gap-1">
-          {NAV_ITEMS.map(item => <NavItem key={item.to} {...item} />)}
-          <Link to="/settings" className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}>
-            <Settings className="w-4 h-4" />
-            הגדרות
-          </Link>
+    <div className="min-h-screen bg-background flex flex-col" dir="rtl" style={{ '--header-h': `${headerHeight}px` }}>
+      <header
+        ref={headerRef}
+        className="fixed inset-x-0 top-0 z-40 glass-nav"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
+        {/* Desktop Nav Bar */}
+        <div className="hidden md:flex items-center gap-3 px-4 h-14 border-b border-border/40">
+          <div className="flex items-center gap-1">
+            {NAV_ITEMS.map(item => <NavItem key={item.to} {...item} />)}
+            <Link to="/settings" className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}>
+              <Settings className="w-4 h-4" />
+              הגדרות
+            </Link>
+          </div>
+          <div className="flex-1" />
+          <button onClick={toggle} aria-label="החלף מצב תצוגה" className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-md hover:bg-secondary/50 transition-colors">
+            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </div>
-        <div className="flex-1" />
-        <button onClick={toggle} aria-label="החלף מצב תצוגה" className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-md hover:bg-secondary/50 transition-colors">
-          {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
+
+        {/* Page Title Bar */}
+        {(title || backTo) && (
+          <div className="flex items-center gap-2 px-4 py-2 border-b border-border/30">
+            {backTo && (
+              <Link to={backTo} className="flex items-center text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            )}
+            <div className="flex-1 min-w-0 text-right">
+              {title && <h1 className="text-base font-bold truncate">{title}</h1>}
+              {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
+            </div>
+            {titleAction && <div className="shrink-0">{titleAction}</div>}
+          </div>
+        )}
       </header>
 
-      {/* Page Header */}
-      {(title || backTo) && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-border/30 glass-nav sticky top-14 md:top-14 z-30">
-          {backTo && (
-            <Link to={backTo} className="flex items-center text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
-          <div className="flex-1 min-w-0">
-            {title && <h1 className="text-base font-bold truncate">{title}</h1>}
-            {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
-          </div>
-          {titleAction && <div className="shrink-0">{titleAction}</div>}
-        </div>
-      )}
-
-      {/* Main Content */}
-      <main className="flex-1 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0">
+      {/* Main Content — real space reserved via measured header height */}
+      <main className="flex-1 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0" style={{ paddingTop: 'var(--header-h)' }}>
         {children}
       </main>
 

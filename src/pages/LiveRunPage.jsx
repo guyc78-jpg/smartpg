@@ -101,7 +101,7 @@ export default function LiveRunPage() {
   return (
     <Layout title="ריצה חיה" subtitle={`${currentClass?.name || ''} · ${measurementTypeLabel(session.setup.measurementType)}`}>
       <div className="max-w-[520px] mx-auto px-2 pt-3 pb-28 space-y-3" dir="rtl">
-        <section className="sticky top-[49px] z-30 rounded-b-3xl bg-background/95 backdrop-blur border-b px-2 pb-3 text-center space-y-3 relative">
+        <section className="sticky z-30 rounded-b-3xl bg-background/95 backdrop-blur border-b px-2 pb-3 text-center space-y-3 relative" style={{ top: 'var(--header-h, 0px)' }}>
           <button onClick={resetRun} aria-label="איפוס ריצה" className="absolute left-2 top-2 h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center" title="איפוס ריצה">
             <RotateCcw className="w-4 h-4" />
           </button>
