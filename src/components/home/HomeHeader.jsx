@@ -10,7 +10,7 @@ export default function HomeHeader({ classCount, studentCount }) {
   const schoolName = typeof window !== 'undefined' ? localStorage.getItem('schoolName') : '';
 
   return (
-    <header className="px-4 pt-4 pb-3">
+    <header className="sticky top-0 z-40 glass-nav px-4 pt-4 pb-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-1">
           <button onClick={() => logout()} className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="יציאה">
