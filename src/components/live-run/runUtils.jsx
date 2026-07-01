@@ -2,36 +2,52 @@ import { formatStudentName } from '@/lib/studentName';
 
 export const RUN_STATUS_LABELS = {
   running: 'רץ/ה',
-  finished: 'סיים/ה',
+  finished: 'בוצע',
   not_completed: 'לא סיים/ה',
-  not_participated: 'לא השתתף/ה',
+  not_participated: 'לא בוצע',
+  exempt: 'פטור/ה',
+  not_relevant: 'לא רלוונטי',
 };
 
+export const FINAL_RUN_STATUSES = ['finished', 'not_completed', 'not_participated', 'exempt', 'not_relevant'];
+
 export function formatRunTime(ms) {
-  const totalCentis = Math.floor((ms || 0) / 10);
+  const safeMs = Math.max(0, Number(ms || 0));
+  const totalCentis = Math.floor(safeMs / 10);
   const centis = totalCentis % 100;
   const totalSeconds = Math.floor(totalCentis / 100);
   const seconds = totalSeconds % 60;
-  const minutes = Math.floor(totalSeconds / 60);
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centis).padStart(2, '0')}`;
+  const minutes = Math.floor(totalSeconds / 60) % 60;
+  const hours = Math.floor(totalSeconds / 3600);
+  const base = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centis).padStart(2, '0')}`;
+  return hours > 0 ? `${String(hours).padStart(2, '0')}:${base}` : base;
 }
 
 export function secondsFromMs(ms) {
-  return Math.round((ms || 0) / 10) / 100;
+  return Math.round((Number(ms || 0)) / 10) / 100;
 }
 
-export function splitHebrewName(name = '') {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length <= 1) return { first: parts[0] || '', last: '' };
-  return { first: parts.slice(0, -1).join(' '), last: parts[parts.length - 1] };
+export function msFromSeconds(seconds) {
+  const value = Number(seconds);
+  return Number.isFinite(value) && value >= 0 ? Math.round(value * 1000) : null;
 }
 
-export function compareStudentsByLastName(a, b) {
-  return formatStudentName(a).localeCompare(formatStudentName(b), 'he');
+export function displayRunStudentName(student) {
+  const first = (student.firstName || student.first_name || '').trim();
+  const last = (student.lastName || student.last_name || '').trim();
+  return [first, last].filter(Boolean).join(' ') || formatStudentName(student);
 }
 
-export function sortRunStudents(students, participants) {
-  const order = { running: 0, finished: 1, not_completed: 2, not_participated: 3 };
+export function compareStudentsByFirstName(a, b) {
+  const firstA = (a.firstName || a.first_name || '').trim();
+  const firstB = (b.firstName || b.first_name || '').trim();
+  const lastA = (a.lastName || a.last_name || '').trim();
+  const lastB = (b.lastName || b.last_name || '').trim();
+  return firstA.localeCompare(firstB, 'he') || lastA.localeCompare(lastB, 'he') || displayRunStudentName(a).localeCompare(displayRunStudentName(b), 'he');
+}
+
+export function sortRunStudents(students, participants = {}) {
+  const order = { running: 0, finished: 1, not_completed: 2, not_participated: 3, exempt: 4, not_relevant: 5 };
   return [...students].sort((a, b) => {
     const pa = participants[a.id];
     const pb = participants[b.id];
@@ -41,6 +57,15 @@ export function sortRunStudents(students, participants) {
       const timeDiff = (pa.finishTimeMs || 0) - (pb.finishTimeMs || 0);
       if (timeDiff !== 0) return timeDiff;
     }
-    return compareStudentsByLastName(a, b);
+    return compareStudentsByFirstName(a, b);
   });
+}
+
+export function participantToResultStatus(status) {
+  if (status === 'finished') return 'completed';
+  if (status === 'not_participated') return 'not_participated';
+  if (status === 'not_completed') return 'not_completed';
+  if (status === 'exempt') return 'exempt';
+  if (status === 'not_relevant') return 'not_relevant';
+  return 'not_completed';
 }

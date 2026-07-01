@@ -1,16 +1,15 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flag, Pause, Play, Square } from 'lucide-react';
+import { Flag, Pause, Play, RotateCcw, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/store/AppProvider';
 import { useLiveRun } from '@/contexts/LiveRunContext';
-import { convertRawToGrade } from '@/lib/gradeCalc';
 import RunSetup from '@/components/live-run/RunSetup';
 import RunStudentCard from '@/components/live-run/RunStudentCard';
 import RunSummary from '@/components/live-run/RunSummary';
-import { formatRunTime, secondsFromMs, sortRunStudents } from '@/components/live-run/runUtils';
+import { formatRunTime, participantToResultStatus, secondsFromMs, sortRunStudents } from '@/components/live-run/runUtils';
 
 export default function LiveRunPage() {
   const navigate = useNavigate();
@@ -31,50 +30,61 @@ export default function LiveRunPage() {
     return {
       running: values.filter(p => p.status === 'running').length,
       finished: values.filter(p => p.status === 'finished').length,
-      not_completed: values.filter(p => p.status === 'not_completed').length,
-      not_participated: values.filter(p => p.status === 'not_participated').length,
+      notCompleted: values.filter(p => p.status === 'not_completed').length,
+      notParticipated: values.filter(p => p.status === 'not_participated').length,
     };
   }, [session]);
 
+  const resetRun = () => {
+    if (window.confirm('איפוס הריצה ימחק את כל הזמנים והסיבובים הזמניים. להמשיך?')) run.resetRun();
+  };
+
+  const finishRun = () => {
+    if (window.confirm('לעבור למסך סיכום? תלמידים שעדיין רצים יסומנו לפי מצבם הנוכחי ולא תתבצע שמירה עדיין.')) run.finishRun();
+  };
+
   const saveSummary = async () => {
     if (!session || !currentTest) return;
-    let missingTable = false;
+    const invalid = selectedStudents.some(student => {
+      const p = session.participants[student.id];
+      return p.status === 'finished' && !p.finishTimeMs;
+    });
+    if (invalid) {
+      toast.error('יש תלמיד שבוצע בלי זמן תקין');
+      return;
+    }
+
+    const existingSameDate = data.results.some(r => r.testId === currentTest.id && r.semester === session.setup.semester && r.testDate === session.setup.date && session.selectedIds.includes(r.studentId) && r.liveRunId !== session.id);
+    if (existingSameDate && !window.confirm('כבר קיימות תוצאות למבדק הזה בתאריך שנבחר. להחליף/לעדכן אותן?')) return;
+
     for (const student of selectedStudents) {
       const participant = session.participants[student.id];
-      const finished = participant.status === 'finished';
-      const rawSeconds = finished ? secondsFromMs(participant.finishTimeMs) : 0;
-      if (finished && !convertRawToGrade(rawSeconds, currentTest.conversionTable || [])) missingTable = true;
-      await setTestResult(student.id, currentTest.id, session.setup.semester, rawSeconds, finished ? 'completed' : participant.status, {
+      const completed = participant.status === 'finished';
+      const rawSeconds = completed ? secondsFromMs(participant.finishTimeMs) : null;
+      await setTestResult(student.id, currentTest.id, session.setup.semester, rawSeconds, participantToResultStatus(participant.status), {
         test_date: session.setup.date,
         run_time_seconds: rawSeconds,
         laps_completed: participant.laps || 0,
-        route_name: `${session.setup.routeName || ''} ${session.setup.distance || ''}`.trim(),
+        route_name: `${session.setup.routeName || ''} · ${session.setup.distance || ''} מ׳`.trim(),
         live_run_id: session.id,
       });
     }
     await setClassTestStatus(session.setup.classId, currentTest.id, session.setup.semester, 'conducted');
     await loadAll();
+    run.markSaved();
     run.closeSession();
-    toast.success(missingTable ? 'התוצאות נשמרו. יש להגדיר טבלת המרה לחישוב ציונים מלא.' : 'התוצאות נשמרו למבדקים');
+    toast.success('תוצאות הריצה נשמרו למבדקים ולכרטיסי התלמידים');
     navigate(`/class/${session.setup.classId}/tests`);
   };
 
   if (!session) {
-    return <Layout title="ריצה Live" backTo="/"><RunSetup data={data} onStart={run.startSession} /></Layout>;
+    return <Layout title="ריצה חיה" subtitle="סטופר חכם למבדקי זמן" backTo="/"><RunSetup data={data} onStart={run.startSession} /></Layout>;
   }
 
   if (session.phase === 'summary') {
     return (
-      <Layout title="סיכום ריצה" backTo="/live-run">
-        <RunSummary
-          session={session}
-          students={selectedStudents}
-          test={currentTest}
-          settings={data.settings}
-          onEdit={run.updateSummaryResult}
-          onBack={run.reopenRun}
-          onSave={saveSummary}
-        />
+      <Layout title="סיכום ריצה" subtitle={`${currentClass?.name || ''} · ${currentTest?.name || ''}`} backTo="/live-run">
+        <RunSummary session={session} students={selectedStudents} test={currentTest} settings={data.settings} onEdit={run.updateSummaryResult} onBack={run.reopenRun} onSave={saveSummary} />
       </Layout>
     );
   }
@@ -82,44 +92,34 @@ export default function LiveRunPage() {
   const sortedStudents = sortRunStudents(selectedStudents, session.participants);
 
   return (
-    <Layout title="ריצה Live" subtitle={`${currentClass?.name || ''} · ${currentTest?.name || ''}`}>
-      <div className="max-w-[470px] mx-auto px-2 pt-4 pb-24 space-y-4" dir="rtl">
-        <section className="text-center space-y-3 sticky top-24 z-20 bg-background/95 backdrop-blur pb-3 border-b border-border/40">
-          <div className="font-mono text-5xl font-black tracking-[0.08em] text-foreground" dir="ltr">{formatRunTime(elapsedMs).slice(0, 8)}</div>
+    <Layout title="סטופר חכם" subtitle={`${currentClass?.name || ''} · ${currentTest?.name || ''} · ${session.setup.distance || ''} מ׳`}>
+      <div className="max-w-[520px] mx-auto px-2 pt-3 pb-28 space-y-3" dir="rtl">
+        <section className="sticky top-[49px] z-30 rounded-b-3xl bg-background/95 backdrop-blur border-b px-2 pb-3 text-center space-y-3">
+          <div className="font-mono text-6xl font-black tracking-wider text-foreground" dir="ltr">{formatRunTime(elapsedMs)}</div>
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary" /> רצים: {counts.running}</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-600" /> סיימו: {counts.finished}</span>
+            <span>רצים: <b className="text-foreground">{counts.running}</b></span>
+            <span>סיימו: <b className="text-green-600">{counts.finished}</b></span>
+            <span>לא סיימו: <b className="text-destructive">{counts.notCompleted}</b></span>
           </div>
-          <div className="grid grid-cols-2 gap-3 px-14">
+          <div className="grid grid-cols-2 gap-2">
             {session.running ? (
-              <Button onClick={run.pauseTimer} className="h-14 rounded-xl bg-red-600 hover:bg-red-700 text-white text-lg font-bold shadow-md">
-                <Square className="w-4 h-4" /> עצור
-              </Button>
+              <Button onClick={run.pauseTimer} className="h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-lg font-black"><Square className="w-4 h-4" /> עצור</Button>
             ) : (
-              <Button onClick={run.startTimer} className="h-14 rounded-xl bg-primary text-primary-foreground text-lg font-bold shadow-md">
-                <Play className="w-4 h-4" /> {elapsedMs ? 'המשך' : 'התחל'}
-              </Button>
+              <Button onClick={run.startTimer} className="h-14 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-lg font-black"><Play className="w-4 h-4" /> {elapsedMs ? 'המשך' : 'התחל'}</Button>
             )}
-            <Button variant="outline" onClick={() => counts.running === 0 || window.confirm('יש תלמידים שעדיין רצים. לסיים ולסמן אותם כלא סיימו?') ? run.finishRun() : null} className="h-14 rounded-xl bg-card text-lg font-bold shadow-md">
-              <Flag className="w-4 h-4" /> סיים ריצה
-            </Button>
+            <Button variant="outline" onClick={finishRun} className="h-14 rounded-2xl text-lg font-black"><Flag className="w-4 h-4" /> סיום ריצה</Button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={run.pauseTimer} disabled={!session.running} className="h-10 rounded-xl"><Pause className="w-4 h-4" /> עצירה</Button>
+            <Button variant="outline" onClick={resetRun} className="h-10 rounded-xl text-destructive"><RotateCcw className="w-4 h-4" /> איפוס</Button>
           </div>
         </section>
 
         <div className="space-y-2">
           {sortedStudents.map(student => (
-            <RunStudentCard
-              key={student.id}
-              student={student}
-              participant={session.participants[student.id]}
-              elapsedMs={elapsedMs}
-              lapsRequired={session.setup.lapsRequired}
-              onLap={() => run.markLap(student.id)}
-              onFinish={() => run.finishStudent(student.id)}
-              onUndo={() => run.undoStudent(student.id)}
-              onStatus={(status) => run.setStudentStatus(student.id, status)}
-            />
+            <RunStudentCard key={student.id} student={student} participant={session.participants[student.id]} elapsedMs={elapsedMs} lapsRequired={session.setup.lapsRequired} onLap={() => run.markLap(student.id)} onFinish={() => run.finishStudent(student.id)} onUndo={() => run.undoStudent(student.id)} onStatus={(status) => run.setStudentStatus(student.id, status)} />
           ))}
+          {sortedStudents.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">אין תלמידים לריצה הזו.</div>}
         </div>
       </div>
     </Layout>

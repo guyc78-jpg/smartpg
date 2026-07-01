@@ -353,7 +353,9 @@ export function AppProvider({ children }) {
 
   // --- Test Results ---
   const setTestResult = useCallback(async (studentId, testId, semester, rawScore, status, metadata = {}) => {
-    const allExisting = await base44.entities.TestResult.filter({ student_id: studentId, test_id: testId, semester });
+    const lookup = { student_id: studentId, test_id: testId, semester };
+    if (metadata.test_date) lookup.test_date = metadata.test_date;
+    const allExisting = await base44.entities.TestResult.filter(lookup);
     const payload = { student_id: studentId, test_id: testId, semester, raw_score: rawScore, status, ...metadata };
     
     if (allExisting.length > 0) {
@@ -363,7 +365,11 @@ export function AppProvider({ children }) {
     }
     
     setData(d => {
-      const filtered = d.results.filter(r => !(r.studentId === studentId && r.testId === testId && r.semester === semester));
+      const filtered = d.results.filter(r => {
+        const sameBase = r.studentId === studentId && r.testId === testId && r.semester === semester;
+        if (!sameBase) return true;
+        return metadata.test_date ? r.testDate !== metadata.test_date : Boolean(r.testDate);
+      });
       return { ...d, results: [...filtered, {
         studentId, testId, semester, rawScore, status,
         testDate: metadata.test_date, runTimeSeconds: metadata.run_time_seconds,
