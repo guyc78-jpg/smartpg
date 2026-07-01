@@ -30,7 +30,7 @@
     --border: 217 20% 90%;
     --input: 217 20% 90%;
     --ring: 217 72% 30%;
-    --radius: 0.75rem;
+    --radius: 1.1rem;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     --success: 217 72% 30%;
@@ -49,9 +49,10 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    --shadow-3d: 0 1px 2px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.06), 0 8px 16px rgba(0,0,0,0.04);
-    --shadow-3d-hover: 0 2px 4px rgba(0,0,0,0.06), 0 8px 16px rgba(0,0,0,0.08), 0 16px 32px rgba(0,0,0,0.06);
-    --shadow-3d-active: 0 1px 2px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.06);
+    --shadow-3d: 0 1px 1px rgba(0,0,0,0.03), 0 8px 24px -8px rgba(20,30,60,0.10), inset 0 1px 0 rgba(255,255,255,0.5);
+    --shadow-3d-hover: 0 2px 2px rgba(0,0,0,0.04), 0 16px 40px -12px rgba(20,30,60,0.16), inset 0 1px 0 rgba(255,255,255,0.6);
+    --shadow-3d-active: 0 1px 1px rgba(0,0,0,0.05), 0 4px 12px -4px rgba(20,30,60,0.12), inset 0 1px 0 rgba(255,255,255,0.4);
+    --glass-border: 255 255 255;
 
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -85,9 +86,10 @@
     --success: 160 60% 45%;
     --success-foreground: 0 0% 100%;
 
-    --shadow-3d: 0 1px 2px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.25), 0 8px 16px rgba(0,0,0,0.15);
-    --shadow-3d-hover: 0 2px 4px rgba(0,0,0,0.25), 0 8px 16px rgba(0,0,0,0.3), 0 16px 32px rgba(0,0,0,0.2);
-    --shadow-3d-active: 0 1px 2px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
+    --shadow-3d: 0 1px 1px rgba(0,0,0,0.3), 0 8px 24px -8px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+    --shadow-3d-hover: 0 2px 2px rgba(0,0,0,0.35), 0 16px 40px -12px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+    --shadow-3d-active: 0 1px 1px rgba(0,0,0,0.4), 0 4px 12px -4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    --glass-border: 255 255 255;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -134,9 +136,11 @@
 @layer components {
   .card-3d {
     box-shadow: var(--shadow-3d);
-    border: 1px solid hsl(var(--border) / 0.5);
-    background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.95) 100%);
-    transition: box-shadow 0.15s ease-out;
+    border: 1px solid rgb(var(--glass-border) / 0.12);
+    background: hsl(var(--card) / 0.72);
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    transition: box-shadow 0.2s ease-out, transform 0.2s ease-out;
   }
   .card-3d:hover {
     box-shadow: var(--shadow-3d-hover);
@@ -145,19 +149,29 @@
     box-shadow: var(--shadow-3d-active);
   }
   .btn-3d {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.15);
-    transition: box-shadow 0.12s ease-out, background-color 0.12s ease-out;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.06), 0 6px 16px -6px rgba(20,30,60,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+    backdrop-filter: blur(16px) saturate(1.6);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6);
+    transition: box-shadow 0.15s ease-out, background-color 0.15s ease-out, transform 0.15s ease-out;
   }
   .btn-3d:hover {
-    box-shadow: 0 3px 6px rgba(0,0,0,0.12), 0 6px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.2);
+    box-shadow: 0 2px 2px rgba(0,0,0,0.08), 0 10px 22px -6px rgba(20,30,60,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+    transform: translateY(-1px);
   }
   .btn-3d:active {
-    box-shadow: 0 1px 2px rgba(0,0,0,0.12), inset 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1), inset 0 1px 3px rgba(0,0,0,0.12);
+    transform: translateY(0);
   }
   .glass-surface {
-    background: hsl(var(--card) / 0.85);
-    backdrop-filter: blur(12px) saturate(1.5);
-    -webkit-backdrop-filter: blur(12px) saturate(1.5);
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(24px) saturate(1.7);
+    -webkit-backdrop-filter: blur(24px) saturate(1.7);
+    border: 1px solid rgb(var(--glass-border) / 0.12);
+  }
+  .glass-nav {
+    background: hsl(var(--background) / 0.65);
+    backdrop-filter: blur(24px) saturate(1.7);
+    -webkit-backdrop-filter: blur(24px) saturate(1.7);
   }
 }
 

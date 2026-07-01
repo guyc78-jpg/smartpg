@@ -31,7 +31,7 @@ export default function Layout({ children, title, backTo, subtitle, titleAction 
   return (
     <div className="min-h-screen bg-background flex flex-col" dir="rtl">
       {/* Desktop Header */}
-      <header className="hidden md:flex items-center gap-3 px-4 h-12 border-b border-border/60 bg-background/95 backdrop-blur sticky top-0 z-40">
+      <header className="hidden md:flex items-center gap-3 px-4 h-14 border-b border-border/40 glass-nav sticky top-0 z-40">
         <div className="flex items-center gap-1">
           {NAV_ITEMS.map(item => <NavItem key={item.to} {...item} />)}
           <Link to="/settings" className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}>
@@ -47,7 +47,7 @@ export default function Layout({ children, title, backTo, subtitle, titleAction 
 
       {/* Page Header */}
       {(title || backTo) && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-background/80 sticky top-12 md:top-12 z-30">
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-border/30 glass-nav sticky top-14 md:top-14 z-30">
           {backTo && (
             <Link to={backTo} className="flex items-center text-muted-foreground hover:text-foreground transition-colors">
               <ArrowRight className="w-4 h-4" />
