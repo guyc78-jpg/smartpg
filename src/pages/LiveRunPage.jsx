@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flag, Pause, Play, RotateCcw, Square } from 'lucide-react';
+import { Flag, Play, RotateCcw, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/store/AppProvider';
 import { useLiveRun } from '@/contexts/LiveRunContext';
+import { convertRawToGrade } from '@/lib/gradeCalc';
 import RunSetup from '@/components/live-run/RunSetup';
 import RunStudentCard from '@/components/live-run/RunStudentCard';
 import RunSummary from '@/components/live-run/RunSummary';
@@ -91,15 +92,23 @@ export default function LiveRunPage() {
 
   const sortedStudents = sortRunStudents(selectedStudents, session.participants);
 
+  const getGrade = (participant) => {
+    if (participant.status !== 'finished') return null;
+    const converted = convertRawToGrade(secondsFromMs(participant.finishTimeMs), currentTest?.conversionTable || []);
+    return converted === null ? '—' : Math.max(converted, data.settings.minCompletedGrade || 56);
+  };
+
   return (
     <Layout title="סטופר חכם" subtitle={`${currentClass?.name || ''} · ${currentTest?.name || ''} · ${session.setup.distance || ''} מ׳`}>
       <div className="max-w-[520px] mx-auto px-2 pt-3 pb-28 space-y-3" dir="rtl">
-        <section className="sticky top-[49px] z-30 rounded-b-3xl bg-background/95 backdrop-blur border-b px-2 pb-3 text-center space-y-3">
-          <div className="font-mono text-6xl font-black tracking-wider text-foreground" dir="ltr">{formatRunTime(elapsedMs)}</div>
+        <section className="sticky top-[49px] z-30 rounded-b-3xl bg-background/95 backdrop-blur border-b px-2 pb-3 text-center space-y-3 relative">
+          <button onClick={resetRun} className="absolute left-2 top-2 h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center" title="איפוס ריצה">
+            <RotateCcw className="w-4 h-4" />
+          </button>
+          <div className="font-mono text-6xl font-black tracking-wider text-foreground" dir="ltr">{formatRunTime(elapsedMs)} 🏃</div>
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-            <span>רצים: <b className="text-foreground">{counts.running}</b></span>
-            <span>סיימו: <b className="text-green-600">{counts.finished}</b></span>
-            <span>לא סיימו: <b className="text-destructive">{counts.notCompleted}</b></span>
+            <span>רצים: {counts.running}</span>
+            <span>סיימו: {counts.finished}</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {session.running ? (
@@ -107,17 +116,13 @@ export default function LiveRunPage() {
             ) : (
               <Button onClick={run.startTimer} className="h-14 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-lg font-black"><Play className="w-4 h-4" /> {elapsedMs ? 'המשך' : 'התחל'}</Button>
             )}
-            <Button variant="outline" onClick={finishRun} className="h-14 rounded-2xl text-lg font-black"><Flag className="w-4 h-4" /> סיום ריצה</Button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={run.pauseTimer} disabled={!session.running} className="h-10 rounded-xl"><Pause className="w-4 h-4" /> עצירה</Button>
-            <Button variant="outline" onClick={resetRun} className="h-10 rounded-xl text-destructive"><RotateCcw className="w-4 h-4" /> איפוס</Button>
+            <Button variant="outline" onClick={finishRun} className="h-14 rounded-2xl text-lg font-black"><Flag className="w-4 h-4" /> סיים ריצה</Button>
           </div>
         </section>
 
         <div className="space-y-2">
           {sortedStudents.map(student => (
-            <RunStudentCard key={student.id} student={student} participant={session.participants[student.id]} elapsedMs={elapsedMs} lapsRequired={session.setup.lapsRequired} onLap={() => run.markLap(student.id)} onFinish={() => run.finishStudent(student.id)} onUndo={() => run.undoStudent(student.id)} onStatus={(status) => run.setStudentStatus(student.id, status)} />
+            <RunStudentCard key={student.id} student={student} participant={session.participants[student.id]} lapsRequired={session.setup.lapsRequired} grade={getGrade(session.participants[student.id])} onLap={() => run.markLap(student.id)} onFinish={() => run.finishStudent(student.id)} onUndo={() => run.undoStudent(student.id)} onStatus={(status) => run.setStudentStatus(student.id, status)} />
           ))}
           {sortedStudents.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">אין תלמידים לריצה הזו.</div>}
         </div>
