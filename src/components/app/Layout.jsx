@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, FileText, ArrowRight, LogOut, Moon, Sun, Settings, CalendarDays, Timer } from 'lucide-react';
+import { Home, ClipboardList, FileText, ArrowRight, LogOut, Moon, Sun, Settings, CalendarDays, Timer, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import BottomNav from '@/components/app/BottomNav';
@@ -7,6 +7,8 @@ import BottomNav from '@/components/app/BottomNav';
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'ראשי' },
   { to: '/schedule', icon: CalendarDays, label: 'מערכת' },
+  { to: '/stopwatch', icon: Timer, label: 'סטופר' },
+  { to: '/live-run', icon: Activity, label: 'ריצה חיה' },
   { to: '/manage-tests', icon: ClipboardList, label: 'מבדקים' },
   { to: '/reports', icon: FileText, label: 'דוחות' },
 ];
@@ -38,9 +40,6 @@ export default function Layout({ children, title, backTo, subtitle, titleAction 
           </Link>
         </div>
         <div className="flex-1" />
-        <Link to="/live-run" className={`h-8 w-8 flex items-center justify-center rounded-md transition-colors ${location.pathname === '/live-run' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary/50'}`} aria-label="ריצה Live">
-          <Timer className="w-4 h-4" />
-        </Link>
         <button onClick={toggle} className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-md hover:bg-secondary/50 transition-colors">
           {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
@@ -58,15 +57,12 @@ export default function Layout({ children, title, backTo, subtitle, titleAction 
             {title && <h1 className="text-base font-bold truncate">{title}</h1>}
             {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
           </div>
-          <Link to="/live-run" className={`md:hidden h-8 w-8 flex items-center justify-center rounded-md transition-colors ${location.pathname === '/live-run' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary/50'}`} aria-label="ריצה Live">
-            <Timer className="w-4 h-4" />
-          </Link>
           {titleAction && <div className="shrink-0">{titleAction}</div>}
         </div>
       )}
 
       {/* Main Content */}
-      <main className="flex-1 pb-16 md:pb-0">
+      <main className="flex-1 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0">
         {children}
       </main>
 
