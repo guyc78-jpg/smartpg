@@ -126,6 +126,11 @@
   }
 }
 
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
 @layer components {
   .card-3d {
     box-shadow: var(--shadow-3d);

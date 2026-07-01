@@ -1,168 +1,152 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+import { ChevronDown, Calendar, Plus, Timer, Trash2, Users } from 'lucide-react';
 import { useApp } from '@/store/AppProvider';
-import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { CalendarDays, ClipboardList, Timer, Search, BarChart3, Plus, UserCheck, AlertCircle, Activity } from 'lucide-react';
-import { formatStudentName } from '@/lib/studentName';
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function QuickAction({ to, icon: Icon, label }) {
-  return (
-    <Link to={to} className="rounded-2xl border border-border bg-card p-3 text-center shadow-sm transition-colors hover:border-primary/40 hover:text-primary">
-      <Icon className="mx-auto mb-1 h-5 w-5" />
-      <span className="text-xs font-semibold">{label}</span>
-    </Link>
-  );
-}
-
-function SummaryCard({ icon: Icon, label, value }) {
-  return (
-    <Card className="card-3d rounded-2xl p-3">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Icon className="h-4 w-4" />
-        <span className="text-xs">{label}</span>
-      </div>
-      <div className="mt-2 text-2xl font-bold text-foreground">{value}</div>
-    </Card>
-  );
-}
+import BottomNav from '@/components/app/BottomNav';
+import HomeHeader from '@/components/home/HomeHeader';
+import ClassCard from '@/components/home/ClassCard';
+import AddClassDialog from '@/components/app/AddClassDialog';
+import EditClassDialog from '@/components/app/EditClassDialog';
+import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
+import { GRADE_LEVELS } from '@/lib/types';
 
 export default function HomePage() {
-  const { data } = useApp();
-  const [studentSearch, setStudentSearch] = useState('');
-  const today = todayKey();
+  const { data, addClass, addStudent, editClass, deleteClass, deleteAllData, defaultGenderTrack } = useApp();
+  const [gradeFilter, setGradeFilter] = useState('all');
+  const [scheduleOpen, setScheduleOpen] = useState(true);
+  const [myClassesOpen, setMyClassesOpen] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
-  const activeClassesById = useMemo(
-    () => Object.fromEntries((data.classes || []).filter(c => (c.status || 'active') === 'active').map(c => [c.id, c])),
-    [data.classes]
+  const activeClasses = useMemo(() => (data.classes || []).filter(c => (c.status || 'active') === 'active'), [data.classes]);
+
+  const filteredClasses = useMemo(
+    () => gradeFilter === 'all' ? activeClasses : activeClasses.filter(c => c.gradeLevel === gradeFilter),
+    [activeClasses, gradeFilter]
   );
 
-  const todayLessons = useMemo(
-    () => (data.lessonTopics || [])
-      .filter(lesson => lesson.date === today && !lesson.isTemplate)
-      .sort((a, b) => (a.period || 0) - (b.period || 0)),
-    [data.lessonTopics, today]
-  );
+  const studentCountByClass = useMemo(() => {
+    const map = {};
+    (data.students || []).forEach(s => { map[s.classId] = (map[s.classId] || 0) + 1; });
+    return map;
+  }, [data.students]);
 
-  const todayTests = useMemo(
-    () => (data.tests || []).filter(test => test.date === today || test.testDate === today),
-    [data.tests, today]
-  );
+  const handleAddClass = async (classData, studentNames) => {
+    const classId = await addClass(classData);
+    for (const name of studentNames) {
+      await addStudent({ name, classId }, classId);
+    }
+    toast.success('הכיתה נוספה');
+  };
 
-  const todayClassIds = useMemo(() => {
-    const ids = new Set();
-    todayLessons.forEach(lesson => lesson.classId && ids.add(lesson.classId));
-    todayTests.forEach(test => test.classId && ids.add(test.classId));
-    return [...ids].filter(id => activeClassesById[id]);
-  }, [todayLessons, todayTests, activeClassesById]);
+  const handleEditClass = async (id, classData) => {
+    await editClass(id, classData);
+    toast.success('הכיתה עודכנה');
+  };
 
-  const todayClasses = todayClassIds.map(id => activeClassesById[id]).filter(Boolean);
+  const handleDeleteClass = async () => {
+    await deleteClass(deleteTarget.id);
+    toast.success('הכיתה נמחקה');
+    setDeleteTarget(null);
+  };
 
-  const plannedRuns = useMemo(() => {
-    const runTests = todayTests.filter(test => test.testType === 'running' || test.name?.includes('ריצה'));
-    const runLessons = todayLessons.filter(lesson => [lesson.topic, lesson.activityType, lesson.notes].filter(Boolean).some(text => text.includes('ריצה')));
-    return { tests: runTests, lessons: runLessons, total: runTests.length + runLessons.length };
-  }, [todayTests, todayLessons]);
-
-  const todayStudents = useMemo(
-    () => (data.students || []).filter(student => todayClassIds.includes(student.classId)),
-    [data.students, todayClassIds]
-  );
-
-  const exemptStudents = todayStudents.filter(student => student.peExempt);
-  const missingResults = (data.results || []).filter(result =>
-    todayTests.some(test => test.id === result.testId) &&
-    ['pending', 'not_participated', 'not_completed'].includes(result.status)
-  );
-
-  const hasTodayActivity = todayLessons.length > 0 || todayTests.length > 0 || plannedRuns.total > 0;
-
-  const firstActiveClass = (data.classes || []).find(c => (c.status || 'active') === 'active');
-  const testEntryLink = firstActiveClass ? `/class/${firstActiveClass.id}/tests` : '/manage-tests';
-
-  const searchResults = useMemo(() => {
-    const q = studentSearch.trim();
-    if (!q) return [];
-    return (data.students || [])
-      .filter(student => formatStudentName(student).includes(q))
-      .slice(0, 5);
-  }, [data.students, studentSearch]);
+  const handleDeleteAll = async () => {
+    await deleteAllData();
+    toast.success('כל הנתונים נמחקו');
+    setDeleteAllOpen(false);
+  };
 
   return (
-    <Layout title="דשבורד יומן חנ״ג" subtitle={new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}>
-      <div className="mx-auto max-w-4xl space-y-4 p-4" dir="rtl">
-        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <SummaryCard icon={CalendarDays} label="שיעורים היום" value={todayLessons.length} />
-          <SummaryCard icon={UserCheck} label="כיתות פעילות" value={todayClasses.length} />
-          <SummaryCard icon={ClipboardList} label="מבדקים היום" value={todayTests.length} />
-          <SummaryCard icon={Timer} label="ריצות מתוכננות" value={plannedRuns.total} />
-        </section>
+    <div className="min-h-screen bg-background flex flex-col" dir="rtl">
+      <HomeHeader classCount={activeClasses.length} studentCount={data.students.length} />
 
-        <Card className="card-3d rounded-2xl p-4">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-base font-bold"><AlertCircle className="h-5 w-5 text-primary" /> מה חשוב היום</h2>
-            <Badge variant="secondary" className="text-[10px]">היום בלבד</Badge>
-          </div>
+      <main className="flex-1 px-4 pb-24 space-y-3">
+        <button onClick={() => setScheduleOpen(o => !o)} className="w-full flex items-center justify-between rounded-2xl bg-card shadow-sm px-4 py-3">
+          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${scheduleOpen ? '' : '-rotate-90'}`} />
+          <span className="flex items-center gap-2 font-bold text-[15px]">
+            מערכת יומית
+            <Calendar className="w-4 h-4 text-primary" />
+          </span>
+        </button>
 
-          {!hasTodayActivity ? (
-            <p className="rounded-xl bg-muted/50 p-4 text-center text-sm font-semibold text-muted-foreground">אין משימות להיום</p>
-          ) : (
-            <div className="space-y-2">
-              {todayLessons.map(lesson => (
-                <Link key={lesson.id} to="/schedule" className="block rounded-xl bg-muted/40 p-3 text-sm hover:bg-muted">
-                  <div className="font-semibold">שיעור: {lesson.topic || 'שיעור חנ״ג'}</div>
-                  <div className="text-xs text-muted-foreground">{activeClassesById[lesson.classId]?.name || 'כיתה'}{lesson.period ? ` • שעה ${lesson.period}` : ''}{lesson.location ? ` • ${lesson.location}` : ''}</div>
-                </Link>
-              ))}
-              {todayTests.map(test => (
-                <Link key={test.id} to={test.classId ? `/class/${test.classId}/tests` : '/manage-tests'} className="block rounded-xl bg-primary/10 p-3 text-sm hover:bg-primary/15">
-                  <div className="font-semibold text-primary">מבדק: {test.name}</div>
-                  <div className="text-xs text-muted-foreground">{activeClassesById[test.classId]?.name || `שכבה ${test.gradeLevel || ''}`} {test.unit ? `• ${test.unit}` : ''}</div>
-                </Link>
+        {scheduleOpen && (
+          <>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              {[...GRADE_LEVELS].reverse().map(g => (
+                <button
+                  key={g}
+                  onClick={() => setGradeFilter(gradeFilter === g ? 'all' : g)}
+                  className={`shrink-0 h-10 px-4 rounded-full border text-sm font-bold ${gradeFilter === g ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-foreground'}`}
+                >
+                  {g}׳
+                </button>
               ))}
             </div>
-          )}
-        </Card>
 
-        <section className="grid grid-cols-3 gap-2">
-          <QuickAction to="/schedule" icon={UserCheck} label="הזנת נוכחות" />
-          <QuickAction to={testEntryLink} icon={ClipboardList} label="הזנת מבדק" />
-          <QuickAction to="/live-run" icon={Timer} label="ריצה חיה" />
-          <QuickAction to="#student-search" icon={Search} label="חיפוש תלמיד" />
-          <QuickAction to="/reports" icon={BarChart3} label="דוחות" />
-          <QuickAction to="/schedule" icon={Plus} label="הוספת שיעור" />
-        </section>
-
-        <Card id="student-search" className="card-3d rounded-2xl p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-bold"><Search className="h-5 w-5 text-primary" /> חיפוש תלמיד</h2>
-          <Input value={studentSearch} onChange={e => setStudentSearch(e.target.value)} placeholder="הקלד/י שם משפחה או שם פרטי" className="h-11" />
-          {searchResults.length > 0 && (
-            <div className="mt-3 space-y-1.5">
-              {searchResults.map(student => (
-                <Link key={student.id} to={`/class/${student.classId}`} className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2 text-sm hover:bg-muted">
-                  <span className="font-semibold">{formatStudentName(student)}</span>
-                  <span className="text-xs text-muted-foreground">{activeClassesById[student.classId]?.name || 'כיתה'}</span>
-                </Link>
-              ))}
+            <div className="grid grid-cols-3 gap-2">
+              <Button onClick={() => setAddOpen(true)} className="h-11 rounded-xl font-bold">
+                <Plus className="w-4 h-4" /> הוסף כיתה
+              </Button>
+              <Link to="/live-run">
+                <Button variant="outline" className="w-full h-11 rounded-xl font-bold border-primary/40 text-primary">
+                  <Timer className="w-4 h-4" /> Live ריצה
+                </Button>
+              </Link>
+              <Button variant="outline" onClick={() => setDeleteAllOpen(true)} className="h-11 rounded-xl font-bold border-destructive/40 text-destructive">
+                <Trash2 className="w-4 h-4" /> מחק הכל
+              </Button>
             </div>
-          )}
-        </Card>
+          </>
+        )}
 
-        <Card className="card-3d rounded-2xl p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-bold"><Activity className="h-5 w-5 text-primary" /> סיכום קצר</h2>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="rounded-xl bg-muted/40 p-3"><span className="text-muted-foreground">תלמידים פטורים היום</span><div className="text-xl font-bold">{exemptStudents.length}</div></div>
-            <div className="rounded-xl bg-muted/40 p-3"><span className="text-muted-foreground">חסרים במבדקי היום</span><div className="text-xl font-bold">{missingResults.length}</div></div>
+        <button onClick={() => setMyClassesOpen(o => !o)} className="w-full flex items-center justify-between px-1 py-2">
+          <Users className="w-4 h-4 text-muted-foreground" />
+          <span className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+            הכיתות שלי
+            <ChevronDown className={`w-4 h-4 transition-transform ${myClassesOpen ? '' : '-rotate-90'}`} />
+          </span>
+        </button>
+
+        {myClassesOpen && (
+          <div className="space-y-2">
+            {filteredClasses.map(cls => (
+              <ClassCard
+                key={cls.id}
+                cls={cls}
+                studentCount={studentCountByClass[cls.id] || 0}
+                onEdit={setEditTarget}
+                onDelete={setDeleteTarget}
+              />
+            ))}
+            {filteredClasses.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-10">אין כיתות להצגה. הוסף כיתה כדי להתחיל.</p>
+            )}
           </div>
-        </Card>
-      </div>
-    </Layout>
+        )}
+      </main>
+
+      <BottomNav />
+
+      <AddClassDialog open={addOpen} onOpenChange={setAddOpen} onAdd={handleAddClass} defaultGenderTrack={defaultGenderTrack} />
+      <EditClassDialog open={!!editTarget} onOpenChange={() => setEditTarget(null)} cls={editTarget} onSave={handleEditClass} />
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title={`מחיקת ${deleteTarget?.name || ''}`}
+        description="מחיקת הכיתה תסיר אותה מהרשימה. תלמידים ורשומות קיימות לא יימחקו אוטומטית."
+        onConfirm={handleDeleteClass}
+      />
+      <ConfirmDeleteDialog
+        open={deleteAllOpen}
+        onOpenChange={setDeleteAllOpen}
+        title="מחיקת כל הנתונים"
+        description="פעולה זו תמחק את כל הכיתות, התלמידים, המבדקים והציונים באפליקציה לצמיתות. האם להמשיך?"
+        onConfirm={handleDeleteAll}
+      />
+    </div>
   );
 }
