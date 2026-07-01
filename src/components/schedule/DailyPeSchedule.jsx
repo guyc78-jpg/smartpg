@@ -32,11 +32,11 @@ export default function DailyPeSchedule({ lessons, classById, lessonTopics, date
                 <Edit2 className="w-3.5 h-3.5" />
                 עריכה
               </Link>
-              <Link to="/live-run" className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
+              <Link to={`/stopwatch?classId=${lesson.classId}&period=${lesson.period}&date=${dateIso}`} className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
                 <Timer className="w-3.5 h-3.5" />
                 סטופר
               </Link>
-              <Link to="/live-run" className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
+              <Link to={`/live-run?classId=${lesson.classId}&period=${lesson.period}&date=${dateIso}`} className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
                 <Activity className="w-3.5 h-3.5" />
                 ריצה חיה
               </Link>

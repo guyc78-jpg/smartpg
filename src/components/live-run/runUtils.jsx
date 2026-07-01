@@ -1,16 +1,5 @@
 import { formatStudentName } from '@/lib/studentName';
 
-export const RUN_STATUS_LABELS = {
-  running: 'רץ/ה',
-  finished: 'בוצע',
-  not_completed: 'לא סיים/ה',
-  not_participated: 'לא בוצע',
-  exempt: 'פטור/ה',
-  not_relevant: 'לא רלוונטי',
-};
-
-export const FINAL_RUN_STATUSES = ['finished', 'not_completed', 'not_participated', 'exempt', 'not_relevant'];
-
 export function formatRunTime(ms) {
   const safeMs = Math.max(0, Number(ms || 0));
   const totalCentis = Math.floor(safeMs / 10);
@@ -59,13 +48,4 @@ export function sortRunStudents(students, participants = {}) {
     }
     return compareStudentsByFirstName(a, b);
   });
-}
-
-export function participantToResultStatus(status) {
-  if (status === 'finished') return 'completed';
-  if (status === 'not_participated') return 'not_participated';
-  if (status === 'not_completed') return 'not_completed';
-  if (status === 'exempt') return 'exempt';
-  if (status === 'not_relevant') return 'not_relevant';
-  return 'not_completed';
 }

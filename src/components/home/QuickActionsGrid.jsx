@@ -4,7 +4,7 @@ import { CalendarDays, CalendarRange, Timer, Activity, ClipboardList, Upload } f
 const ACTIONS = [
   { to: '/schedule#daily-journal', label: 'מערכת יומית', icon: CalendarDays },
   { to: '/schedule#weekly-schedule', label: 'מערכת שבועית', icon: CalendarRange },
-  { to: '/live-run', label: 'סטופר חכם', icon: Timer },
+  { to: '/stopwatch', label: 'סטופר חכם', icon: Timer },
   { to: '/live-run', label: 'ריצה חיה', icon: Activity },
   { to: '/manage-tests', label: 'מדידות כושר', icon: ClipboardList },
   { to: '/schedule?import=1', label: 'ייבוא מערכת', icon: Upload },

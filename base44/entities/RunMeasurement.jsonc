@@ -1,0 +1,54 @@
+{
+  "name": "RunMeasurement",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "class_id": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "period": {
+      "type": "number"
+    },
+    "measurement_type": {
+      "type": "string",
+      "enum": [
+        "distance_1500",
+        "distance_2000",
+        "sprint_60",
+        "sprint_80",
+        "sprint_100",
+        "free"
+      ]
+    },
+    "result_seconds": {
+      "type": "number"
+    },
+    "result_distance": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "finished",
+        "not_participated"
+      ],
+      "default": "running"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "class_id",
+    "date",
+    "measurement_type"
+  ]
+}

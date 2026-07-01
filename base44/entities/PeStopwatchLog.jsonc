@@ -1,0 +1,36 @@
+{
+  "name": "PeStopwatchLog",
+  "type": "object",
+  "properties": {
+    "class_id": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "period": {
+      "type": "number"
+    },
+    "label": {
+      "type": "string"
+    },
+    "laps": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "total_time_ms": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "class_id",
+    "date",
+    "total_time_ms"
+  ]
+}

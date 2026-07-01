@@ -80,11 +80,11 @@ export default function LessonManagePage() {
             </Card>
 
             <div className="grid grid-cols-2 gap-2">
-              <Link to="/live-run" className="flex flex-col items-center justify-center gap-1 rounded-xl bg-card shadow-sm py-3 hover:bg-secondary/60 transition-colors">
+              <Link to={`/stopwatch?classId=${classId}&period=${period}&date=${date}`} className="flex flex-col items-center justify-center gap-1 rounded-xl bg-card shadow-sm py-3 hover:bg-secondary/60 transition-colors">
                 <Timer className="w-[18px] h-[18px] text-primary" />
                 <span className="text-xs font-semibold">סטופר חכם</span>
               </Link>
-              <Link to="/live-run" className="flex flex-col items-center justify-center gap-1 rounded-xl bg-card shadow-sm py-3 hover:bg-secondary/60 transition-colors">
+              <Link to={`/live-run?classId=${classId}&period=${period}&date=${date}`} className="flex flex-col items-center justify-center gap-1 rounded-xl bg-card shadow-sm py-3 hover:bg-secondary/60 transition-colors">
                 <Activity className="w-[18px] h-[18px] text-primary" />
                 <span className="text-xs font-semibold">ריצה חיה</span>
               </Link>

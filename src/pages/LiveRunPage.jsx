@@ -1,105 +1,101 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flag, Play, RotateCcw, Square } from 'lucide-react';
+import { Flag, Play, RotateCcw, Search, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
 import { useApp } from '@/store/AppProvider';
 import { useLiveRun } from '@/contexts/LiveRunContext';
-import { convertRawToGrade } from '@/lib/gradeCalc';
 import RunSetup from '@/components/live-run/RunSetup';
 import RunStudentCard from '@/components/live-run/RunStudentCard';
 import RunSummary from '@/components/live-run/RunSummary';
-import { formatRunTime, participantToResultStatus, secondsFromMs, sortRunStudents } from '@/components/live-run/runUtils';
+import { formatRunTime, secondsFromMs, sortRunStudents } from '@/components/live-run/runUtils';
+import { measurementTypeLabel } from '@/lib/runMeasurementTypes';
 
 export default function LiveRunPage() {
   const navigate = useNavigate();
-  const { data, setTestResult, setClassTestStatus, loadAll } = useApp();
+  const { data } = useApp();
   const run = useLiveRun();
   const { session, elapsedMs } = run;
+  const [search, setSearch] = useState('');
 
   const selectedStudents = useMemo(() => {
     if (!session) return [];
     return data.students.filter(s => session.selectedIds.includes(s.id));
   }, [data.students, session]);
 
-  const currentTest = data.tests.find(t => t.id === session?.setup?.testId);
   const currentClass = data.classes.find(c => c.id === session?.setup?.classId);
+  const isFreeType = session?.setup?.measurementType === 'free';
 
   const counts = useMemo(() => {
     const values = Object.values(session?.participants || {});
     return {
       running: values.filter(p => p.status === 'running').length,
       finished: values.filter(p => p.status === 'finished').length,
-      notCompleted: values.filter(p => p.status === 'not_completed').length,
-      notParticipated: values.filter(p => p.status === 'not_participated').length,
     };
   }, [session]);
 
+  const params = new URLSearchParams(window.location.search);
+  const initial = { classId: params.get('classId') || '', period: params.get('period') || '', date: params.get('date') || '' };
+
   const resetRun = () => {
-    if (window.confirm('איפוס הריצה ימחק את כל הזמנים והסיבובים הזמניים. להמשיך?')) run.resetRun();
+    if (window.confirm('איפוס הריצה ימחק את כל הזמנים הזמניים. להמשיך?')) run.resetRun();
   };
 
   const finishRun = () => {
-    if (window.confirm('לעבור למסך סיכום? תלמידים שעדיין רצים יסומנו לפי מצבם הנוכחי ולא תתבצע שמירה עדיין.')) run.finishRun();
+    if (window.confirm('לעבור למסך סיכום? תלמידים שעדיין רצים יסומנו כלא השתתפו.')) run.finishRun();
   };
 
   const saveSummary = async () => {
-    if (!session || !currentTest) return;
-    const invalid = selectedStudents.some(student => {
-      const p = session.participants[student.id];
-      return p.status === 'finished' && !p.finishTimeMs;
-    });
-    if (invalid) {
-      toast.error('יש תלמיד שבוצע בלי זמן תקין');
-      return;
-    }
-
-    const existingSameDate = data.results.some(r => r.testId === currentTest.id && r.semester === session.setup.semester && r.testDate === session.setup.date && session.selectedIds.includes(r.studentId) && r.liveRunId !== session.id);
-    if (existingSameDate && !window.confirm('כבר קיימות תוצאות למבדק הזה בתאריך שנבחר. להחליף/לעדכן אותן?')) return;
+    if (!session) return;
+    const { classId, date, period, measurementType } = session.setup;
+    const existing = await base44.entities.RunMeasurement.filter({ class_id: classId, date, period, measurement_type: measurementType });
+    const existingByStudent = Object.fromEntries(existing.map(r => [r.student_id, r]));
 
     for (const student of selectedStudents) {
       const participant = session.participants[student.id];
       const completed = participant.status === 'finished';
-      const rawSeconds = completed ? secondsFromMs(participant.finishTimeMs) : null;
-      await setTestResult(student.id, currentTest.id, session.setup.semester, rawSeconds, participantToResultStatus(participant.status), {
-        test_date: session.setup.date,
-        run_time_seconds: rawSeconds,
-        laps_completed: participant.laps || 0,
-        route_name: `${session.setup.routeName || ''} · ${session.setup.distance || ''} מ׳`.trim(),
-        live_run_id: session.id,
-      });
+      const payload = {
+        student_id: student.id, class_id: classId, date, period,
+        measurement_type: measurementType,
+        result_seconds: completed ? secondsFromMs(participant.finishTimeMs) : null,
+        result_distance: participant.resultDistance != null && participant.resultDistance !== '' ? Number(participant.resultDistance) : null,
+        status: completed ? 'finished' : 'not_participated',
+      };
+      const match = existingByStudent[student.id];
+      if (match) await base44.entities.RunMeasurement.update(match.id, payload);
+      else await base44.entities.RunMeasurement.create(payload);
     }
-    await setClassTestStatus(session.setup.classId, currentTest.id, session.setup.semester, 'conducted');
-    await loadAll();
     run.markSaved();
     run.closeSession();
-    toast.success('תוצאות הריצה נשמרו למבדקים ולכרטיסי התלמידים');
-    navigate(`/class/${session.setup.classId}/tests`);
+    toast.success('התוצאות נשמרו');
+    navigate(`/class/${classId}`);
   };
 
   if (!session) {
-    return <Layout title="ריצה חיה" subtitle="סטופר חכם למבדקי זמן" backTo="/"><RunSetup data={data} onStart={run.startSession} /></Layout>;
+    return <Layout title="ריצה חיה" subtitle="מדידת תלמידים בשיעורי חנ״ג" backTo="/"><RunSetup data={data} initial={initial} onStart={run.startSession} /></Layout>;
   }
 
   if (session.phase === 'summary') {
     return (
-      <Layout title="סיכום ריצה" subtitle={`${currentClass?.name || ''} · ${currentTest?.name || ''}`} backTo="/live-run">
-        <RunSummary session={session} students={selectedStudents} test={currentTest} settings={data.settings} onEdit={run.updateSummaryResult} onBack={run.reopenRun} onSave={saveSummary} />
+      <Layout title="סיכום ריצה" subtitle={`${currentClass?.name || ''} · ${measurementTypeLabel(session.setup.measurementType)}`} backTo="/live-run">
+        <RunSummary session={session} students={selectedStudents} onEdit={run.updateSummaryResult} onBack={run.reopenRun} onSave={saveSummary} isFreeType={isFreeType} />
       </Layout>
     );
   }
 
-  const sortedStudents = sortRunStudents(selectedStudents, session.participants);
+  const searchTerm = search.trim().toLowerCase();
+  const sortedStudents = sortRunStudents(selectedStudents, session.participants)
+    .filter(s => !searchTerm || `${s.name || ''} ${s.firstName || ''} ${s.lastName || ''}`.toLowerCase().includes(searchTerm));
 
-  const getGrade = (participant) => {
-    if (participant.status !== 'finished') return null;
-    const converted = convertRawToGrade(secondsFromMs(participant.finishTimeMs), currentTest?.conversionTable || []);
-    return converted === null ? '—' : Math.max(converted, data.settings.minCompletedGrade || 56);
-  };
+  const finishedRank = {};
+  sortRunStudents(selectedStudents, session.participants)
+    .filter(s => session.participants[s.id].status === 'finished')
+    .forEach((s, idx) => { finishedRank[s.id] = idx + 1; });
 
   return (
-    <Layout title="סטופר חכם" subtitle={`${currentClass?.name || ''} · ${currentTest?.name || ''} · ${session.setup.distance || ''} מ׳`}>
+    <Layout title="ריצה חיה" subtitle={`${currentClass?.name || ''} · ${measurementTypeLabel(session.setup.measurementType)}`}>
       <div className="max-w-[520px] mx-auto px-2 pt-3 pb-28 space-y-3" dir="rtl">
         <section className="sticky top-[49px] z-30 rounded-b-3xl bg-background/95 backdrop-blur border-b px-2 pb-3 text-center space-y-3 relative">
           <button onClick={resetRun} className="absolute left-2 top-2 h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center" title="איפוס ריצה">
@@ -118,13 +114,26 @@ export default function LiveRunPage() {
             )}
             <Button variant="outline" onClick={finishRun} className="h-14 rounded-2xl text-lg font-black"><Flag className="w-4 h-4" /> סיים ריצה</Button>
           </div>
+          <div className="relative">
+            <Search className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="חיפוש תלמיד/ה" className="w-full h-10 rounded-xl border border-input bg-background pr-9 pl-3 text-sm" />
+          </div>
         </section>
 
         <div className="space-y-2">
           {sortedStudents.map(student => (
-            <RunStudentCard key={student.id} student={student} participant={session.participants[student.id]} lapsRequired={session.setup.lapsRequired} grade={getGrade(session.participants[student.id])} onLap={() => run.markLap(student.id)} onFinish={() => run.finishStudent(student.id)} onUndo={() => run.undoStudent(student.id)} onStatus={(status) => run.setStudentStatus(student.id, status)} />
+            <RunStudentCard
+              key={student.id}
+              student={student}
+              participant={session.participants[student.id]}
+              rank={finishedRank[student.id]}
+              isFreeType={isFreeType}
+              onFinish={() => run.finishStudent(student.id)}
+              onUndo={() => run.undoStudent(student.id)}
+              onDistanceChange={(value) => run.updateSummaryResult(student.id, { resultDistance: value })}
+            />
           ))}
-          {sortedStudents.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">אין תלמידים לריצה הזו.</div>}
+          {sortedStudents.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">לא נמצאו תלמידים.</div>}
         </div>
       </div>
     </Layout>
