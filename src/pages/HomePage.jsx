@@ -69,7 +69,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-background flex flex-col" dir="rtl">
       <HomeHeader classCount={activeClasses.length} studentCount={data.students.length} />
 
-      <main className="flex-1 px-4 pb-24 space-y-3">
+      <main className="flex-1 px-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-3">
         <TodayPeHeader todaysLessons={todaysLessons} classById={classById} />
 
         <QuickActionsGrid />
