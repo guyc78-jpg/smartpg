@@ -12,8 +12,10 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
+import ImportScheduleDialog from '@/components/schedule/ImportScheduleDialog';
 import { GRADE_LEVELS, SEMESTER_LABELS } from '@/lib/types';
-import { CalendarDays, ClipboardList, Copy, Edit2, Loader2, Plus, Save, Timer, Trash2, UserCheck } from 'lucide-react';
+import { DAY_LABELS } from '@/lib/scheduleImport';
+import { CalendarDays, ClipboardList, Copy, Edit2, Loader2, Plus, Save, Timer, Trash2, UserCheck, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EMPTY_FORM = {
@@ -66,10 +68,11 @@ function fromRow(row) {
 }
 
 export default function SchedulePage() {
-  const { data, loadAll } = useApp();
+  const { data, loadAll, importSchedule } = useApp();
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
   const [deleteLessonTarget, setDeleteLessonTarget] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -88,6 +91,15 @@ export default function SchedulePage() {
   useEffect(() => { fetchLessons(); }, [fetchLessons]);
 
   const classById = useMemo(() => Object.fromEntries(data.classes.map(c => [c.id, c])), [data.classes]);
+  const scheduleByDay = useMemo(() => {
+    return (data.scheduleLessons || [])
+      .slice()
+      .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.period - b.period)
+      .reduce((acc, item) => {
+        (acc[item.dayOfWeek] = acc[item.dayOfWeek] || []).push(item);
+        return acc;
+      }, {});
+  }, [data.scheduleLessons]);
   const visibleLessons = useMemo(() => {
     return lessons
       .filter(l => !l.isTemplate)
@@ -164,8 +176,35 @@ export default function SchedulePage() {
   };
 
   return (
-    <Layout title="יומן שיעורי חנ״ג" titleAction={<Button size="sm" onClick={openAdd} className="h-8 gap-1 text-xs"><Plus className="w-3.5 h-3.5" /> שיעור</Button>}>
+    <Layout title="יומן שיעורי חנ״ג" titleAction={
+      <div className="flex gap-1.5">
+        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)} className="h-8 gap-1 text-xs"><Upload className="w-3.5 h-3.5" /> ייבוא מערכת</Button>
+        <Button size="sm" onClick={openAdd} className="h-8 gap-1 text-xs"><Plus className="w-3.5 h-3.5" /> שיעור</Button>
+      </div>
+    }>
       <div className="max-w-4xl mx-auto p-4 space-y-4" dir="rtl">
+        {Object.keys(scheduleByDay).length > 0 && (
+          <Card className="card-3d rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-bold">
+              <CalendarDays className="w-4 h-4 text-primary" />
+              מערכת שעות חנ״ג (מקור אמת מסונן)
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {Object.entries(scheduleByDay).map(([day, items]) => (
+                <div key={day} className="rounded-xl bg-muted/40 p-3 space-y-1.5">
+                  <p className="text-xs font-bold text-muted-foreground">יום {DAY_LABELS[Number(day)]}</p>
+                  {items.map(item => (
+                    <div key={item.id} className="flex items-center justify-between text-sm">
+                      <span>{classById[item.classId]?.name || item.className}</span>
+                      <Badge variant="secondary" className="text-[10px]">שעה {item.period}</Badge>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         <Card className="card-3d rounded-2xl p-3 space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Select value={classFilter} onValueChange={setClassFilter}>
@@ -262,6 +301,17 @@ export default function SchedulePage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <ImportScheduleDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onImport={async (lessonsToImport) => {
+            const result = await importSchedule(lessonsToImport);
+            await loadAll();
+            toast.success(`יובאו ${result.lessonsSaved} שיעורי חנ״ג, נוצרו ${result.classesCreated} כיתות חדשות`);
+            return result;
+          }}
+        />
 
         <ConfirmDeleteDialog
           open={!!deleteLessonTarget}

@@ -3,13 +3,30 @@
   "type": "object",
   "properties": {
     "day_of_week": {
-      "type": "number"
+      "type": "number",
+      "description": "0=Sunday ... 6=Saturday"
     },
     "period": {
       "type": "number"
     },
     "class_id": {
       "type": "string"
+    },
+    "class_name": {
+      "type": "string",
+      "description": "Raw class name as it appeared in the imported schedule file"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Normalized subject name, always '\u05d7\u05d9\u05e0\u05d5\u05da \u05d2\u05d5\u05e4\u05e0\u05d9' for imported PE lessons"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "import"
+      ],
+      "default": "manual"
     },
     "notes": {
       "type": "string"

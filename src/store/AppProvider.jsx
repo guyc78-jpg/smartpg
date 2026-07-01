@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef, createContext, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
-import { DEFAULT_DATA, DEFAULT_TESTS } from '@/lib/types';
+import { DEFAULT_DATA, DEFAULT_TESTS, GRADE_LEVELS } from '@/lib/types';
 import { useAuth } from '@/lib/AuthContext';
+import { normalizeClassName, scheduleDedupeKey, PE_SUBJECT_NAME } from '@/lib/scheduleImport';
 
 function jsonToConversionTable(json) {
   if (!Array.isArray(json)) return [];
@@ -40,7 +41,7 @@ export function AppProvider({ children }) {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [classesData, studentsData, testsData, resultsData, behaviorData, settingsData, bagrutCompData, bagrutResultsData, classTestStatusData, gradeOverridesData, attemptsData, lessonData] = await Promise.all([
+      const [classesData, studentsData, testsData, resultsData, behaviorData, settingsData, bagrutCompData, bagrutResultsData, classTestStatusData, gradeOverridesData, attemptsData, lessonData, scheduleData] = await Promise.all([
         base44.entities.SchoolClass.list(),
         base44.entities.Student.list(),
         base44.entities.TestDefinition.list(),
@@ -53,6 +54,7 @@ export function AppProvider({ children }) {
         base44.entities.GradeOverride.list(),
         base44.entities.TestAttempt.list(),
         base44.entities.LessonTopic.list(),
+        base44.entities.TeacherSchedule.list(),
       ]);
 
       const classes = (classesData || []).map(c => ({
@@ -144,10 +146,15 @@ export function AppProvider({ children }) {
         isTemplate: r.is_template || false, templateName: r.template_name || '',
       }));
 
+      const scheduleLessons = (scheduleData || []).map(r => ({
+        id: r.id, dayOfWeek: r.day_of_week, period: r.period, classId: r.class_id || '',
+        className: r.class_name || '', subject: r.subject || '', source: r.source || 'manual', notes: r.notes || '',
+      }));
+
       setData({
         classes, students, tests, results, testAttempts, behaviorGrades, settings,
         bagrutComponents, bagrutResults, bagrutSettings: { enabled: false, autoCalculate: true, showInSummary: true },
-        classTestStatuses, gradeOverrides, lessonTopics,
+        classTestStatuses, gradeOverrides, lessonTopics, scheduleLessons,
       });
       setLoading(false);
       return true;
@@ -485,6 +492,62 @@ export function AppProvider({ children }) {
     loadAll();
   }, [loadAll]);
 
+  // --- Schedule Import (PE lessons only) ---
+  const importSchedule = useCallback(async (lessons) => {
+    const existingClassByKey = new Map(data.classes.map(c => [normalizeClassName(c.name), c]));
+    const existingKeys = new Set(
+      data.scheduleLessons.map(l => scheduleDedupeKey(l.dayOfWeek, l.period, l.classId))
+    );
+
+    let classesCreated = 0;
+    const newClasses = [];
+    const newScheduleRows = [];
+
+    for (const lesson of lessons) {
+      let cls = existingClassByKey.get(lesson.classKey);
+      if (!cls) {
+        const gradeLevel = GRADE_LEVELS.find(g => lesson.className.trim().startsWith(g)) || null;
+        const genderTrack = /בנות/.test(lesson.className) ? 'girls' : 'boys';
+        const created = await base44.entities.SchoolClass.create({
+          name: lesson.className, grade_level: gradeLevel, gender_track: genderTrack,
+          status: 'active', homeroom_contacts: [],
+        });
+        cls = {
+          id: created.id, name: created.name, gradeLevel: created.grade_level,
+          genderTrack: created.gender_track, homeroomTeacher: '', studentCount: 0,
+          notes: '', status: 'active', homeroomContacts: [],
+        };
+        existingClassByKey.set(lesson.classKey, cls);
+        newClasses.push(cls);
+        classesCreated += 1;
+      }
+
+      const key = scheduleDedupeKey(lesson.dayOfWeek, lesson.period, cls.id);
+      if (existingKeys.has(key)) continue;
+      existingKeys.add(key);
+      newScheduleRows.push({
+        day_of_week: lesson.dayOfWeek, period: lesson.period, class_id: cls.id,
+        class_name: lesson.className, subject: PE_SUBJECT_NAME, source: 'import',
+      });
+    }
+
+    let created = [];
+    if (newScheduleRows.length > 0) {
+      created = await base44.entities.TeacherSchedule.bulkCreate(newScheduleRows);
+    }
+
+    setData(d => ({
+      ...d,
+      classes: [...d.classes, ...newClasses],
+      scheduleLessons: [...d.scheduleLessons, ...created.map(r => ({
+        id: r.id, dayOfWeek: r.day_of_week, period: r.period, classId: r.class_id,
+        className: r.class_name || '', subject: r.subject || '', source: r.source || 'import', notes: '',
+      }))],
+    }));
+
+    return { classesCreated, lessonsSaved: created.length, duplicatesSkipped: lessons.length - created.length };
+  }, [data.classes, data.scheduleLessons]);
+
   // --- Delete All ---
   const deleteAllData = useCallback(async () => {
     const entities = [
@@ -492,7 +555,7 @@ export function AppProvider({ children }) {
     base44.entities.TestResult, base44.entities.BehaviorGrade,
     base44.entities.ClassTestStatus, base44.entities.GradeOverride,
     base44.entities.TestAttempt, base44.entities.BagrutResult,
-    base44.entities.LessonTopic,
+    base44.entities.LessonTopic, base44.entities.TeacherSchedule,
     ];
     for (const entity of entities) {
       const rows = await entity.list();
@@ -513,7 +576,7 @@ export function AppProvider({ children }) {
     setTestResult, setBehaviorGrade, setClassTestStatus,
     setGradeOverride, updateSettings, updateDefaultGenderTrack,
     updateBagrutSettings, setBagrutResult, setBagrutTestIncluded,
-    deleteAllData, seedClasses, closeSemester, loadAll,
+    deleteAllData, seedClasses, closeSemester, loadAll, importSchedule,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

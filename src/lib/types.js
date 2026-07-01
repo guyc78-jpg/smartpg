@@ -94,4 +94,5 @@ export const DEFAULT_DATA = {
   classTestStatuses: [],
   gradeOverrides: [],
   lessonTopics: [],
+  scheduleLessons: [],
 };
