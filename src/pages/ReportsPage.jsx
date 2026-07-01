@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BarChart3, Users, TrendingUp, AlertTriangle, Download } from 'lucide-react';
 import { SEMESTER_LABELS } from '@/lib/types';
 import { formatStudentName } from '@/lib/studentName';
+import { exportClassReportCSV } from '@/lib/exportReport';
 
 export default function ReportsPage() {
   const { data } = useApp();
@@ -143,7 +144,12 @@ export default function ReportsPage() {
           <Card className="card-3d rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-sm">{cls?.name}</h3>
-              <Badge variant="secondary" className="text-[10px]">{summary.total} תלמידים</Badge>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => exportClassReportCSV(cls?.name, studentGrades)}>
+                  <Download className="w-3 h-3" /> ייצוא
+                </Button>
+                <Badge variant="secondary" className="text-[10px]">{summary.total} תלמידים</Badge>
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>

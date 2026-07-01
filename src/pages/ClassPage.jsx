@@ -181,7 +181,9 @@ export default function ClassPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-[15px] truncate">{formatStudentName(student)}</h3>
+                      <Link to={`/class/${classId}/student/${student.id}`} className="block">
+                        <h3 className="font-bold text-[15px] truncate hover:text-primary transition-colors">{formatStudentName(student)}</h3>
+                      </Link>
                       {student.peExempt && (
                         <Badge variant="outline" className="text-[9px] border-destructive/40 text-destructive bg-destructive/5">
                           <ShieldOff className="w-2.5 h-2.5 ml-0.5" />פטור

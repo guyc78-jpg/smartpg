@@ -7,13 +7,14 @@ import HomeHeader from '@/components/home/HomeHeader';
 import ClassCard from '@/components/home/ClassCard';
 import TodayPeHeader from '@/components/home/TodayPeHeader';
 import QuickActionsGrid from '@/components/home/QuickActionsGrid';
+import RiskAlertsCard from '@/components/home/RiskAlertsCard';
 import DailyPeSchedule from '@/components/schedule/DailyPeSchedule';
 import AddClassDialog from '@/components/app/AddClassDialog';
 import EditClassDialog from '@/components/app/EditClassDialog';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 
 export default function HomePage() {
-  const { data, addClass, addStudent, editClass, deleteClass, deleteAllData, defaultGenderTrack } = useApp();
+  const { data, addClass, addStudent, editClass, deleteClass, archiveClass, deleteAllData, defaultGenderTrack } = useApp();
   const [myClassesOpen, setMyClassesOpen] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -47,6 +48,11 @@ export default function HomePage() {
     toast.success('הכיתה עודכנה');
   };
 
+  const handleArchiveClass = async (cls) => {
+    await archiveClass(cls.id);
+    toast.success('הכיתה הועברה לארכיון');
+  };
+
   const handleDeleteClass = async () => {
     await deleteClass(deleteTarget.id);
     toast.success('הכיתה נמחקה');
@@ -67,6 +73,8 @@ export default function HomePage() {
         <TodayPeHeader todaysLessons={todaysLessons} classById={classById} />
 
         <QuickActionsGrid />
+
+        <RiskAlertsCard />
 
         <DailyPeSchedule lessons={todaysLessons} classById={classById} lessonTopics={data.lessonTopics} dateIso={todayIso} />
 
@@ -95,6 +103,7 @@ export default function HomePage() {
                 studentCount={studentCountByClass[cls.id] || 0}
                 onEdit={setEditTarget}
                 onDelete={setDeleteTarget}
+                onArchive={handleArchiveClass}
               />
             ))}
             {activeClasses.length === 0 && (

@@ -1,14 +1,17 @@
 import { Link } from 'react-router-dom';
-import { Trash2, Edit2, UserCheck } from 'lucide-react';
+import { Trash2, Edit2, UserCheck, Archive } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { GENDER_TRACK_LABELS } from '@/lib/types';
 
-export default function ClassCard({ cls, studentCount, onEdit, onDelete }) {
+export default function ClassCard({ cls, studentCount, onEdit, onDelete, onArchive }) {
   return (
     <div className="rounded-2xl bg-card shadow-sm p-3 flex items-center justify-between gap-2">
       <div className="flex items-center gap-1 shrink-0">
         <button onClick={() => onDelete(cls)} className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
           <Trash2 className="w-4 h-4" />
+        </button>
+        <button onClick={() => onArchive(cls)} className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary" title="ארכוב">
+          <Archive className="w-4 h-4" />
         </button>
         <button onClick={() => onEdit(cls)} className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary">
           <Edit2 className="w-4 h-4" />

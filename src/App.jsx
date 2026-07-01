@@ -18,6 +18,7 @@ import ResetPassword from '@/pages/ResetPassword';
 
 import HomePage from './pages/HomePage';
 import ClassPage from './pages/ClassPage';
+import StudentProfilePage from './pages/StudentProfilePage';
 import TestsPage from './pages/TestsPage';
 import ManageTestsPage from './pages/ManageTestsPage';
 import AppSettingsPage from './pages/AppSettingsPage';
@@ -67,6 +68,7 @@ const AuthenticatedApp = () => {
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/class/:classId" element={<ClassPage />} />
+          <Route path="/class/:classId/student/:studentId" element={<StudentProfilePage />} />
           <Route path="/class/:classId/tests" element={<TestsPage />} />
           <Route path="/class/:classId/bagrut" element={<BagrutTestsPage />} />
           <Route path="/manage-tests" element={<ManageTestsPage />} />
