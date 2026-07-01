@@ -55,6 +55,15 @@ export const BAGRUT_STUDENT_STATUS_LABELS = {
   partial: 'הושלם חלקית',
 };
 
+export const ATTENDANCE_STATUS_LABELS = {
+  present: 'נוכח',
+  absent: 'נעדר',
+  late: 'איחר',
+  excused: 'מוצדק',
+};
+
+export const ATTENDANCE_STATUSES = ['present', 'absent', 'late', 'excused'];
+
 export const CONTACT_ROLE_LABELS = {
   homeroom: 'מחנך/ת',
   coordinator: 'רכז/ת',
@@ -95,4 +104,6 @@ export const DEFAULT_DATA = {
   gradeOverrides: [],
   lessonTopics: [],
   scheduleLessons: [],
+  attendance: [],
+  substitutions: [],
 };

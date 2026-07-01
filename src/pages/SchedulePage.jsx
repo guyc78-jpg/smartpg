@@ -15,6 +15,7 @@ import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import ImportScheduleDialog from '@/components/schedule/ImportScheduleDialog';
 import WeeklyPeSchedule from '@/components/schedule/WeeklyPeSchedule';
 import DailyPeSchedule from '@/components/schedule/DailyPeSchedule';
+import SubstitutionsSection from '@/components/schedule/SubstitutionsSection';
 import { GRADE_LEVELS, SEMESTER_LABELS } from '@/lib/types';
 import { CalendarDays, ClipboardList, Copy, Edit2, Loader2, Plus, Save, Timer, Trash2, UserCheck, Upload } from 'lucide-react';
 import { toast } from 'sonner';
@@ -69,7 +70,7 @@ function fromRow(row) {
 }
 
 export default function SchedulePage() {
-  const { data, loadAll, importSchedule } = useApp();
+  const { data, loadAll, importSchedule, addSubstitution, deleteSubstitution } = useApp();
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -179,6 +180,13 @@ export default function SchedulePage() {
           </div>
           <WeeklyPeSchedule scheduleLessons={data.scheduleLessons} classById={classById} lessonTopics={lessons} />
         </Card>
+
+        <SubstitutionsSection
+          substitutions={data.substitutions || []}
+          classes={data.classes}
+          onAdd={addSubstitution}
+          onDelete={deleteSubstitution}
+        />
 
         <Card id="daily-journal" className="card-3d rounded-2xl p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-bold">
