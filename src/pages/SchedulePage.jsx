@@ -90,6 +90,23 @@ export default function SchedulePage() {
 
   useEffect(() => { fetchLessons(); }, [fetchLessons]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('import') === '1') setImportOpen(true);
+    const classId = params.get('classId');
+    const period = params.get('period');
+    const date = params.get('date');
+    if (classId && period && date) {
+      setEditingLesson(null);
+      setForm({ ...EMPTY_FORM, classId, period: Number(period), date });
+      setDialogOpen(true);
+    }
+    if (window.location.hash) {
+      const el = document.getElementById(window.location.hash.slice(1));
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+  }, []);
+
   const classById = useMemo(() => Object.fromEntries(data.classes.map(c => [c.id, c])), [data.classes]);
   const scheduleByDay = useMemo(() => {
     return (data.scheduleLessons || [])
@@ -184,7 +201,7 @@ export default function SchedulePage() {
     }>
       <div className="max-w-4xl mx-auto p-4 space-y-4" dir="rtl">
         {Object.keys(scheduleByDay).length > 0 && (
-          <Card className="card-3d rounded-2xl p-4 space-y-3">
+          <Card id="weekly-schedule" className="card-3d rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-bold">
               <CalendarDays className="w-4 h-4 text-primary" />
               מערכת שעות חנ״ג (מקור אמת מסונן)
@@ -205,7 +222,7 @@ export default function SchedulePage() {
           </Card>
         )}
 
-        <Card className="card-3d rounded-2xl p-3 space-y-3">
+        <Card id="daily-journal" className="card-3d rounded-2xl p-3 space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Select value={classFilter} onValueChange={setClassFilter}>
               <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="כיתה" /></SelectTrigger>

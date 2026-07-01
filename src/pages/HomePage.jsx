@@ -1,21 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ChevronDown, Calendar, Plus, Timer, Trash2, Users } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, Users } from 'lucide-react';
 import { useApp } from '@/store/AppProvider';
-import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/app/BottomNav';
 import HomeHeader from '@/components/home/HomeHeader';
 import ClassCard from '@/components/home/ClassCard';
+import TodayPeHeader from '@/components/home/TodayPeHeader';
+import QuickActionsGrid from '@/components/home/QuickActionsGrid';
+import TodayLessonsList from '@/components/home/TodayLessonsList';
 import AddClassDialog from '@/components/app/AddClassDialog';
 import EditClassDialog from '@/components/app/EditClassDialog';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
-import { GRADE_LEVELS } from '@/lib/types';
 
 export default function HomePage() {
   const { data, addClass, addStudent, editClass, deleteClass, deleteAllData, defaultGenderTrack } = useApp();
-  const [gradeFilter, setGradeFilter] = useState('all');
-  const [scheduleOpen, setScheduleOpen] = useState(true);
   const [myClassesOpen, setMyClassesOpen] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -23,10 +21,11 @@ export default function HomePage() {
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
   const activeClasses = useMemo(() => (data.classes || []).filter(c => (c.status || 'active') === 'active'), [data.classes]);
-
-  const filteredClasses = useMemo(
-    () => gradeFilter === 'all' ? activeClasses : activeClasses.filter(c => c.gradeLevel === gradeFilter),
-    [activeClasses, gradeFilter]
+  const classById = useMemo(() => Object.fromEntries(data.classes.map(c => [c.id, c])), [data.classes]);
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todaysLessons = useMemo(
+    () => (data.scheduleLessons || []).filter(l => l.dayOfWeek === new Date().getDay()),
+    [data.scheduleLessons]
   );
 
   const studentCountByClass = useMemo(() => {
@@ -65,55 +64,31 @@ export default function HomePage() {
       <HomeHeader classCount={activeClasses.length} studentCount={data.students.length} />
 
       <main className="flex-1 px-4 pb-24 space-y-3">
-        <button onClick={() => setScheduleOpen(o => !o)} className="w-full flex items-center justify-between rounded-2xl bg-card shadow-sm px-4 py-3">
-          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${scheduleOpen ? '' : '-rotate-90'}`} />
-          <span className="flex items-center gap-2 font-bold text-[15px]">
-            מערכת יומית
-            <Calendar className="w-4 h-4 text-primary" />
-          </span>
-        </button>
+        <TodayPeHeader todaysLessons={todaysLessons} classById={classById} />
 
-        {scheduleOpen && (
-          <>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {[...GRADE_LEVELS].reverse().map(g => (
-                <button
-                  key={g}
-                  onClick={() => setGradeFilter(gradeFilter === g ? 'all' : g)}
-                  className={`shrink-0 h-10 px-4 rounded-full border text-sm font-bold ${gradeFilter === g ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-foreground'}`}
-                >
-                  {g}׳
-                </button>
-              ))}
-            </div>
+        <QuickActionsGrid />
 
-            <div className="grid grid-cols-3 gap-2">
-              <Button onClick={() => setAddOpen(true)} className="h-11 rounded-xl font-bold">
-                <Plus className="w-4 h-4" /> הוסף כיתה
-              </Button>
-              <Link to="/live-run">
-                <Button variant="outline" className="w-full h-11 rounded-xl font-bold border-primary/40 text-primary">
-                  <Timer className="w-4 h-4" /> Live ריצה
-                </Button>
-              </Link>
-              <Button variant="outline" onClick={() => setDeleteAllOpen(true)} className="h-11 rounded-xl font-bold border-destructive/40 text-destructive">
-                <Trash2 className="w-4 h-4" /> מחק הכל
-              </Button>
-            </div>
-          </>
-        )}
+        <TodayLessonsList todaysLessons={todaysLessons} classById={classById} lessonTopics={data.lessonTopics} todayIso={todayIso} />
 
-        <button onClick={() => setMyClassesOpen(o => !o)} className="w-full flex items-center justify-between px-1 py-2">
-          <Users className="w-4 h-4 text-muted-foreground" />
-          <span className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
-            הכיתות שלי
+        <div className="flex items-center justify-between px-1 pt-2">
+          <div className="flex items-center gap-1">
+            <button onClick={() => setAddOpen(true)} className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary" title="הוסף כיתה">
+              <Plus className="w-4 h-4" />
+            </button>
+            <button onClick={() => setDeleteAllOpen(true)} className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="מחק הכל">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+          <button onClick={() => setMyClassesOpen(o => !o)} className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
             <ChevronDown className={`w-4 h-4 transition-transform ${myClassesOpen ? '' : '-rotate-90'}`} />
-          </span>
-        </button>
+            הכיתות שלי
+            <Users className="w-4 h-4" />
+          </button>
+        </div>
 
         {myClassesOpen && (
           <div className="space-y-2">
-            {filteredClasses.map(cls => (
+            {activeClasses.map(cls => (
               <ClassCard
                 key={cls.id}
                 cls={cls}
@@ -122,7 +97,7 @@ export default function HomePage() {
                 onDelete={setDeleteTarget}
               />
             ))}
-            {filteredClasses.length === 0 && (
+            {activeClasses.length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-10">אין כיתות להצגה. הוסף כיתה כדי להתחיל.</p>
             )}
           </div>
