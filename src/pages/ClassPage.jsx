@@ -7,26 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit2, Search, ClipboardList, ShieldOff, Award, Upload, Timer, TrendingUp, MessageSquare, CalendarDays } from 'lucide-react';
+import { Plus, Search, ClipboardList, Award, Upload, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
 import ImportStudentsDialog from '@/components/students/ImportStudentsDialog';
-import StudentGradeBreakdown from '@/components/grades/StudentGradeBreakdown';
+import StudentCard from '@/components/students/StudentCard';
 import { SEMESTER_LABELS, GENDER_TRACK_LABELS } from '@/lib/types';
 import { formatStudentName } from '@/lib/studentName';
-
-const GENDER_LABELS = { boys: 'בן', girls: 'בת', other: 'אחר' };
-
-function InfoChip({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-center gap-1 rounded-lg bg-muted/70 px-2 py-1 text-[11px] text-muted-foreground">
-      <Icon className="w-3 h-3" />
-      <span>{label}</span>
-      {value !== undefined && <span className="font-semibold text-foreground">{value}</span>}
-    </div>
-  );
-}
 
 export default function ClassPage() {
   const { classId } = useParams();
@@ -212,54 +200,19 @@ export default function ClassPage() {
             const isLow = displayGrade !== null && displayGrade < redBelow;
 
             return (
-              <Card key={student.id} id={`student-${student.id}`} className={`card-3d rounded-2xl p-3 space-y-3 transition-shadow ${student.peExempt ? 'opacity-75' : ''} ${highlightId === student.id ? 'ring-2 ring-primary shadow-lg' : ''}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Link to={`/class/${classId}/student/${student.id}`} className="block">
-                        <h3 className="font-bold text-[15px] truncate hover:text-primary transition-colors">{formatStudentName(student)}</h3>
-                      </Link>
-                      {student.peExempt && (
-                        <Badge variant="outline" className="text-[9px] border-destructive/40 text-destructive bg-destructive/5">
-                          <ShieldOff className="w-2.5 h-2.5 ml-0.5" />פטור
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 mt-1 text-[11px] text-muted-foreground">
-                      {student.gender && <span>{GENDER_LABELS[student.gender] || student.gender}</span>}
-                      {student.studyGroup && <span>• {student.studyGroup}</span>}
-                      <span>• {cls.name}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {displayGrade !== null && !student.peExempt && (
-                      <div className={`rounded-lg px-2.5 py-1 min-w-[42px] text-center ${isLow ? 'bg-destructive/10' : 'bg-primary/10'}`}>
-                        <span className={`text-sm font-bold ${isLow ? 'text-destructive' : 'text-primary'}`}>{displayGrade}</span>
-                      </div>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="עריכת תלמיד" onClick={() => openEdit(student)}><Edit2 className="w-3.5 h-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="מחיקת תלמיד" onClick={() => setDeleteStudentTarget({ id: student.id, name: formatStudentName(student) })}><Trash2 className="w-3.5 h-3.5 text-destructive/70" /></Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                  <InfoChip icon={ClipboardList} label="מבדקים" value={completedResults} />
-                  <InfoChip icon={Award} label="ציונים" value={displayGrade ?? '—'} />
-                  <InfoChip icon={Timer} label="ריצה חיה" />
-                  <InfoChip icon={MessageSquare} label="הערות" value={student.peNotes ? 'יש' : '—'} />
-                  <InfoChip icon={CalendarDays} label="שיעורים" value={classLessons.length} />
-                  <InfoChip icon={TrendingUp} label="התקדמות" value={progress} />
-                </div>
-
-                <StudentGradeBreakdown annual={annual} viewMode={viewMode} />
-
-                {(student.medicalLimitations || student.peNotes) && (
-                  <div className="space-y-1 rounded-xl bg-muted/40 p-2 text-xs text-muted-foreground">
-                    {student.medicalLimitations && <p><span className="font-semibold text-foreground">רפואי:</span> {student.medicalLimitations}</p>}
-                    {student.peNotes && <p><span className="font-semibold text-foreground">מקצועי:</span> {student.peNotes}</p>}
-                  </div>
-                )}
-              </Card>
+              <StudentCard
+                key={student.id}
+                student={student}
+                classId={classId}
+                displayGrade={displayGrade}
+                annual={annual}
+                viewMode={viewMode}
+                progress={progress}
+                isLow={isLow}
+                highlighted={highlightId === student.id}
+                onEdit={() => openEdit(student)}
+                onDelete={() => setDeleteStudentTarget({ id: student.id, name: formatStudentName(student) })}
+              />
             );
           })}
 
