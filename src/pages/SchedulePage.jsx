@@ -128,7 +128,11 @@ export default function SchedulePage() {
           onOpenChange={setDeleteOpen}
           lessonCount={data.scheduleLessons.length}
           onConfirm={async () => {
-            await base44.entities.TeacherSchedule.deleteMany({ day_of_week: { $gte: 0 } });
+            let hasMore = true;
+            while (hasMore) {
+              const res = await base44.entities.TeacherSchedule.deleteMany({});
+              hasMore = res?.has_more === true;
+            }
             await loadAll();
             toast.success('מערכת השעות נמחקה');
           }}

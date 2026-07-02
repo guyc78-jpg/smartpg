@@ -11,6 +11,8 @@ export default function DeleteScheduleDialog({ open, onOpenChange, lessonCount, 
     try {
       await onConfirm();
       onOpenChange(false);
+    } catch {
+      // keep dialog open on failure
     } finally {
       setDeleting(false);
     }
@@ -18,7 +20,7 @@ export default function DeleteScheduleDialog({ open, onOpenChange, lessonCount, 
 
   return (
     <Dialog open={open} onOpenChange={deleting ? undefined : onOpenChange}>
-      <DialogContent className="glass-surface border-0 rounded-3xl max-w-sm p-0 overflow-hidden" dir="rtl">
+      <DialogContent className="bg-card/90 backdrop-blur-2xl border border-white/20 shadow-2xl rounded-3xl max-w-sm p-0 overflow-hidden" dir="rtl">
         <div className="p-6 text-center space-y-4">
           <div className="mx-auto w-16 h-16 rounded-2xl bg-destructive/10 backdrop-blur-md flex items-center justify-center shadow-inner">
             <CalendarX className="w-8 h-8 text-destructive" />
