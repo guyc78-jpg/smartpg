@@ -7,10 +7,7 @@ export default function GradeFilterPills({ selected, onSelect }) {
         <button
           key={g}
           onClick={() => onSelect(selected === g ? null : g)}
-          className={`h-9 rounded-full text-sm font-bold border transition-colors
-            ${selected === g
-              ? 'bg-primary text-primary-foreground border-primary'
-              : 'bg-card/70 text-foreground border-border/60 hover:bg-secondary'}`}
+          className={`h-9 rounded-full text-sm font-bold liquid-chip ${selected === g ? 'liquid-chip-active' : ''}`}
         >
           {g}׳
         </button>

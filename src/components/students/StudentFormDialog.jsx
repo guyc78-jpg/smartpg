@@ -84,7 +84,7 @@ export default function StudentFormDialog({ open, onOpenChange, student, classes
         <Input value={form.studyGroup} onChange={e => update('studyGroup', e.target.value)} placeholder="לדוגמה: קבוצה א׳" className={fieldClass} />
       </Field>
 
-      <label className="flex items-center gap-2.5 rounded-xl border border-border/80 bg-white dark:bg-card p-3.5 cursor-pointer">
+      <label className="flex items-center gap-2.5 rounded-xl liquid-chip p-3.5 cursor-pointer">
         <Checkbox checked={form.peExempt} onCheckedChange={v => update('peExempt', Boolean(v))} />
         <span className="text-sm font-semibold text-foreground">פטור / מגבלה רפואית פעילה</span>
       </label>

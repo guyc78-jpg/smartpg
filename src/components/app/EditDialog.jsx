@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, Loader2, Trash2 } from 'lucide-react';
 
-export const fieldClass = 'h-11 text-sm text-foreground bg-white dark:bg-card border border-border/80 rounded-xl shadow-none focus-visible:ring-2 focus-visible:ring-primary';
-export const textareaClass = 'min-h-[70px] text-sm text-foreground bg-white dark:bg-card border border-border/80 rounded-xl focus-visible:ring-2 focus-visible:ring-primary';
+export const fieldClass = 'h-11 text-sm text-foreground liquid-field rounded-xl shadow-none focus-visible:ring-0';
+export const textareaClass = 'min-h-[70px] text-sm text-foreground liquid-field rounded-xl focus-visible:ring-0';
 
 export function Field({ label, children }) {
   return (
