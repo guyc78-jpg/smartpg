@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Play, Timer, Users } from 'lucide-react';
+import { Check, Play, Timer, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getPeClassIdsForDate, getPeriodsForClassAndDate } from '@/lib/peLessons';
-import { compareStudentsByFirstName, displayRunStudentName } from './runUtils';
+import { displayRunStudentName } from './runUtils';
 
 function Field({ label, children }) {
   return <div className="space-y-1.5"><label className="text-sm font-bold block text-right">{label}</label>{children}</div>;
@@ -36,7 +36,21 @@ export default function RunSetup({ data, initial, onStart }) {
   }, [periods, period]);
 
   const cls = data.classes.find(c => c.id === classId);
-  const students = useMemo(() => data.students.filter(s => s.classId === classId).sort(compareStudentsByFirstName), [data.students, classId]);
+  const students = useMemo(
+    () => data.students
+      .filter(s => s.classId === classId)
+      .sort((a, b) => displayRunStudentName(a).localeCompare(displayRunStudentName(b), 'he')),
+    [data.students, classId]
+  );
+
+  const [selectedIds, setSelectedIds] = useState([]);
+  useEffect(() => {
+    setSelectedIds(students.map(s => s.id));
+  }, [classId, students.length]);
+
+  const allSelected = students.length > 0 && selectedIds.length === students.length;
+  const toggleStudent = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleAll = () => setSelectedIds(allSelected ? [] : students.map(s => s.id));
 
   const relevantTests = useMemo(() => {
     if (!cls) return [];
@@ -58,8 +72,10 @@ export default function RunSetup({ data, initial, onStart }) {
     ? Math.max(0.5, Math.round((Number(distance) / Number(trackLength)) * 2) / 2)
     : 0;
 
+  const selectedStudents = students.filter(s => selectedIds.includes(s.id));
+
   const handleStart = () => {
-    if (!cls || !period || students.length === 0 || totalLaps <= 0) return;
+    if (!cls || !period || selectedStudents.length === 0 || totalLaps <= 0) return;
     localStorage.setItem('pe_track_length', String(trackLength));
     const test = testId !== 'none' ? data.tests.find(t => t.id === testId) : null;
     const measurementType = { 1500: 'distance_1500', 2000: 'distance_2000', 60: 'sprint_60', 80: 'sprint_80', 100: 'sprint_100' }[Number(distance)] || 'free';
@@ -68,7 +84,7 @@ export default function RunSetup({ data, initial, onStart }) {
       measurementLabel: test ? test.name : `ריצת ${distance} מ'`,
       testId: test?.id || '', testName: test?.name || '', semester,
       distance: Number(distance), trackLength: Number(trackLength), totalLaps,
-    }, students);
+    }, selectedStudents);
   };
 
   return (
@@ -125,22 +141,39 @@ export default function RunSetup({ data, initial, onStart }) {
 
       <section className="space-y-2">
         <div className="flex items-center justify-between text-sm font-bold">
-          <span className="flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> תלמידי הכיתה ({students.length})</span>
-          {cls && <span className="text-muted-foreground font-medium">{cls.name}</span>}
+          <span className="flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> תלמידים משתתפים ({selectedIds.length}/{students.length})</span>
+          {students.length > 0 && (
+            <button type="button" onClick={toggleAll} className="text-xs font-semibold text-primary hover:underline">
+              {allSelected ? 'נקה הכל' : 'בחר הכל'}
+            </button>
+          )}
         </div>
         <div className="rounded-2xl border bg-card overflow-hidden">
-          {students.map(student => (
-            <div key={student.id} className="h-11 flex items-center px-3 border-b last:border-0 text-sm font-semibold truncate">
-              {displayRunStudentName(student)}
-            </div>
-          ))}
+          {students.map(student => {
+            const checked = selectedIds.includes(student.id);
+            return (
+              <button
+                type="button"
+                key={student.id}
+                onClick={() => toggleStudent(student.id)}
+                className="w-full h-11 flex items-center justify-between gap-2 px-3 border-b last:border-0 text-right hover:bg-muted/40 transition-colors"
+              >
+                <span className={`text-sm font-semibold truncate ${checked ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  {displayRunStudentName(student)}
+                </span>
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 transition-colors ${checked ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/40 bg-transparent'}`}>
+                  {checked && <Check className="w-4 h-4" strokeWidth={3} />}
+                </span>
+              </button>
+            );
+          })}
           {!cls && <div className="py-8 text-center text-sm text-muted-foreground">בחר כיתה כדי להציג תלמידים.</div>}
           {cls && students.length === 0 && <div className="py-8 text-center text-sm text-muted-foreground">אין תלמידים בכיתה הזו.</div>}
         </div>
       </section>
 
       <div className="sticky bottom-16 md:bottom-4 z-20 bg-background/80 backdrop-blur pt-2">
-        <Button onClick={handleStart} disabled={!cls || !period || students.length === 0 || totalLaps <= 0} className="w-full h-16 rounded-2xl text-xl font-black btn-3d">
+        <Button onClick={handleStart} disabled={!cls || !period || selectedStudents.length === 0 || totalLaps <= 0} className="w-full h-16 rounded-2xl text-xl font-black btn-3d">
           <Play className="w-5 h-5" /> התחל ריצה חיה
         </Button>
       </div>
