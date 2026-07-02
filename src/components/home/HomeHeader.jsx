@@ -14,21 +14,21 @@ export default function HomeHeader({ classCount, studentCount }) {
     <header dir="rtl" className="sticky top-0 z-40 glass-nav px-4 pt-2 pb-1.5" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}>
       <div className="flex items-center justify-between gap-2">
         <div className="text-right min-w-0">
-          <h1 className="text-base font-bold text-foreground truncate leading-tight">
-            {teacherName || user?.full_name || 'ראשי'}
-            {schoolName && <span className="text-sm font-normal text-muted-foreground"> - {schoolName}</span>}
-          </h1>
+          <h1 className="text-lg font-black text-foreground truncate leading-tight">ראשי</h1>
+          {(schoolName || teacherName || user?.full_name) && (
+            <p className="text-xs text-muted-foreground truncate leading-tight">
+              {schoolName || teacherName || user?.full_name}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <Link
             to="/substitute-fills"
-            className="h-8 flex items-center gap-1.5 px-2.5 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors"
+            className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60"
             title="מילויי מקום"
           >
             <UserCheck className="w-4 h-4" />
-            <span>מילוי מקום</span>
           </Link>
-          <span className="w-px h-5 bg-border mx-0.5" aria-hidden="true" />
           <Link to="/settings" className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="הגדרות">
             <Settings className="w-4 h-4" />
           </Link>
@@ -45,9 +45,9 @@ export default function HomeHeader({ classCount, studentCount }) {
       </div>
 
       <div className="flex items-center justify-start gap-2 mt-1 text-xs font-medium text-muted-foreground">
-        <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {studentCount} תלמידים</span>
-        <span className="text-border">|</span>
         <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" /> {classCount} כיתות</span>
+        <span className="text-border">|</span>
+        <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {studentCount} תלמידים</span>
       </div>
     </header>
   );
