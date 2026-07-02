@@ -2,6 +2,11 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock, UserPlus, Users } from 'lucide-react';
 import { periodsForDay, formatPeriodRange, getCurrentPeriod } from '@/lib/periodTimes';
+import LessonTopicInline from '@/components/home/LessonTopicInline';
+
+function toISODate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function initialOffset(lessons) {
   const now = new Date();
@@ -36,6 +41,7 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
   const periods = periodsForDay(day).filter(p => dayLessons.some(l => Number(l.period) === p));
 
   const dateLabel = date.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const dateISO = toISODate(date);
 
   return (
     <div className="rounded-2xl card-3d overflow-hidden" dir="rtl">
@@ -118,6 +124,9 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
                               <span> · {classById[l.classId]?.name || l.className}</span>
                             )}
                           </div>
+                        ))}
+                        {lessons.filter(l => l.classId).map(l => (
+                          <LessonTopicInline key={`topic-${l.id}`} classId={l.classId} date={dateISO} period={p} />
                         ))}
                         {lessons.some(l => l.classId) && (
                           <Link

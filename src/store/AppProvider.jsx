@@ -641,6 +641,29 @@ export function AppProvider({ children }) {
     await loadAll();
   }, [loadAll]);
 
+  // --- Lesson Topics ---
+  const saveLessonTopic = useCallback(async (classId, date, period, topic) => {
+    const existing = await base44.entities.LessonTopic.filter({ class_id: classId, date, period: Number(period), is_template: false });
+    const trimmed = (topic || '').trim();
+    if (existing.length > 0) {
+      if (!trimmed) {
+        await base44.entities.LessonTopic.delete(existing[0].id);
+        setData(d => ({ ...d, lessonTopics: d.lessonTopics.filter(l => l.id !== existing[0].id) }));
+        return;
+      }
+      await base44.entities.LessonTopic.update(existing[0].id, { topic: trimmed });
+      setData(d => ({ ...d, lessonTopics: d.lessonTopics.map(l => l.id === existing[0].id ? { ...l, topic: trimmed } : l) }));
+    } else {
+      if (!trimmed) return;
+      const created = await base44.entities.LessonTopic.create({ class_id: classId, date, period: Number(period), topic: trimmed });
+      setData(d => ({ ...d, lessonTopics: [...d.lessonTopics, {
+        id: created.id, classId, date, period: Number(period), semester: '', topic: trimmed,
+        location: '', objective: '', equipment: '', activityType: '', notes: '', postLessonNotes: '',
+        isTemplate: false, templateName: '',
+      }] }));
+    }
+  }, []);
+
   // --- Substitutions ---
   const addSubstitution = useCallback(async (subData) => {
     const created = await base44.entities.Substitution.create({
@@ -672,7 +695,7 @@ export function AppProvider({ children }) {
     setGradeOverride, updateSettings, updateDefaultGenderTrack,
     updateBagrutSettings, setBagrutResult, setBagrutTestIncluded,
     deleteAllData, seedClasses, closeSemester, loadAll, importSchedule,
-    addSubstitution, deleteSubstitution,
+    addSubstitution, deleteSubstitution, saveLessonTopic,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

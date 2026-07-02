@@ -5,9 +5,8 @@ import { calculateAnnualGrade } from '@/lib/gradeCalc';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Search, ClipboardList, Award, Upload, CalendarDays } from 'lucide-react';
+import { Plus, Search, ClipboardList, Award, Upload, Users, BookOpen } from 'lucide-react';
+import ClassLessonJournal from '@/components/class/ClassLessonJournal';
 import { toast } from 'sonner';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
@@ -27,6 +26,7 @@ export default function ClassPage() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [deleteStudentTarget, setDeleteStudentTarget] = useState(null);
   const [viewMode, setViewMode] = useState('A');
+  const [tab, setTab] = useState('students');
 
   const cls = data.classes.find(c => c.id === classId);
   const isGrade12 = cls?.gradeLevel === 'יב';
@@ -62,13 +62,6 @@ export default function ClassPage() {
     if (!search) return students;
     return students.filter(s => [formatStudentName(s), s.studyGroup, s.medicalLimitations, s.peNotes].filter(Boolean).some(v => v.includes(search)));
   }, [students, search]);
-
-  const classLessons = useMemo(
-    () => (data.lessonTopics || [])
-      .filter(l => l.classId === classId && !l.isTemplate)
-      .sort((a, b) => (b.date || '').localeCompare(a.date || '')),
-    [data.lessonTopics, classId]
-  );
 
   if (!cls) {
     return (
@@ -127,6 +120,25 @@ export default function ClassPage() {
       }
     >
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setTab('students')}
+            className={`h-10 rounded-xl liquid-chip flex items-center justify-center gap-2 text-sm ${tab === 'students' ? 'liquid-chip-active' : ''}`}
+          >
+            <Users className="w-4 h-4" /> תלמידים
+          </button>
+          <button
+            onClick={() => setTab('journal')}
+            className={`h-10 rounded-xl liquid-chip flex items-center justify-center gap-2 text-sm ${tab === 'journal' ? 'liquid-chip-active' : ''}`}
+          >
+            <BookOpen className="w-4 h-4" /> יומן שיעורים
+          </button>
+        </div>
+
+        {tab === 'journal' ? (
+          <ClassLessonJournal classId={classId} />
+        ) : (
+        <>
         <div className="relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -174,22 +186,6 @@ export default function ClassPage() {
           <Button onClick={() => setImportDialogOpen(true)} variant="outline" className="h-11 rounded-xl gap-2 font-semibold"><Upload className="w-4 h-4" /> ייבוא Excel/CSV</Button>
         </div>
 
-        <Card className="card-3d rounded-2xl p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 font-bold text-sm"><CalendarDays className="w-4 h-4 text-primary" /> היסטוריית שיעורי חנ״ג</div>
-            <Badge variant="secondary" className="text-[10px]">{classLessons.length} שיעורים</Badge>
-          </div>
-          <div className="space-y-1">
-            {classLessons.slice(0, 3).map(lesson => (
-              <div key={lesson.id} className="flex items-center justify-between gap-2 text-xs rounded-lg bg-muted/40 px-2 py-1.5">
-                <span className="font-medium truncate">{lesson.topic}</span>
-                <span className="text-muted-foreground shrink-0">{new Date(lesson.date).toLocaleDateString('he-IL')}</span>
-              </div>
-            ))}
-            {classLessons.length === 0 && <p className="text-xs text-muted-foreground">אין עדיין שיעורים שמורים לכיתה זו.</p>}
-          </div>
-        </Card>
-
         <div className="space-y-2">
           {filtered.map(student => {
             const annual = calculateAnnualGrade(student.id, classTests, data.results, data.behaviorGrades, data.settings, conductedTestIdsA, conductedTestIdsB, student.peExempt);
@@ -222,6 +218,8 @@ export default function ClassPage() {
             </p>
           )}
         </div>
+        </>
+        )}
 
         <StudentFormDialog
           open={studentDialogOpen}
