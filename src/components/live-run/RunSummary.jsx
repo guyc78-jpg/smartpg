@@ -10,7 +10,7 @@ const STATUS_OPTIONS = [
   { value: 'not_participated', label: 'לא השתתף/ה' },
 ];
 
-export default function RunSummary({ session, students, className, test, onEdit, onBack, onSave, saving }) {
+export default function RunSummary({ session, students, className, test, passThreshold = 55, onEdit, onBack, onSave, saving }) {
   const participants = session.participants;
   const sorted = sortRunStudents(students, participants);
   const totalLaps = session.setup.totalLaps;
@@ -51,8 +51,8 @@ export default function RunSummary({ session, students, className, test, onEdit,
       </div>
 
       <div className="rounded-2xl border bg-card overflow-hidden">
-        <div className="grid grid-cols-[24px_1fr_64px_60px_44px] gap-1 px-3 py-2 text-xs font-bold text-muted-foreground border-b bg-muted/40">
-          <span>#</span><span className="text-right">שם</span><span className="text-center">זמן</span><span className="text-center">סיבובים</span><span className="text-center">ציון</span>
+        <div className="grid grid-cols-[24px_1fr_58px_54px_40px_52px] gap-1 px-3 py-2 text-xs font-bold text-muted-foreground border-b bg-muted/40">
+          <span>#</span><span className="text-right">שם</span><span className="text-center">זמן</span><span className="text-center">סיבובים</span><span className="text-center">ציון</span><span className="text-center">מצב</span>
         </div>
         {sorted.map(student => {
           const p = participants[student.id];
@@ -60,12 +60,19 @@ export default function RunSummary({ session, students, className, test, onEdit,
           const rank = isFinished ? finished.indexOf(student) + 1 : null;
           const grade = gradeFor(p);
           return (
-            <div key={student.id} className="grid grid-cols-[24px_1fr_64px_60px_44px] gap-1 px-3 py-2.5 items-center border-b last:border-0 text-sm">
+            <div key={student.id} className="grid grid-cols-[24px_1fr_58px_54px_40px_52px] gap-1 px-3 py-2.5 items-center border-b last:border-0 text-sm">
               <span className="text-muted-foreground text-xs">{rank ?? '—'}</span>
               <span className="font-bold truncate text-right">{displayRunStudentName(student)}</span>
               <span className="text-center font-mono font-bold" dir="ltr">{isFinished && p.finishTimeMs ? formatResultSeconds(p.finishTimeMs) : '—'}</span>
               <span className="text-center text-xs text-muted-foreground">{p.laps != null && totalLaps ? `${p.laps}/${totalLaps}` : '—'}</span>
               <span className="text-center font-black">{grade ?? '—'}</span>
+              <span className="text-center">
+                {grade != null ? (
+                  grade >= passThreshold
+                    ? <span className="rounded-full bg-green-600/15 text-green-700 dark:text-green-400 px-1.5 py-0.5 text-[10px] font-black">עבר</span>
+                    : <span className="rounded-full bg-destructive/15 text-destructive px-1.5 py-0.5 text-[10px] font-black">לא עבר</span>
+                ) : '—'}
+              </span>
             </div>
           );
         })}

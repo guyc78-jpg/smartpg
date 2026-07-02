@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import LapCircles from './LapCircles';
 import { displayRunStudentName, formatResultSeconds } from './runUtils';
 
-export default function RunStudentCard({ student, participant, totalLaps, grade, onFinish, onNotParticipate, onUndo, onSetLaps }) {
+export default function RunStudentCard({ student, participant, totalLaps, grade, passThreshold = 55, onFinish, onNotParticipate, onUndo, onSetLaps }) {
   const name = displayRunStudentName(student);
   const status = participant.status;
   const laps = participant.laps || 0;
@@ -33,6 +33,11 @@ export default function RunStudentCard({ student, participant, totalLaps, grade,
             )}
             {grade != null && (
               <span className="rounded-md bg-green-600/15 text-green-700 dark:text-green-400 px-1.5 py-0.5 text-xs font-black shrink-0">{grade}</span>
+            )}
+            {grade != null && (
+              grade >= passThreshold
+                ? <span className="rounded-full bg-green-600 text-white px-2 py-0.5 text-[10px] font-black shrink-0">עבר ✓</span>
+                : <span className="rounded-full bg-destructive text-destructive-foreground px-2 py-0.5 text-[10px] font-black shrink-0">לא עבר</span>
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-2 justify-start">

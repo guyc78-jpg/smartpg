@@ -29,6 +29,7 @@ export default function LiveRunPage() {
   const currentClass = data.classes.find(c => c.id === session?.setup?.classId);
   const selectedTest = useMemo(() => data.tests.find(t => t.id === session?.setup?.testId) || null, [data.tests, session?.setup?.testId]);
   const totalLaps = session?.setup?.totalLaps || 1;
+  const passThreshold = data.settings?.gradeColorThresholds?.redBelow ?? 55;
 
   const gradeFor = (participant) => {
     if (!selectedTest || participant.status !== 'finished' || participant.finishTimeMs == null) return null;
@@ -110,7 +111,7 @@ export default function LiveRunPage() {
   if (session.phase === 'summary') {
     return (
       <Layout title="סיכום ריצה" subtitle={`${currentClass?.name || ''} · ${session.setup.measurementLabel || ''}`} backTo="/live-run">
-        <RunSummary session={session} students={selectedStudents} className={currentClass?.name} test={selectedTest} onEdit={run.updateSummaryResult} onBack={run.reopenRun} onSave={saveSummary} saving={saving} />
+        <RunSummary session={session} students={selectedStudents} className={currentClass?.name} test={selectedTest} passThreshold={passThreshold} onEdit={run.updateSummaryResult} onBack={run.reopenRun} onSave={saveSummary} saving={saving} />
       </Layout>
     );
   }
@@ -153,6 +154,7 @@ export default function LiveRunPage() {
               participant={session.participants[student.id]}
               totalLaps={totalLaps}
               grade={gradeFor(session.participants[student.id])}
+              passThreshold={passThreshold}
               onFinish={() => run.finishStudent(student.id)}
               onNotParticipate={() => run.setStudentStatus(student.id, 'not_participated')}
               onUndo={() => run.undoStudent(student.id)}
