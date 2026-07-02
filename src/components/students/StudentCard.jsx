@@ -63,19 +63,6 @@ export default function StudentCard({ student, classId, displayGrade, annual, vi
 
       <StudentGradeBreakdown annual={annual} viewMode={viewMode} />
 
-      {(student.peExempt || student.medicalLimitations) && (
-        <div className={`flex items-start gap-2 rounded-xl border p-3 text-xs ${
-          student.peExempt ? 'border-destructive/40 bg-destructive/10' : 'border-warning/50 bg-warning/10'
-        }`}>
-          <HeartPulse className={`w-4 h-4 shrink-0 mt-0.5 ${student.peExempt ? 'text-destructive' : 'text-warning'}`} />
-          <div className="text-right space-y-0.5">
-            <p className={`font-bold ${student.peExempt ? 'text-destructive' : 'text-warning'}`}>
-              {student.peExempt ? 'פטור / מגבלה רפואית פעילה' : 'מגבלה רפואית'}
-            </p>
-            {student.medicalLimitations && <p className="text-foreground/80">{student.medicalLimitations}</p>}
-          </div>
-        </div>
-      )}
       {student.peNotes && (
         <div className="rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground text-right">
           <span className="font-semibold text-foreground">מקצועי:</span> {student.peNotes}
