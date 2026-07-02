@@ -20,7 +20,7 @@ export default function HomeHeader({ classCount, studentCount }) {
           </h1>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
-          <Link to="/settings" className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="פרופיל">
+          <Link to="/substitute-fills" className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="מילויי מקום">
             <UserCheck className="w-4 h-4" />
           </Link>
           <Link to="/settings" className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="הגדרות">
