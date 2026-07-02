@@ -32,6 +32,8 @@ export default function ClassPage() {
   const { classId } = useParams();
   const { data, addStudent, deleteStudent, editStudent, importStudents } = useApp();
   const [search, setSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightId, setHighlightId] = useState(null);
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -134,6 +136,40 @@ export default function ClassPage() {
       }
     >
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={e => { setSearch(e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            placeholder="חיפוש מהיר: הקלד שם תלמיד..."
+            className="h-11 pr-9 text-sm rounded-xl"
+          />
+          {showSuggestions && search && filtered.length > 0 && (
+            <div className="absolute inset-x-0 top-full mt-1 z-30 rounded-xl glass-surface shadow-xl overflow-hidden">
+              {filtered.slice(0, 6).map(s => (
+                <button
+                  key={s.id}
+                  onMouseDown={() => {
+                    setShowSuggestions(false);
+                    setSearch('');
+                    setHighlightId(s.id);
+                    setTimeout(() => {
+                      document.getElementById(`student-${s.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 50);
+                    setTimeout(() => setHighlightId(null), 2500);
+                  }}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm text-right hover:bg-primary/10 transition-colors border-b border-border/30 last:border-0"
+                >
+                  <span className="font-semibold truncate">{formatStudentName(s)}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{s.studyGroup || cls.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-2">
           {['A', 'B', 'annual'].map(mode => (
             <Button key={mode} variant={viewMode === mode ? 'default' : 'outline'} onClick={() => setViewMode(mode)} className="flex-1 h-9 text-xs font-semibold">
@@ -145,11 +181,6 @@ export default function ClassPage() {
         <div className="grid grid-cols-2 gap-2">
           <Button onClick={openAdd} className="h-11 rounded-xl gap-2 font-semibold"><Plus className="w-4 h-4" /> הוסף תלמיד</Button>
           <Button onClick={() => setImportDialogOpen(true)} variant="outline" className="h-11 rounded-xl gap-2 font-semibold"><Upload className="w-4 h-4" /> ייבוא Excel/CSV</Button>
-        </div>
-
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="חיפוש תלמיד, קבוצה או הערה..." className="h-10 pr-9 text-sm" />
         </div>
 
         <Card className="card-3d rounded-2xl p-3 space-y-2">
@@ -178,7 +209,7 @@ export default function ClassPage() {
             const isLow = displayGrade !== null && displayGrade < redBelow;
 
             return (
-              <Card key={student.id} className={`card-3d rounded-2xl p-3 space-y-3 ${student.peExempt ? 'opacity-75' : ''}`}>
+              <Card key={student.id} id={`student-${student.id}`} className={`card-3d rounded-2xl p-3 space-y-3 transition-shadow ${student.peExempt ? 'opacity-75' : ''} ${highlightId === student.id ? 'ring-2 ring-primary shadow-lg' : ''}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
