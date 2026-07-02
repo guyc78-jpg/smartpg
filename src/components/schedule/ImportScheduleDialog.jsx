@@ -104,7 +104,7 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
             <input type="file" accept=".csv,.xlsx,.xls" onChange={e => handleFile(e.target.files?.[0] || null)} className="w-full text-sm" />
             {file && <p className="text-xs text-muted-foreground">קובץ נבחר: {file.name}</p>}
             {loading && <p className="text-xs text-primary">מעבד את הקובץ...</p>}
-            <p className="text-[11px] text-muted-foreground/70">המערכת תסרוק את כל הרשומות ותשמור אך ורק שיעורי חינוך גופני (חנ״ג / ספורט וכל הגרסאות שלהם), תוך איחוד כפילויות לפי יום, שעה, כיתה ומקצוע.</p>
+            <p className="text-[11px] text-muted-foreground/70">המערכת תסרוק את כל הרשומות ותשמור את כל השיעורים — חנ״ג לפי כיתות, וכן פרטני, חינוך, שהייה וכו׳ — תוך איחוד כפילויות לפי יום, שעה, כיתה ומקצוע.</p>
           </div>
 
           {directPreview && (
@@ -150,6 +150,7 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
                       <tr>
                         <th className="p-2">יום</th>
                         <th className="p-2">שעה</th>
+                        <th className="p-2">מקצוע</th>
                         <th className="p-2">כיתה</th>
                       </tr>
                     </thead>
@@ -158,6 +159,7 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
                         <tr key={index} className="border-t border-border">
                           <td className="p-2">{DAY_LABELS[lesson.dayOfWeek]}</td>
                           <td className="p-2">{lesson.period}</td>
+                          <td className="p-2">{lesson.subject}</td>
                           <td className="p-2">{lesson.className}</td>
                         </tr>
                       ))}

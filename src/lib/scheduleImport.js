@@ -128,27 +128,44 @@ export function parseTeacherReportCsv(text) {
     if (!cell) return;
 
     const commaIdx = cell.indexOf(',');
-    const subject = commaIdx === -1 ? cell : cell.slice(0, commaIdx);
+    const subjectRaw = commaIdx === -1 ? cell : cell.slice(0, commaIdx);
     const rest = commaIdx === -1 ? '' : cell.slice(commaIdx + 1);
-    if (!isPeSubject(subject)) return;
-    matched += 1;
+    const subject = normalizeText(subjectRaw);
+    if (!subject) return;
 
     const tokens = [...rest.matchAll(CLASS_TOKEN_RE)];
-    if (tokens.length === 0) {
-      invalid += 1;
-      return;
-    }
-    tokens.forEach(m => {
-      const className = `${m[1]} ${m[2]}`;
-      const classKey = normalizeClassName(className);
+
+    if (isPeSubject(subject)) {
+      matched += 1;
+      if (tokens.length === 0) {
+        invalid += 1;
+        return;
+      }
+      tokens.forEach(m => {
+        const className = `${m[1]} ${m[2]}`;
+        const classKey = normalizeClassName(className);
+        const key = scheduleDedupeKey(dayOfWeek, period, classKey);
+        if (seen.has(key)) {
+          duplicates += 1;
+          return;
+        }
+        seen.add(key);
+        lessons.push({ dayOfWeek, period, className, classKey, subject: PE_SUBJECT_NAME, isPe: true });
+      });
+    } else {
+      // Non-PE lesson (פרטני, חינוך, שהייה, ישיבת צוות...) — keep as one entry with subject + optional classes
+      const className = tokens.length > 0
+        ? tokens.map(m => `${m[1]} ${m[2]}`).join(', ')
+        : normalizeText(rest);
+      const classKey = normalizeClassName(`${subject}|${className}`);
       const key = scheduleDedupeKey(dayOfWeek, period, classKey);
       if (seen.has(key)) {
         duplicates += 1;
         return;
       }
       seen.add(key);
-      lessons.push({ dayOfWeek, period, className, classKey, subject: PE_SUBJECT_NAME });
-    });
+      lessons.push({ dayOfWeek, period, className, classKey, subject, isPe: false });
+    }
   });
 
   return { lessons, scanned: dataRows.length, matched, duplicates, invalid };

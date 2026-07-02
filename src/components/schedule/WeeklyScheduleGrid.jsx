@@ -71,11 +71,18 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                             כעת
                           </span>
                         )}
-                        {cellLessons.map(l => (
-                          <p key={l.id} className="text-xs font-bold text-primary truncate">
-                            {classById[l.classId]?.name || l.className}
-                          </p>
-                        ))}
+                        <p className="text-xs font-bold text-primary truncate leading-tight">
+                          {[...new Set(cellLessons.map(l => l.subject || 'חינוך גופני'))].join(', ')}
+                        </p>
+                        {(() => {
+                          const names = cellLessons
+                            .map(l => classById[l.classId]?.name || l.className)
+                            .filter(Boolean)
+                            .join(', ');
+                          return names ? (
+                            <p className="text-[10px] text-primary/70 truncate leading-tight">{names}</p>
+                          ) : null;
+                        })()}
                       </div>
                     ) : (
                       <div className="flex items-center justify-center">

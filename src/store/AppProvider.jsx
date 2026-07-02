@@ -558,7 +558,9 @@ export function AppProvider({ children }) {
   const importSchedule = useCallback(async (lessons) => {
     const existingClassByKey = new Map(data.classes.map(c => [normalizeClassName(c.name), c]));
     const existingKeys = new Set(
-      data.scheduleLessons.map(l => scheduleDedupeKey(l.dayOfWeek, l.period, l.classId))
+      data.scheduleLessons.map(l => l.classId
+        ? scheduleDedupeKey(l.dayOfWeek, l.period, l.classId)
+        : scheduleDedupeKey(l.dayOfWeek, l.period, normalizeClassName(`${l.subject}|${l.className}`)))
     );
 
     let classesCreated = 0;
@@ -566,6 +568,17 @@ export function AppProvider({ children }) {
     const newScheduleRows = [];
 
     for (const lesson of lessons) {
+      if (lesson.isPe === false) {
+        // Non-PE lesson — save as-is without creating a class
+        const key = scheduleDedupeKey(lesson.dayOfWeek, lesson.period, lesson.classKey);
+        if (existingKeys.has(key)) continue;
+        existingKeys.add(key);
+        newScheduleRows.push({
+          day_of_week: lesson.dayOfWeek, period: lesson.period, class_id: '',
+          class_name: lesson.className, subject: lesson.subject, source: 'import',
+        });
+        continue;
+      }
       let cls = existingClassByKey.get(lesson.classKey);
       if (!cls) {
         const gradeLevel = GRADE_LEVELS.find(g => lesson.className.trim().startsWith(g)) || null;
