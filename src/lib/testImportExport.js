@@ -79,11 +79,13 @@ ${rows}
 
 const TYPE_BY_LABEL = Object.fromEntries(Object.entries(TEST_TYPES).map(([value, label]) => [label, value]));
 
+const INVALID_TEST_NAMES = new Set(['מינימום', 'מקסימום', 'ציון', 'טבלת המרה', 'שם', 'שם מבדק']);
+
 export function rowsToTests(rows) {
   const groups = new Map();
   for (const row of rows) {
     const name = (row.test_name || row.name || '').toString().trim();
-    if (!name) continue;
+    if (!name || INVALID_TEST_NAMES.has(name)) continue;
     const gradeLevel = (row.grade_level || '').toString().replace('׳', '').trim();
     const genderRaw = (row.gender || '').toString();
     const genderTrack = genderRaw.includes('בנות') || genderRaw.toLowerCase().includes('girls') ? 'girls' : 'boys';

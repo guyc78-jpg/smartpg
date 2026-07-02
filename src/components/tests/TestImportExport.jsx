@@ -3,37 +3,41 @@ import { FileSpreadsheet, FileText, Loader2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { exportTestsToExcel, exportTestsToWord, rowsToTests } from '@/lib/testImportExport';
+import TestImportDialog from '@/components/tests/TestImportDialog.jsx';
 
-export default function TestImportExport({ tests, onImport }) {
+export default function TestImportExport({ tests, onImport, defaultGradeLevel }) {
   const fileRef = useRef(null);
+  const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [parsedTests, setParsedTests] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    setImporting(true);
+    setParsing(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const res = await base44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
           type: 'object',
+          description: 'קובץ המכיל מבדקי חינוך גופני עם טבלאות המרה מתוצאה לציון. כל מבדק מזוהה לפי שם המבדק (למשל "ריצת 1000 מטר", "כפיפות בטן", "שכיבות סמיכה"). שים לב: "מינימום", "מקסימום" ו"ציון" הם כותרות עמודות של טבלת ההמרה — הם לעולם אינם שמות מבדקים. יש לחלץ שורה אחת עבור כל שורת טבלת המרה, ולשייך אותה לשם המבדק שאליו הטבלה שייכת.',
           properties: {
             rows: {
               type: 'array',
               items: {
                 type: 'object',
                 properties: {
-                  test_name: { type: 'string', description: 'שם המבדק' },
-                  grade_level: { type: 'string', description: 'שכבה (ז/ח/ט/י/יא/יב)' },
-                  gender: { type: 'string', description: 'בנים או בנות' },
-                  test_type: { type: 'string', description: 'סוג המבדק' },
-                  unit: { type: 'string', description: 'יחידת מדידה' },
-                  weight: { type: 'number', description: 'משקל בציון' },
-                  min_result: { type: 'string', description: 'תוצאת מינימום (מספר או דק:שנ)' },
-                  max_result: { type: 'string', description: 'תוצאת מקסימום (מספר או דק:שנ)' },
-                  grade: { type: 'number', description: 'ציון 0-100' },
+                  test_name: { type: 'string', description: 'שם המבדק המלא כפי שמופיע בכותרת המבדק בקובץ (לא כותרת עמודה כמו מינימום/מקסימום/ציון)' },
+                  gender: { type: 'string', description: 'בנים או בנות, אם מצוין' },
+                  test_type: { type: 'string', description: 'סוג המבדק אם מצוין' },
+                  unit: { type: 'string', description: 'יחידת מדידה (שניות/מטרים/חזרות)' },
+                  weight: { type: 'number', description: 'משקל בציון אם מצוין' },
+                  min_result: { type: 'string', description: 'תוצאת מינימום של הטווח (מספר או זמן בפורמט דק:שנ כמו 2:35)' },
+                  max_result: { type: 'string', description: 'תוצאת מקסימום של הטווח (מספר או זמן בפורמט דק:שנ)' },
+                  grade: { type: 'number', description: 'הציון (0-100) שמתקבל עבור טווח תוצאות זה' },
                 },
               },
             },
@@ -42,16 +46,30 @@ export default function TestImportExport({ tests, onImport }) {
       });
       if (res.status !== 'success') throw new Error(res.details || 'extract failed');
       const rows = Array.isArray(res.output) ? res.output : res.output?.rows || [];
-      const testsToImport = rowsToTests(rows);
-      if (testsToImport.length === 0) {
+      const found = rowsToTests(rows);
+      if (found.length === 0) {
         toast.error('לא נמצאו מבדקים בקובץ');
         return;
       }
-      const count = await onImport(testsToImport);
-      toast.success(`יובאו ${count} מבדקים בהצלחה`);
+      setParsedTests(found);
+      setDialogOpen(true);
     } catch (err) {
       console.error('Test import failed:', err);
-      toast.error('הייבוא נכשל. ודא שהקובץ מכיל טבלת מבדקים תקינה.');
+      toast.error('קריאת הקובץ נכשלה. ודא שהקובץ מכיל טבלאות מבדקים.');
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const handleConfirm = async (chosen) => {
+    setImporting(true);
+    try {
+      const count = await onImport(chosen);
+      setDialogOpen(false);
+      toast.success(`יובאו ${count} מבדקים בהצלחה`);
+    } catch (err) {
+      console.error('Import failed:', err);
+      toast.error('הייבוא נכשל. נסה שוב.');
     } finally {
       setImporting(false);
     }
@@ -61,9 +79,9 @@ export default function TestImportExport({ tests, onImport }) {
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap" dir="rtl">
-      <button type="button" onClick={() => fileRef.current?.click()} disabled={importing} className={chip}>
-        {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-        {importing ? 'מייבא…' : 'ייבוא'}
+      <button type="button" onClick={() => fileRef.current?.click()} disabled={parsing} className={chip}>
+        {parsing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+        {parsing ? 'קורא קובץ…' : 'ייבוא'}
       </button>
       <button type="button" onClick={() => tests.length ? exportTestsToExcel(tests) : toast.error('אין מבדקים לייצוא בסינון הנוכחי')} className={chip}>
         <FileSpreadsheet className="w-3.5 h-3.5" /> ייצוא Excel
@@ -72,6 +90,15 @@ export default function TestImportExport({ tests, onImport }) {
         <FileText className="w-3.5 h-3.5" /> ייצוא Word
       </button>
       <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.doc,.docx,.pdf" className="hidden" onChange={handleFile} />
+
+      <TestImportDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        tests={parsedTests}
+        defaultGradeLevel={defaultGradeLevel}
+        onConfirm={handleConfirm}
+        importing={importing}
+      />
     </div>
   );
 }
