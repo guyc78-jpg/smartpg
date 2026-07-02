@@ -68,9 +68,9 @@ export default function TestsPage() {
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
         <div className="flex gap-2">
           {['A', 'B'].map(s => (
-            <Button key={s} variant={semester === s ? 'default' : 'outline'} onClick={() => { setSemester(s); setSelectedTestIdx(0); }} className="flex-1 h-10 text-sm font-semibold">
+            <button key={s} type="button" onClick={() => { setSemester(s); setSelectedTestIdx(0); }} className={`flex-1 h-10 text-sm font-semibold rounded-full liquid-chip ${semester === s ? 'liquid-chip-active' : ''}`}>
               {SEMESTER_LABELS[s]}
-            </Button>
+            </button>
           ))}
         </div>
 
@@ -149,16 +149,15 @@ export default function TestsPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
                         <div className="flex gap-1 overflow-x-auto pb-1">
                           {resultStatuses.map(option => (
-                            <Button
+                            <button
                               key={option}
-                              size="sm"
-                              variant={status === option ? 'default' : 'outline'}
+                              type="button"
                               disabled={(student.peExempt && option !== 'exempt') || (option === 'completed' && rawScore === null)}
                               onClick={() => handleStatus(student.id, currentTest.id, option, rawScore)}
-                              className="h-7 px-2 text-[10px] rounded-full shrink-0"
+                              className={`h-7 px-2.5 text-[10px] font-medium rounded-full shrink-0 liquid-chip ${status === option ? 'liquid-chip-active' : ''}`}
                             >
                               {TEST_STATUS_LABELS[option]}
-                            </Button>
+                            </button>
                           ))}
                         </div>
                         <Input

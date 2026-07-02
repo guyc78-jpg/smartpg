@@ -77,18 +77,18 @@ export default function SchedulePage() {
       </div>
     }>
       <div className="max-w-3xl mx-auto p-4 space-y-4" dir="rtl">
-        <div className="grid grid-cols-2 rounded-2xl bg-muted/60 p-1 gap-1">
+        <div className="grid grid-cols-2 rounded-full liquid-pill p-1 gap-1">
           <button
             type="button"
             onClick={() => setTab('grid')}
-            className={`h-10 rounded-xl text-sm font-bold transition-all ${tab === 'grid' ? 'bg-card shadow text-foreground' : 'text-primary/80 hover:text-primary'}`}
+            className={`h-10 rounded-full text-sm font-bold transition-all duration-200 active:scale-95 ${tab === 'grid' ? 'liquid-chip-active' : 'text-muted-foreground hover:text-foreground'}`}
           >
             מערכת שעות
           </button>
           <button
             type="button"
             onClick={() => setTab('journal')}
-            className={`h-10 rounded-xl text-sm font-bold transition-all ${tab === 'journal' ? 'bg-card shadow text-foreground' : 'text-primary/80 hover:text-primary'}`}
+            className={`h-10 rounded-full text-sm font-bold transition-all duration-200 active:scale-95 ${tab === 'journal' ? 'liquid-chip-active' : 'text-muted-foreground hover:text-foreground'}`}
           >
             יומן שיעורים
           </button>
