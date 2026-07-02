@@ -82,6 +82,11 @@ export default function HomePage() {
         <DailyPeSchedule lessons={todaysLessons} classById={classById} lessonTopics={data.lessonTopics} dateIso={todayIso} />
 
         <div className="flex items-center justify-between px-1 pt-2">
+          <button onClick={() => setMyClassesOpen(o => !o)} className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+            <Users className="w-4 h-4" />
+            הכיתות שלי
+            <ChevronDown className={`w-4 h-4 transition-transform ${myClassesOpen ? '' : '-rotate-90'}`} />
+          </button>
           <div className="flex items-center gap-1">
             <button onClick={() => setAddOpen(true)} className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary" title="הוסף כיתה">
               <Plus className="w-4 h-4" />
@@ -92,11 +97,6 @@ export default function HomePage() {
               </button>
             )}
           </div>
-          <button onClick={() => setMyClassesOpen(o => !o)} className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
-            <ChevronDown className={`w-4 h-4 transition-transform ${myClassesOpen ? '' : '-rotate-90'}`} />
-            הכיתות שלי
-            <Users className="w-4 h-4" />
-          </button>
         </div>
 
         {myClassesOpen && (
