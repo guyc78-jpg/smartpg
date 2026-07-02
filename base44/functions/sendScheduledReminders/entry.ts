@@ -81,17 +81,16 @@ Deno.serve(async (req) => {
         if (!t) continue;
         const start = toMinutes(t[0]);
         const lead = start - nowMinutes;
-        if (lead < 5 || lead >= 15) continue;
+        if (lead < 1 || lead >= 6) continue;
 
         const key = `lesson_${localDate}_${lesson.period}_${lesson.id}`;
         if (await alreadySent(key)) continue;
         await db.SentReminder.create({ key, date: localDate });
 
         const who = lesson.class_name || 'שיעור';
-        const subject = lesson.subject ? `${lesson.subject} — ` : '';
         await sendToAll(
-          `⏰ בעוד כ־${lead} דקות`,
-          `${subject}${who} | שעה ${lesson.period} (${t[0]})`,
+          `⏰ השיעור מתחיל עוד רגע (${t[0]})`,
+          `כיתה ${who} | שעה ${lesson.period} במערכת`,
           '/schedule'
         );
         lessonReminders++;

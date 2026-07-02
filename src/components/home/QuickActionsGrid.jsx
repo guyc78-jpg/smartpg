@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { CalendarDays, CalendarRange, Activity, ClipboardList, Upload, FileText } from 'lucide-react';
+import { CalendarDays, CalendarRange, Activity, ClipboardList, Upload, FileText, AlertCircle } from 'lucide-react';
 
 const ACTIONS = [
   { to: '/schedule#daily-journal', label: 'מערכת יומית', icon: CalendarDays },
   { to: '/schedule#weekly-schedule', label: 'מערכת שבועית', icon: CalendarRange },
   { to: '/live-run', label: 'ריצה חיה', icon: Activity },
   { to: '/manage-tests', label: 'מדידות כושר', icon: ClipboardList },
+  { to: '/missing-grades', label: 'השלמות וחוסרים', icon: AlertCircle },
   { to: '/schedule?import=1', label: 'ייבוא מערכת', icon: Upload },
   { to: '/reports', label: 'דוחות', icon: FileText },
 ];

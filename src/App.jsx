@@ -31,6 +31,7 @@ const LessonManagePage = lazy(() => import('./pages/LessonManagePage'));
 const LessonEditPage = lazy(() => import('./pages/LessonEditPage'));
 const SubstituteFillsPage = lazy(() => import('./pages/SubstituteFillsPage'));
 const WizardsPage = lazy(() => import('./pages/WizardsPage'));
+const MissingGradesPage = lazy(() => import('./pages/MissingGradesPage'));
 
 const PageFallback = () => (
   <div className="min-h-screen flex items-center justify-center" dir="rtl">
@@ -85,6 +86,7 @@ const AppShell = () => {
           <Route path="/live-run" element={<LiveRunPage />} />
           <Route path="/substitute-fills" element={<SubstituteFillsPage />} />
           <Route path="/wizards" element={<WizardsPage />} />
+          <Route path="/missing-grades" element={<MissingGradesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<AppSettingsPage />} />
         </Route>
