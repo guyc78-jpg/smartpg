@@ -369,3 +369,12 @@ body::before {
 .animate-loading-dot {
   animation: loading-dot 1.4s ease-in-out infinite both;
 }
+
+/* ===== Pro Stopwatch ===== */
+@keyframes stopwatch-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.97); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+.animate-stopwatch-pulse {
+  animation: stopwatch-pulse 2s ease-in-out infinite;
+}

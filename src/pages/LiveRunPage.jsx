@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pause, Play, RotateCcw, Search, Square, UserPlus } from 'lucide-react';
+import { Search, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/app/Layout';
-import { Button } from '@/components/ui/button';
+import ProStopwatch from '@/components/live-run/ProStopwatch';
 import { base44 } from '@/api/base44Client';
 import { useApp } from '@/store/AppProvider';
 import { useLiveRun } from '@/contexts/LiveRunContext';
@@ -12,7 +12,7 @@ import RunStudentRow from '@/components/live-run/RunStudentRow';
 import RunSummary from '@/components/live-run/RunSummary';
 import EditParticipants from '@/components/live-run/EditParticipants';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { displayRunStudentName, formatClockTime, secondsFromMs } from '@/components/live-run/runUtils';
+import { displayRunStudentName, secondsFromMs } from '@/components/live-run/runUtils';
 import { convertRawToGrade } from '@/lib/gradeCalc';
 
 export default function LiveRunPage() {
@@ -159,35 +159,26 @@ export default function LiveRunPage() {
 
   return (
     <Layout title="ריצה חיה" subtitle={`${currentClass?.name || ''} · ${session.setup.measurementLabel || ''}`}>
-      <div className="w-full max-w-[520px] mx-auto pb-44 overflow-x-hidden" dir="rtl">
-        {/* Stats bar */}
-        <section className="sticky z-30 bg-muted/70 backdrop-blur border-b" style={{ top: 'var(--header-h, 0px)' }}>
-          <div className="grid grid-cols-2 text-center py-2.5 relative">
-            <div className="border-l border-border/60">
-              <p className="text-xs text-muted-foreground font-semibold">משתתפים</p>
-              <p className="text-lg font-black text-primary leading-tight" dir="ltr">{counts.participating}/{selectedStudents.length}</p>
+      <div className="w-full max-w-[520px] mx-auto pb-24 overflow-x-hidden" dir="rtl">
+        {/* Pro stopwatch */}
+        <section className="px-3 pt-3 pb-2">
+          <ProStopwatch onReset={resetRun} onFinish={() => setEndDialogOpen(true)} />
+        </section>
+
+        {/* Participants + search bar */}
+        <section className="sticky z-30 glass-nav" style={{ top: 'var(--header-h, 0px)' }}>
+          <div className="flex items-center gap-2 px-3 py-2">
+            <div className="text-xs font-bold text-muted-foreground whitespace-nowrap text-right">
+              משתתפים{' '}
+              <span className="text-primary font-black" dir="ltr">{counts.participating}/{selectedStudents.length}</span>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground font-semibold">זמן כולל</p>
-              <p className="text-lg font-black text-primary font-mono leading-tight" dir="ltr">{formatClockTime(elapsedMs)}</p>
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="חיפוש תלמיד/ה" className="w-full h-9 rounded-xl liquid-field pr-9 pl-3 text-sm" />
             </div>
-            <div className="absolute left-1.5 top-1.5 flex flex-col gap-1">
-              {raceStarted && (
-                <button onClick={session.running ? run.pauseTimer : run.startTimer} aria-label={session.running ? 'השהה' : 'המשך'} className="h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center">
-                  {session.running ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                </button>
-              )}
-              <button onClick={resetRun} aria-label="איפוס ריצה" title="איפוס ריצה" className="h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center">
-                <RotateCcw className="w-4 h-4" />
-              </button>
-              <button onClick={run.openEditParticipants} aria-label="עריכת משתתפים" title="עריכת משתתפים" className="h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center">
-                <UserPlus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="px-3 pb-2 relative">
-            <Search className="w-4 h-4 text-muted-foreground absolute right-6 top-1/2 -translate-y-[calc(50%+4px)]" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="חיפוש תלמיד/ה" className="w-full h-9 rounded-xl border border-input bg-background pr-9 pl-3 text-sm" />
+            <button onClick={run.openEditParticipants} aria-label="עריכת משתתפים" title="עריכת משתתפים" className="liquid-chip h-9 w-9 rounded-xl flex items-center justify-center shrink-0">
+              <UserPlus className="w-4 h-4" />
+            </button>
           </div>
         </section>
 
@@ -208,21 +199,6 @@ export default function LiveRunPage() {
             />
           ))}
           {sortedStudents.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">לא נמצאו תלמידים.</div>}
-        </div>
-      </div>
-
-      {/* Fixed bottom action */}
-      <div className="fixed inset-x-0 z-40 px-4 bottom-[calc(80px+env(safe-area-inset-bottom,0px))] md:bottom-4">
-        <div className="w-full max-w-[520px] mx-auto">
-          {session.running ? (
-            <Button onClick={() => setEndDialogOpen(true)} className="w-full h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-lg font-black btn-3d">
-              <Square className="w-5 h-5 fill-current" /> סיום מרוץ
-            </Button>
-          ) : (
-            <Button onClick={run.startTimer} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
-              <Play className="w-5 h-5 fill-current" /> {elapsedMs > 0 ? 'המשך מרוץ' : 'התחל מרוץ'}
-            </Button>
-          )}
         </div>
       </div>
 
