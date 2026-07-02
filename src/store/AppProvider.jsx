@@ -41,7 +41,7 @@ export function AppProvider({ children }) {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [classesData, studentsData, testsData, resultsData, behaviorData, settingsData, bagrutCompData, bagrutResultsData, classTestStatusData, gradeOverridesData, attemptsData, lessonData, scheduleData, attendanceData, substitutionData] = await Promise.all([
+      const [classesData, studentsData, testsData, resultsData, behaviorData, settingsData, bagrutCompData, bagrutResultsData, classTestStatusData, gradeOverridesData, attemptsData, lessonData, scheduleData, substitutionData] = await Promise.all([
         base44.entities.SchoolClass.list('-created_date', 500),
         base44.entities.Student.list('-created_date', 500),
         base44.entities.TestDefinition.list('-created_date', 500),
@@ -55,7 +55,6 @@ export function AppProvider({ children }) {
         base44.entities.TestAttempt.list('-created_date', 5000),
         base44.entities.LessonTopic.list('-created_date', 5000),
         base44.entities.TeacherSchedule.list('-created_date', 5000),
-        base44.entities.Attendance.list('-created_date', 5000),
         base44.entities.Substitution.list('-created_date', 5000),
       ]);
 
@@ -154,11 +153,6 @@ export function AppProvider({ children }) {
         className: r.class_name || '', subject: r.subject || '', source: r.source || 'manual', notes: r.notes || '',
       }));
 
-      const attendance = (attendanceData || []).map(r => ({
-        id: r.id, studentId: r.student_id, classId: r.class_id, date: r.date,
-        status: r.status || 'present', notes: r.notes || '',
-      }));
-
       const substitutions = (substitutionData || []).map(r => ({
         id: r.id, date: r.date, period: r.period,
         originalClassId: r.original_class_id || '', substituteClassId: r.substitute_class_id || '',
@@ -168,7 +162,7 @@ export function AppProvider({ children }) {
       setData({
         classes, students, tests, results, testAttempts, behaviorGrades, settings,
         bagrutComponents, bagrutResults, bagrutSettings: { enabled: false, autoCalculate: true, showInSummary: true },
-        classTestStatuses, gradeOverrides, lessonTopics, scheduleLessons, attendance, substitutions,
+        classTestStatuses, gradeOverrides, lessonTopics, scheduleLessons, substitutions,
       });
       setLoading(false);
       return true;
@@ -203,7 +197,7 @@ export function AppProvider({ children }) {
     };
     const entitiesToWatch = [
       'SchoolClass', 'Student', 'TestResult', 'BehaviorGrade',
-      'ClassTestStatus', 'LessonTopic', 'TeacherSchedule', 'Attendance', 'Substitution',
+      'ClassTestStatus', 'LessonTopic', 'TeacherSchedule', 'Substitution',
     ];
     const unsubs = entitiesToWatch.map(name => {
       try {
@@ -254,7 +248,6 @@ export function AppProvider({ children }) {
       await base44.entities.TestAttempt.deleteMany({ student_id: { $in: studentIds } });
       await base44.entities.GradeOverride.deleteMany({ student_id: { $in: studentIds } });
     }
-    await base44.entities.Attendance.deleteMany({ class_id: id });
     await base44.entities.LessonTopic.deleteMany({ class_id: id });
     await base44.entities.TeacherSchedule.deleteMany({ class_id: id });
     await base44.entities.ClassTestStatus.deleteMany({ class_id: id });
@@ -269,7 +262,6 @@ export function AppProvider({ children }) {
       bagrutResults: d.bagrutResults.filter(r => !studentIds.includes(r.studentId)),
       testAttempts: d.testAttempts.filter(a => !studentIds.includes(a.studentId)),
       gradeOverrides: d.gradeOverrides.filter(o => o.classId !== id),
-      attendance: d.attendance.filter(a => a.classId !== id),
       lessonTopics: d.lessonTopics.filter(l => l.classId !== id),
       scheduleLessons: d.scheduleLessons.filter(l => l.classId !== id),
       classTestStatuses: d.classTestStatuses.filter(s => s.classId !== id),
@@ -627,7 +619,7 @@ export function AppProvider({ children }) {
     base44.entities.TestAttempt, base44.entities.BagrutResult,
     base44.entities.LessonTopic, base44.entities.TeacherSchedule,
     base44.entities.RunMeasurement, base44.entities.PeStopwatchLog,
-    base44.entities.Attendance, base44.entities.Substitution,
+    base44.entities.Substitution,
     ];
     for (const entity of entities) {
       await entity.deleteMany({});
@@ -635,20 +627,6 @@ export function AppProvider({ children }) {
     setData({ ...DEFAULT_DATA });
     await loadAll();
   }, [loadAll]);
-
-  // --- Attendance ---
-  const setAttendance = useCallback(async (studentId, classId, date, status) => {
-    const existing = await base44.entities.Attendance.filter({ student_id: studentId, class_id: classId, date });
-    if (existing.length > 0) {
-      await base44.entities.Attendance.update(existing[0].id, { status });
-    } else {
-      await base44.entities.Attendance.create({ student_id: studentId, class_id: classId, date, status });
-    }
-    setData(d => {
-      const filtered = d.attendance.filter(a => !(a.studentId === studentId && a.classId === classId && a.date === date));
-      return { ...d, attendance: [...filtered, { id: existing[0]?.id || generateId(), studentId, classId, date, status, notes: '' }] };
-    });
-  }, []);
 
   // --- Substitutions ---
   const addSubstitution = useCallback(async (subData) => {
@@ -681,7 +659,7 @@ export function AppProvider({ children }) {
     setGradeOverride, updateSettings, updateDefaultGenderTrack,
     updateBagrutSettings, setBagrutResult, setBagrutTestIncluded,
     deleteAllData, seedClasses, closeSemester, loadAll, importSchedule,
-    setAttendance, addSubstitution, deleteSubstitution,
+    addSubstitution, deleteSubstitution,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

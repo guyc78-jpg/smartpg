@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Check, Plus, RotateCcw, User } from 'lucide-react';
-import AttendanceQuickButtons from './AttendanceQuickButtons';
 import { displayRunStudentName, formatClockTime } from './runUtils';
 
-export default function RunStudentRow({ student, participant, raceStarted, raceRunning, grade, passThreshold = 55, attendanceStatus, onAttendanceChange, onLap, onNotParticipate, onUndo }) {
+export default function RunStudentRow({ student, participant, raceStarted, raceRunning, grade, passThreshold = 55, onLap, onNotParticipate, onUndo }) {
   const [expanded, setExpanded] = useState(false);
   const name = displayRunStudentName(student);
   const status = participant.status;
@@ -72,7 +71,6 @@ export default function RunStudentRow({ student, participant, raceStarted, raceR
 
       {expanded && (
         <div className="mt-2 pt-2 border-t space-y-2">
-          {onAttendanceChange && <AttendanceQuickButtons value={attendanceStatus} onChange={onAttendanceChange} />}
           <div className="flex gap-2">
             {!out && !finished && raceStarted && (
               <button onClick={onNotParticipate} className="flex-1 h-9 rounded-xl border text-xs font-bold text-muted-foreground hover:bg-muted">

@@ -126,7 +126,7 @@ export default function HomePage() {
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}
         title={`מחיקת ${deleteTarget?.name || ''}`}
-        description="מחיקת הכיתה תמחק גם את כל התלמידים, הנוכחות, הציונים והרשומות המשויכים אליה לצמיתות. האם להמשיך?"
+        description="מחיקת הכיתה תמחק גם את כל התלמידים, הציונים והרשומות המשויכים אליה לצמיתות. האם להמשיך?"
         onConfirm={handleDeleteClass}
       />
       <ConfirmDeleteDialog

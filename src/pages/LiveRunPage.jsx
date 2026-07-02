@@ -16,7 +16,7 @@ import { convertRawToGrade } from '@/lib/gradeCalc';
 
 export default function LiveRunPage() {
   const navigate = useNavigate();
-  const { data, setTestResult, setClassTestStatus, setAttendance } = useApp();
+  const { data, setTestResult, setClassTestStatus } = useApp();
   const run = useLiveRun();
   const { session, elapsedMs } = run;
   const [search, setSearch] = useState('');
@@ -32,22 +32,6 @@ export default function LiveRunPage() {
   const selectedTest = useMemo(() => data.tests.find(t => t.id === session?.setup?.testId) || null, [data.tests, session?.setup?.testId]);
   const totalLaps = session?.setup?.totalLaps || 1;
   const passThreshold = data.settings?.gradeColorThresholds?.redBelow ?? 55;
-
-  const attendanceByStudent = useMemo(() => {
-    const map = {};
-    (data.attendance || [])
-      .filter(a => a.classId === session?.setup?.classId && a.date === session?.setup?.date)
-      .forEach(a => { map[a.studentId] = a.status; });
-    return map;
-  }, [data.attendance, session?.setup?.classId, session?.setup?.date]);
-
-  const handleAttendance = (studentId, status) => {
-    setAttendance(studentId, session.setup.classId, session.setup.date, status);
-    if ((status === 'absent' || status === 'excused') && session.participants[studentId]?.status === 'running') {
-      run.setStudentStatus(studentId, 'not_participated');
-    }
-    toast.success(status === 'present' ? 'סומן כנוכח' : status === 'absent' ? 'סומן כנעדר' : 'סומן כפטור');
-  };
 
   const gradeFor = (participant) => {
     if (!selectedTest || participant.status !== 'finished' || participant.finishTimeMs == null) return null;
@@ -188,8 +172,6 @@ export default function LiveRunPage() {
               raceRunning={session.running}
               grade={gradeFor(session.participants[student.id])}
               passThreshold={passThreshold}
-              attendanceStatus={attendanceByStudent[student.id]}
-              onAttendanceChange={(status) => handleAttendance(student.id, status)}
               onLap={() => handleLap(student.id)}
               onNotParticipate={() => run.setStudentStatus(student.id, 'not_participated')}
               onUndo={() => run.undoStudent(student.id)}

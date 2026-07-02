@@ -7,13 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit2, Search, ClipboardList, ShieldOff, Award, Upload, UserCheck, Timer, TrendingUp, MessageSquare, CalendarDays } from 'lucide-react';
+import { Plus, Trash2, Edit2, Search, ClipboardList, ShieldOff, Award, Upload, Timer, TrendingUp, MessageSquare, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
 import ImportStudentsDialog from '@/components/students/ImportStudentsDialog';
 import StudentGradeBreakdown from '@/components/grades/StudentGradeBreakdown';
-import AttendanceTab from '@/components/attendance/AttendanceTab';
 import { SEMESTER_LABELS, GENDER_TRACK_LABELS } from '@/lib/types';
 import { formatStudentName } from '@/lib/studentName';
 
@@ -31,7 +30,7 @@ function InfoChip({ icon: Icon, label, value }) {
 
 export default function ClassPage() {
   const { classId } = useParams();
-  const { data, addStudent, deleteStudent, editStudent, importStudents, setAttendance } = useApp();
+  const { data, addStudent, deleteStudent, editStudent, importStudents } = useApp();
   const [search, setSearch] = useState('');
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -136,9 +135,9 @@ export default function ClassPage() {
     >
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
         <div className="flex gap-2">
-          {['A', 'B', 'annual', 'attendance'].map(mode => (
+          {['A', 'B', 'annual'].map(mode => (
             <Button key={mode} variant={viewMode === mode ? 'default' : 'outline'} onClick={() => setViewMode(mode)} className="flex-1 h-9 text-xs font-semibold">
-              {mode === 'annual' ? 'שנתי' : mode === 'attendance' ? 'נוכחות' : SEMESTER_LABELS[mode]}
+              {mode === 'annual' ? 'שנתי' : SEMESTER_LABELS[mode]}
             </Button>
           ))}
         </div>
@@ -169,17 +168,8 @@ export default function ClassPage() {
           </div>
         </Card>
 
-        {viewMode === 'attendance' ? (
-          <AttendanceTab
-            students={filtered}
-            attendance={data.attendance || []}
-            date={new Date().toISOString().slice(0, 10)}
-            onSave={(studentId, date, status) => setAttendance(studentId, classId, date, status)}
-          />
-        ) : null}
-
         <div className="space-y-2">
-          {viewMode !== 'attendance' && filtered.map(student => {
+          {filtered.map(student => {
             const annual = calculateAnnualGrade(student.id, classTests, data.results, data.behaviorGrades, data.settings, conductedTestIdsA, conductedTestIdsB, student.peExempt);
             const displayGrade = viewMode === 'annual' ? annual.annualGrade : viewMode === 'A' ? annual.semA.semesterFinalGrade : annual.semB.semesterFinalGrade;
             const completedResults = data.results.filter(r => r.studentId === student.id && r.status === 'completed').length;
@@ -219,7 +209,6 @@ export default function ClassPage() {
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                  <InfoChip icon={UserCheck} label="נוכחות" />
                   <InfoChip icon={ClipboardList} label="מבדקים" value={completedResults} />
                   <InfoChip icon={Award} label="ציונים" value={displayGrade ?? '—'} />
                   <InfoChip icon={Timer} label="ריצה חיה" />

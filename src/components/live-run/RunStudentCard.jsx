@@ -1,19 +1,12 @@
 import { CheckCircle2, RotateCcw, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LapCircles from './LapCircles';
-import AttendanceQuickButtons from './AttendanceQuickButtons';
 import { displayRunStudentName, formatResultSeconds } from './runUtils';
 
-export default function RunStudentCard({ student, participant, totalLaps, grade, passThreshold = 55, attendanceStatus, onAttendanceChange, onFinish, onNotParticipate, onUndo, onSetLaps }) {
+export default function RunStudentCard({ student, participant, totalLaps, grade, passThreshold = 55, onFinish, onNotParticipate, onUndo, onSetLaps }) {
   const name = displayRunStudentName(student);
   const status = participant.status;
   const laps = participant.laps || 0;
-
-  const attendanceRow = onAttendanceChange ? (
-    <div className="border-t pt-2 mt-2">
-      <AttendanceQuickButtons value={attendanceStatus} onChange={onAttendanceChange} />
-    </div>
-  ) : null;
 
   if (status === 'not_participated' || status === 'not_completed') {
     return (
@@ -27,7 +20,6 @@ export default function RunStudentCard({ student, participant, totalLaps, grade,
             <RotateCcw className="w-4 h-4" />
           </button>
         </div>
-        {attendanceRow}
       </div>
     );
   }
@@ -61,7 +53,6 @@ export default function RunStudentCard({ student, participant, totalLaps, grade,
           </button>
           <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />
         </div>
-        {attendanceRow}
       </div>
     );
   }
@@ -81,7 +72,6 @@ export default function RunStudentCard({ student, participant, totalLaps, grade,
           <XCircle className="w-5 h-5" />
         </button>
       </div>
-      {attendanceRow}
     </div>
   );
 }
