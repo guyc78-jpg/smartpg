@@ -16,7 +16,7 @@ export default function HomeHeader({ classCount, studentCount }) {
         <div className="text-right min-w-0">
           <h1 className="text-base font-bold text-foreground truncate leading-tight">
             {teacherName || user?.full_name || 'ראשי'}
-            {schoolName && <span className="text-base font-bold text-foreground"> - {schoolName}</span>}
+            {schoolName && <span className="text-sm font-normal text-muted-foreground"> - {schoolName}</span>}
           </h1>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
