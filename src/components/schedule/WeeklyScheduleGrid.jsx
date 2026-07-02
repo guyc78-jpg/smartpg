@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { PERIODS, periodsForDay, getCurrentPeriod } from '@/lib/periodTimes';
 
@@ -5,6 +6,12 @@ const DAYS = [0, 1, 2, 3, 4, 5];
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
 
 export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellClick }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const today = new Date().getDay();
   const currentPeriod = getCurrentPeriod();
 
@@ -45,6 +52,7 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                 }
                 const cellLessons = lessonsAt(d, p);
                 const isTodayCol = d === today;
+                const isLiveNow = isTodayCol && p === currentPeriod && cellLessons.length > 0;
                 return (
                   <td
                     key={d}
@@ -52,10 +60,17 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                     className={`h-14 min-w-[92px] border-b border-l border-border/50 p-1 cursor-pointer transition-colors align-middle
                       ${isTodayCol ? 'bg-primary/5 border-l-primary/40' : rowIdx % 2 === 1 ? 'bg-muted/30' : 'bg-card/60'}
                       ${isTodayCol && p === currentPeriod ? 'bg-primary/15 shadow-inner' : ''}
+                      ${isLiveNow ? 'relative ring-2 ring-inset ring-primary rounded-lg' : ''}
                       hover:bg-primary/10`}
                   >
                     {cellLessons.length > 0 ? (
                       <div className="text-center space-y-0.5">
+                        {isLiveNow && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground text-[9px] font-black px-1.5 py-px leading-tight">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground animate-pulse" />
+                            כעת
+                          </span>
+                        )}
                         {cellLessons.map(l => (
                           <p key={l.id} className="text-xs font-bold text-primary truncate">
                             {classById[l.classId]?.name || l.className}

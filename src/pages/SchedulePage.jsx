@@ -5,6 +5,7 @@ import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
 import ImportScheduleDialog from '@/components/schedule/ImportScheduleDialog';
 import WeeklyScheduleGrid from '@/components/schedule/WeeklyScheduleGrid';
+import LiveNowBanner from '@/components/schedule/LiveNowBanner';
 import DailyLessonJournal from '@/components/schedule/DailyLessonJournal';
 import AssignLessonDialog from '@/components/schedule/AssignLessonDialog';
 import { Upload } from 'lucide-react';
@@ -87,11 +88,14 @@ export default function SchedulePage() {
         </div>
 
         {tab === 'grid' ? (
-          <WeeklyScheduleGrid
-            scheduleLessons={data.scheduleLessons}
-            classById={classById}
-            onCellClick={handleCellClick}
-          />
+          <>
+            <LiveNowBanner scheduleLessons={data.scheduleLessons} classById={classById} />
+            <WeeklyScheduleGrid
+              scheduleLessons={data.scheduleLessons}
+              classById={classById}
+              onCellClick={handleCellClick}
+            />
+          </>
         ) : (
           <DailyLessonJournal
             dateIso={dateIso}
