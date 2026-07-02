@@ -25,11 +25,11 @@ export default function AppLoader({ exiting = false, onExited }) {
               </linearGradient>
             </defs>
           </svg>
-          <div className="relative w-20 h-20 rounded-[1.6rem] overflow-hidden" style={{ boxShadow: '0 0 24px hsl(190 85% 55% / 0.45), 0 8px 24px -8px hsl(217 85% 45% / 0.5)' }}>
+          <div className="relative w-20 h-20 rounded-full overflow-hidden isolate" style={{ borderRadius: '9999px', boxShadow: '0 0 24px hsl(190 85% 55% / 0.45), 0 8px 24px -8px hsl(217 85% 45% / 0.5)' }}>
             <img
               src="https://media.base44.com/images/public/6a1d68f94dec55d128da882f/854e67890_5CF5E9B9-1E5C-4BD2-885F-9E5B2D0AF927.png"
               alt="יומן חנ״ג חכם"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover scale-[1.42]"
               draggable="false"
             />
             <span
