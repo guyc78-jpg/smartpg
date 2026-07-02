@@ -1,15 +1,21 @@
 import { useRef, useState } from 'react';
-import { FileSpreadsheet, FileText, Loader2, Upload } from 'lucide-react';
+import { FileSpreadsheet, FileText, Loader2, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { exportTestsToExcel, exportTestsToWord, rowsToTests } from '@/lib/testImportExport';
 import { parseTestDocx } from '@/functions/parseTestDocx';
 import TestImportDialog from '@/components/tests/TestImportDialog.jsx';
+import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 
-export default function TestImportExport({ tests, onImport, defaultGradeLevel }) {
+export default function TestImportExport({ tests, onImport, onDeleteAll, defaultGradeLevel }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const fileRef = useRef(null);
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [parsedTests, setParsedTests] = useState([]);
   const [detectedGradeLevel, setDetectedGradeLevel] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -105,7 +111,33 @@ export default function TestImportExport({ tests, onImport, defaultGradeLevel })
       <button type="button" onClick={() => tests.length ? exportTestsToWord(tests) : toast.error('אין מבדקים לייצוא בסינון הנוכחי')} className={chip}>
         <FileText className="w-3.5 h-3.5" /> ייצוא Word
       </button>
+      {isAdmin && onDeleteAll && (
+        <button type="button" onClick={() => setDeleteAllOpen(true)} disabled={deletingAll} className={`${chip} text-destructive`}>
+          {deletingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+          {deletingAll ? 'מוחק…' : 'מחק הכל'}
+        </button>
+      )}
       <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.doc,.docx,.pdf" className="hidden" onChange={handleFile} />
+
+      <ConfirmDeleteDialog
+        open={deleteAllOpen}
+        onOpenChange={setDeleteAllOpen}
+        title="מחיקת כל המבדקים"
+        description="כל המבדקים וטבלאות ההמרה שלהם יימחקו לצמיתות. פעולה זו לא ניתנת לביטול."
+        onConfirm={async () => {
+          setDeleteAllOpen(false);
+          setDeletingAll(true);
+          try {
+            const count = await onDeleteAll();
+            toast.success(`נמחקו ${count} מבדקים`);
+          } catch (err) {
+            console.error('Delete all tests failed:', err);
+            toast.error('המחיקה נכשלה. נסה שוב.');
+          } finally {
+            setDeletingAll(false);
+          }
+        }}
+      />
 
       <TestImportDialog
         open={dialogOpen}

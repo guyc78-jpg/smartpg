@@ -60,6 +60,12 @@ export default function ManageTestsPage() {
     return tests.length;
   };
 
+  const handleDeleteAll = async () => {
+    const ids = data.tests.map(t => t.id);
+    for (const id of ids) await deleteTest(id);
+    return ids.length;
+  };
+
   return (
     <Layout title="מבדקים">
       <div className="max-w-4xl mx-auto space-y-3 p-4" dir="rtl">
@@ -86,7 +92,7 @@ export default function ManageTestsPage() {
               <Plus className="w-3.5 h-3.5 ml-1" /> הוסף מבדק
             </Button>
           </div>
-          <TestImportExport tests={filteredTests} onImport={handleImport} defaultGradeLevel={selectedGradeLevel === 'all' ? 'ז' : selectedGradeLevel} />
+          <TestImportExport tests={filteredTests} onImport={handleImport} onDeleteAll={handleDeleteAll} defaultGradeLevel={selectedGradeLevel === 'all' ? 'ז' : selectedGradeLevel} />
         </div>
 
         <div className="space-y-2">
