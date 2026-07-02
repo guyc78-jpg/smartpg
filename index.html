@@ -12,7 +12,15 @@
     <meta name="description" content="יומן המורה הדיגיטלי לחינוך גופני" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:hsl(210,20%,98%)">
+        <img src="https://media.base44.com/images/public/6a1d68f94dec55d128da882f/854e67890_5CF5E9B9-1E5C-4BD2-885F-9E5B2D0AF927.png" alt="" style="width:80px;height:80px;border-radius:26px;animation:boot-pulse 1.2s ease-in-out infinite" />
+        <style>
+          @keyframes boot-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.6; transform:scale(.94); } }
+          @media (prefers-color-scheme: dark) { #root > div { background:hsl(222,30%,7%) !important; } }
+        </style>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

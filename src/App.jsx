@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { AppProvider } from '@/store/AppProvider';
+import { AppProvider, useApp } from '@/store/AppProvider';
 import { LiveRunProvider } from '@/contexts/LiveRunContext';
 import FloatingRunTimer from '@/components/live-run/FloatingRunTimer';
 
@@ -31,17 +31,18 @@ import LessonManagePage from './pages/LessonManagePage';
 import LessonEditPage from './pages/LessonEditPage';
 import SubstituteFillsPage from './pages/SubstituteFillsPage';
 
-const AuthenticatedApp = () => {
+const AppShell = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { loading: isLoadingData } = useApp();
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [loaderGone, setLoaderGone] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setMinTimeElapsed(true), 2200);
+    const t = setTimeout(() => setMinTimeElapsed(true), 700);
     return () => clearTimeout(t);
   }, []);
 
-  const appReady = !isLoadingPublicSettings && !isLoadingAuth && minTimeElapsed;
+  const appReady = !isLoadingPublicSettings && !isLoadingAuth && !isLoadingData && minTimeElapsed;
 
   if (appReady && authError) {
     if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
@@ -51,9 +52,8 @@ const AuthenticatedApp = () => {
   return (
     <>
     {!loaderGone && <AppLoader exiting={appReady} onExited={() => setLoaderGone(true)} />}
-    {appReady && (
+    {(appReady || loaderGone) && (
     <ErrorBoundary>
-    <AppProvider>
       <LiveRunProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -79,12 +79,17 @@ const AuthenticatedApp = () => {
       </Routes>
       <FloatingRunTimer />
       </LiveRunProvider>
-    </AppProvider>
     </ErrorBoundary>
     )}
     </>
   );
 };
+
+const AuthenticatedApp = () => (
+  <AppProvider>
+    <AppShell />
+  </AppProvider>
+);
 
 function App() {
   return (
