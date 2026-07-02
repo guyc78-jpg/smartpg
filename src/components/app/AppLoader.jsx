@@ -25,8 +25,13 @@ export default function AppLoader({ exiting = false, onExited }) {
               </linearGradient>
             </defs>
           </svg>
-          <div className="relative w-20 h-20 rounded-[1.6rem] glass-surface flex items-center justify-center overflow-hidden">
-            <span className="text-2xl font-bold text-primary tracking-tight">חנ״ג</span>
+          <div className="relative w-20 h-20 rounded-[1.6rem] overflow-hidden" style={{ boxShadow: '0 0 24px hsl(190 85% 55% / 0.45), 0 8px 24px -8px hsl(217 85% 45% / 0.5)' }}>
+            <img
+              src="https://media.base44.com/images/public/6a1d68f94dec55d128da882f/854e67890_5CF5E9B9-1E5C-4BD2-885F-9E5B2D0AF927.png"
+              alt="יומן חנ״ג חכם"
+              className="w-full h-full object-cover"
+              draggable="false"
+            />
             <span
               className="absolute inset-0"
               style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%)', animation: 'loader-shimmer 2.2s ease-in-out infinite' }}
