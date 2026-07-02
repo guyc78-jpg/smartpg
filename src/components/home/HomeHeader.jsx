@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Bell, LogOut, Moon, Settings, Sun, User, Users, Building2 } from 'lucide-react';
+import { Bell, LogOut, Moon, Settings, Sun, UserCheck, Users, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
@@ -20,21 +20,21 @@ export default function HomeHeader({ classCount, studentCount }) {
           </h1>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
-          <button onClick={() => logout()} className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="יציאה">
-            <LogOut className="w-4 h-4" />
+          <Link to="/settings" className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="פרופיל">
+            <UserCheck className="w-4 h-4" />
+          </Link>
+          <Link to="/settings" className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="הגדרות">
+            <Settings className="w-4 h-4" />
+          </Link>
+          <button onClick={() => toast('אין התראות חדשות')} className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="התראות">
+            <Bell className="w-4 h-4" />
           </button>
           <button onClick={toggle} className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="מצב כהה">
             {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <button onClick={() => toast('אין התראות חדשות')} className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="התראות">
-            <Bell className="w-4 h-4" />
+          <button onClick={() => logout()} className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="יציאה">
+            <LogOut className="w-4 h-4" />
           </button>
-          <Link to="/settings" className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="הגדרות">
-            <Settings className="w-4 h-4" />
-          </Link>
-          <Link to="/settings" className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="פרופיל">
-            <User className="w-4 h-4" />
-          </Link>
         </div>
       </div>
 
