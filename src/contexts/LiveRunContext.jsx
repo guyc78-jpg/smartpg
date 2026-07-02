@@ -44,7 +44,13 @@ export function LiveRunProvider({ children }) {
   const elapsedMs = useMemo(() => getElapsed(session), [session, tick]);
 
   const startSession = useCallback((setup, students) => {
-    const participants = Object.fromEntries(students.map(student => [
+    const unique = [];
+    const seen = new Set();
+    for (const s of students) {
+      if (s && s.id && !seen.has(s.id)) { seen.add(s.id); unique.push(s); }
+    }
+    if (unique.length === 0) return;
+    const participants = Object.fromEntries(unique.map(student => [
       student.id,
       { studentId: student.id, laps: 0, lapTimes: [], status: 'running', finishTimeMs: null, history: [], unsaved: true }
     ]));
@@ -52,7 +58,8 @@ export function LiveRunProvider({ children }) {
       id: `run_${Date.now()}`,
       setup,
       participants,
-      selectedIds: students.map(s => s.id),
+      selectedIds: unique.map(s => s.id),
+      studentsById: Object.fromEntries(unique.map(s => [s.id, s])),
       running: false,
       startedAt: null,
       elapsedBeforePause: 0,
@@ -169,6 +176,33 @@ export function LiveRunProvider({ children }) {
 
   const reopenRun = useCallback(() => setSession(prev => prev ? { ...prev, phase: 'running' } : prev), []);
 
+  const openEditParticipants = useCallback(() => setSession(prev => prev ? { ...prev, phase: 'edit' } : prev), []);
+
+  const updateParticipants = useCallback((students) => {
+    setSession(prev => {
+      if (!prev) return prev;
+      const unique = [];
+      const seen = new Set();
+      for (const s of students) {
+        if (s && s.id && !seen.has(s.id)) { seen.add(s.id); unique.push(s); }
+      }
+      if (unique.length === 0) return prev;
+      const participants = {};
+      for (const s of unique) {
+        participants[s.id] = prev.participants[s.id]
+          || { studentId: s.id, laps: 0, lapTimes: [], status: 'running', finishTimeMs: null, history: [], unsaved: true };
+      }
+      return {
+        ...prev,
+        selectedIds: unique.map(s => s.id),
+        studentsById: { ...(prev.studentsById || {}), ...Object.fromEntries(unique.map(s => [s.id, s])) },
+        participants,
+        phase: 'running',
+        saved: false,
+      };
+    });
+  }, []);
+
   const updateSummaryResult = useCallback((studentId, patch) => {
     setSession(prev => {
       if (!prev) return prev;
@@ -200,6 +234,8 @@ export function LiveRunProvider({ children }) {
     undoStudent,
     finishRun,
     reopenRun,
+    openEditParticipants,
+    updateParticipants,
     updateSummaryResult,
     markSaved,
   };

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pause, Play, RotateCcw, Search, Square } from 'lucide-react';
+import { Pause, Play, RotateCcw, Search, Square, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { useLiveRun } from '@/contexts/LiveRunContext';
 import RunSetup from '@/components/live-run/RunSetup';
 import RunStudentRow from '@/components/live-run/RunStudentRow';
 import RunSummary from '@/components/live-run/RunSummary';
+import EditParticipants from '@/components/live-run/EditParticipants';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { displayRunStudentName, formatClockTime, secondsFromMs } from '@/components/live-run/runUtils';
 import { convertRawToGrade } from '@/lib/gradeCalc';
@@ -25,7 +26,10 @@ export default function LiveRunPage() {
 
   const selectedStudents = useMemo(() => {
     if (!session) return [];
-    return data.students.filter(s => session.selectedIds.includes(s.id));
+    const byId = new Map(data.students.map(s => [s.id, s]));
+    return session.selectedIds
+      .map(id => byId.get(id) || session.studentsById?.[id])
+      .filter(Boolean);
   }, [data.students, session]);
 
   const currentClass = data.classes.find(c => c.id === session?.setup?.classId);
@@ -116,6 +120,20 @@ export default function LiveRunPage() {
     return <Layout title="ריצה חיה" subtitle="מדידת תלמידים בשיעורי חנ״ג" backTo="/"><RunSetup data={data} initial={initial} onStart={run.startSession} /></Layout>;
   }
 
+  if (session.phase === 'edit') {
+    return (
+      <Layout title="עריכת משתתפים" subtitle={currentClass?.name || ''}>
+        <EditParticipants
+          classStudents={data.students.filter(s => s.classId === session.setup.classId)}
+          snapshot={session.studentsById}
+          selectedIds={session.selectedIds}
+          onConfirm={run.updateParticipants}
+          onCancel={run.reopenRun}
+        />
+      </Layout>
+    );
+  }
+
   if (session.phase === 'summary') {
     return (
       <Layout title="סיכום ריצה" subtitle={`${currentClass?.name || ''} · ${session.setup.measurementLabel || ''}`} backTo="/live-run">
@@ -152,6 +170,9 @@ export default function LiveRunPage() {
               )}
               <button onClick={resetRun} aria-label="איפוס ריצה" title="איפוס ריצה" className="h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center">
                 <RotateCcw className="w-4 h-4" />
+              </button>
+              <button onClick={run.openEditParticipants} aria-label="עריכת משתתפים" title="עריכת משתתפים" className="h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center">
+                <UserPlus className="w-4 h-4" />
               </button>
             </div>
           </div>
