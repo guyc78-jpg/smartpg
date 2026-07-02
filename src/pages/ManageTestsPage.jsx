@@ -56,10 +56,6 @@ export default function ManageTestsPage() {
   return (
     <Layout title="מבדקים">
       <div className="max-w-4xl mx-auto space-y-3 p-4" dir="rtl">
-        <div className="rounded-2xl bg-primary/10 border border-primary/20 p-3 text-xs text-primary leading-6">
-          הגדירו לכל מבדק טבלת המרה לפי שכבה, מגדר וסוג. שורות ריקות, טווחים חופפים, ציונים לא חוקיים ותוצאות לא תקינות לא יישמרו.
-        </div>
-
         <div className="space-y-2">
           <div className="grid grid-cols-7 gap-1.5 w-full" dir="rtl">
             <button type="button" onClick={() => setSelectedGradeLevel('all')} className={`h-9 rounded-full text-xs font-bold liquid-chip ${selectedGradeLevel === 'all' ? 'liquid-chip-active' : ''}`}>
