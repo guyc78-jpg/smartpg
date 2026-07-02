@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
-import { guessScheduleMapping, parseScheduleCsv, extractPeLessons, DAY_LABELS } from '@/lib/scheduleImport';
+import { guessScheduleMapping, parseScheduleCsv, parseTeacherReportCsv, extractPeLessons, DAY_LABELS } from '@/lib/scheduleImport';
 
 const MAPPING_FIELDS = { day: 'יום בשבוע', period: 'שעה/שיעור', className: 'כיתה', subject: 'מקצוע' };
 
@@ -20,9 +20,11 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);
+  const [directPreview, setDirectPreview] = useState(null);
 
   const columns = useMemo(() => Object.keys(rows[0] || {}), [rows]);
-  const preview = useMemo(() => extractPeLessons(rows, mapping), [rows, mapping]);
+  const mappedPreview = useMemo(() => extractPeLessons(rows, mapping), [rows, mapping]);
+  const preview = directPreview || mappedPreview;
 
   const resetImport = () => {
     setFile(null);
@@ -30,6 +32,7 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
     setMapping({});
     setError('');
     setSummary(null);
+    setDirectPreview(null);
   };
 
   const handleFile = async (selectedFile) => {
@@ -37,13 +40,21 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
     setRows([]);
     setSummary(null);
     setError('');
+    setDirectPreview(null);
     if (!selectedFile) return;
     setLoading(true);
 
     const isCsv = selectedFile.name.toLowerCase().endsWith('.csv');
     let importedRows = [];
     if (isCsv) {
-      importedRows = parseScheduleCsv(await selectedFile.text());
+      const text = await selectedFile.text();
+      const report = parseTeacherReportCsv(text);
+      if (report && report.matched > 0) {
+        setDirectPreview(report);
+        setLoading(false);
+        return;
+      }
+      importedRows = parseScheduleCsv(text);
     } else {
       const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
       const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({ file_url, json_schema: IMPORT_SCHEMA });
@@ -89,7 +100,13 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
             <p className="text-[11px] text-muted-foreground/70">המערכת תסרוק את כל הרשומות ותשמור אך ורק שיעורי חינוך גופני (חנ״ג / ספורט וכל הגרסאות שלהם), תוך איחוד כפילויות לפי יום, שעה, כיתה ומקצוע.</p>
           </div>
 
-          {columns.length > 0 && (
+          {directPreview && (
+            <p className="text-xs text-primary font-semibold rounded-xl bg-primary/10 p-3">
+              זוהה פורמט דוח מערכת שעות למורה — שיעורי החנ״ג והכיתות חולצו אוטומטית, ללא צורך במיפוי עמודות.
+            </p>
+          )}
+
+          {!directPreview && columns.length > 0 && (
             <div className="space-y-3 rounded-2xl border border-border p-4">
               <Label className="text-sm font-bold">2. מיפוי עמודות</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -109,7 +126,7 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
             </div>
           )}
 
-          {rows.length > 0 && (
+          {(rows.length > 0 || directPreview) && (
             <div className="space-y-3 rounded-2xl border border-border p-4">
               <Label className="text-sm font-bold">3. תוצאות הסינון</Label>
               <div className="grid grid-cols-4 gap-2 text-center text-sm">
@@ -156,8 +173,8 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
           )}
 
           <div className="flex gap-2 sticky bottom-0 bg-background pt-2">
-            <Button onClick={handleImport} disabled={!rows.length || loading} className="flex-1 h-11 rounded-xl font-semibold">אשר ייבוא</Button>
-            <Button variant="outline" onClick={resetImport} disabled={!file && !rows.length} className="h-11 rounded-xl px-5">מחק קובץ</Button>
+            <Button onClick={handleImport} disabled={(!rows.length && !directPreview) || loading} className="flex-1 h-11 rounded-xl font-semibold">אשר ייבוא</Button>
+            <Button variant="outline" onClick={resetImport} disabled={!file && !rows.length && !directPreview} className="h-11 rounded-xl px-5">מחק קובץ</Button>
             <Button variant="outline" onClick={() => onOpenChange(false)} className="h-11 rounded-xl px-5">סגור</Button>
           </div>
         </div>

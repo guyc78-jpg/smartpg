@@ -64,7 +64,7 @@ export function guessScheduleMapping(columns) {
   };
 }
 
-export function parseScheduleCsv(text) {
+function parseCsvRows(text) {
   const rows = [];
   let row = [];
   let value = '';
@@ -92,8 +92,66 @@ export function parseScheduleCsv(text) {
   }
   row.push(value.trim());
   if (row.some(Boolean)) rows.push(row);
+  return rows;
+}
+
+export function parseScheduleCsv(text) {
+  const rows = parseCsvRows(text);
   const headers = rows[0] || [];
   return rows.slice(1).map(values => Object.fromEntries(headers.map((header, index) => [header || `עמודה ${index + 1}`, values[index] || ''])));
+}
+
+// Matches class tokens like: ח' 1, ט' 5, י' 2, י"א 7, י"ב 3
+const CLASS_TOKEN_RE = /(י["״][אב]|[א-ת]['׳])\s*(\d{1,2})/g;
+
+// Parses "teacher schedule report" CSVs where each row is: period, day name,
+// and a combined cell of "subject,  class class class". Returns null if the
+// file doesn't look like this format.
+export function parseTeacherReportCsv(text) {
+  const rows = parseCsvRows(text);
+  const dataRows = rows.filter(cols => {
+    const period = Number(String(cols[0] || '').trim());
+    return Number.isFinite(period) && period >= 1 && period <= 15 && DAY_NAME_MAP[normalizeText(cols[1])] !== undefined;
+  });
+  if (dataRows.length < 5) return null;
+
+  const seen = new Set();
+  const lessons = [];
+  let matched = 0;
+  let duplicates = 0;
+  let invalid = 0;
+
+  dataRows.forEach(cols => {
+    const period = Number(String(cols[0]).trim());
+    const dayOfWeek = DAY_NAME_MAP[normalizeText(cols[1])];
+    const cell = String(cols[2] || '').trim();
+    if (!cell) return;
+
+    const commaIdx = cell.indexOf(',');
+    const subject = commaIdx === -1 ? cell : cell.slice(0, commaIdx);
+    const rest = commaIdx === -1 ? '' : cell.slice(commaIdx + 1);
+    if (!isPeSubject(subject)) return;
+    matched += 1;
+
+    const tokens = [...rest.matchAll(CLASS_TOKEN_RE)];
+    if (tokens.length === 0) {
+      invalid += 1;
+      return;
+    }
+    tokens.forEach(m => {
+      const className = `${m[1]} ${m[2]}`;
+      const classKey = normalizeClassName(className);
+      const key = scheduleDedupeKey(dayOfWeek, period, classKey);
+      if (seen.has(key)) {
+        duplicates += 1;
+        return;
+      }
+      seen.add(key);
+      lessons.push({ dayOfWeek, period, className, classKey, subject: PE_SUBJECT_NAME });
+    });
+  });
+
+  return { lessons, scanned: dataRows.length, matched, duplicates, invalid };
 }
 
 // Given raw imported rows + column mapping, returns only the PE lessons, deduped.
