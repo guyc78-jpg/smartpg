@@ -28,8 +28,12 @@ export default function RiskAlertsCard() {
         if (student.peExempt) continue;
         const annual = calculateAnnualGrade(student.id, classTests, data.results, data.behaviorGrades, data.settings, ctsA, ctsB, false);
         const missingCount = (annual.semA?.missingTests?.length || 0) + (annual.semB?.missingTests?.length || 0);
-        if ((annual.annualGrade !== null && annual.annualGrade < redBelow) || missingCount > 0) {
-          results.push({ student, cls, grade: annual.annualGrade, missingCount });
+        const declineDrop = annual.semA?.semesterFinalGrade != null && annual.semB?.semesterFinalGrade != null
+          ? annual.semA.semesterFinalGrade - annual.semB.semesterFinalGrade
+          : 0;
+        const declining = declineDrop >= 8;
+        if ((annual.annualGrade !== null && annual.annualGrade < redBelow) || missingCount > 0 || declining) {
+          results.push({ student, cls, grade: annual.annualGrade, missingCount, declining, declineDrop });
         }
       }
     }
@@ -46,7 +50,7 @@ export default function RiskAlertsCard() {
         <Badge variant="secondary" className="text-[10px]">{atRiskStudents.length}</Badge>
       </div>
       <div className="space-y-1">
-        {atRiskStudents.map(({ student, cls, grade, missingCount }) => (
+        {atRiskStudents.map(({ student, cls, grade, missingCount, declining, declineDrop }) => (
           <Link
             key={student.id}
             to={`/class/${cls.id}/student/${student.id}`}
@@ -57,6 +61,9 @@ export default function RiskAlertsCard() {
               <div className="text-muted-foreground truncate">{cls.name}</div>
             </div>
             <div className="shrink-0 flex items-center gap-2">
+              {declining && (
+                <Badge variant="outline" className="text-[9px] border-destructive/40 text-destructive">▼ ירידה {declineDrop}</Badge>
+              )}
               {missingCount > 0 && (
                 <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-700 dark:text-amber-200">{missingCount} חסרים</Badge>
               )}

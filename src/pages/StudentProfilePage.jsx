@@ -6,6 +6,7 @@ import { calculateAnnualGrade } from '@/lib/gradeCalc';
 import Layout from '@/components/app/Layout';
 import StudentGradeBreakdown from '@/components/grades/StudentGradeBreakdown';
 import StudentInfoCard from '@/components/student-profile/StudentInfoCard';
+import ClassComparisonSection from '@/components/student-profile/ClassComparisonSection';
 import TestResultsSection from '@/components/student-profile/TestResultsSection';
 import BehaviorSection from '@/components/student-profile/BehaviorSection';
 import RunHistorySection from '@/components/student-profile/RunHistorySection';
@@ -70,6 +71,7 @@ export default function StudentProfilePage() {
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
         <StudentInfoCard student={student} cls={cls} />
         {annual && <StudentGradeBreakdown annual={annual} viewMode="annual" />}
+        <ClassComparisonSection cls={cls} student={student} classTests={classTests} conductedTestIdsA={conductedTestIdsA} conductedTestIdsB={conductedTestIdsB} />
         <TestResultsSection student={student} tests={classTests} results={data.results} />
         <BehaviorSection studentId={studentId} behaviorGrades={data.behaviorGrades} onSave={setBehaviorGrade} />
         <RunHistorySection measurements={runMeasurements} loading={loadingRuns} />
