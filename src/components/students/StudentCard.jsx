@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit2, Trash2, ShieldOff } from 'lucide-react';
+import { Edit2, Trash2, ShieldOff, HeartPulse } from 'lucide-react';
 import StudentGradeBreakdown from '@/components/grades/StudentGradeBreakdown';
 import { formatStudentName } from '@/lib/studentName';
 
@@ -34,8 +34,13 @@ export default function StudentCard({ student, classId, displayGrade, annual, vi
               <h3 className="font-bold text-base truncate hover:text-primary transition-colors">{formatStudentName(student)}</h3>
             </Link>
             {student.peExempt && (
-              <Badge variant="outline" className="text-[9px] border-destructive/40 text-destructive bg-destructive/5">
-                <ShieldOff className="w-2.5 h-2.5 ml-0.5" />פטור
+              <Badge className="text-[10px] bg-destructive text-destructive-foreground hover:bg-destructive">
+                <ShieldOff className="w-3 h-3 ml-1" />פטור רפואי
+              </Badge>
+            )}
+            {!student.peExempt && student.medicalLimitations && (
+              <Badge variant="outline" className="text-[10px] border-warning/60 text-warning bg-warning/10">
+                <HeartPulse className="w-3 h-3 ml-1" />מגבלה רפואית
               </Badge>
             )}
           </div>
@@ -58,10 +63,22 @@ export default function StudentCard({ student, classId, displayGrade, annual, vi
 
       <StudentGradeBreakdown annual={annual} viewMode={viewMode} />
 
-      {(student.medicalLimitations || student.peNotes) && (
-        <div className="space-y-1 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
-          {student.medicalLimitations && <p><span className="font-semibold text-foreground">רפואי:</span> {student.medicalLimitations}</p>}
-          {student.peNotes && <p><span className="font-semibold text-foreground">מקצועי:</span> {student.peNotes}</p>}
+      {(student.peExempt || student.medicalLimitations) && (
+        <div className={`flex items-start gap-2 rounded-xl border p-3 text-xs ${
+          student.peExempt ? 'border-destructive/40 bg-destructive/10' : 'border-warning/50 bg-warning/10'
+        }`}>
+          <HeartPulse className={`w-4 h-4 shrink-0 mt-0.5 ${student.peExempt ? 'text-destructive' : 'text-warning'}`} />
+          <div className="text-right space-y-0.5">
+            <p className={`font-bold ${student.peExempt ? 'text-destructive' : 'text-warning'}`}>
+              {student.peExempt ? 'פטור / מגבלה רפואית פעילה' : 'מגבלה רפואית'}
+            </p>
+            {student.medicalLimitations && <p className="text-foreground/80">{student.medicalLimitations}</p>}
+          </div>
+        </div>
+      )}
+      {student.peNotes && (
+        <div className="rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground text-right">
+          <span className="font-semibold text-foreground">מקצועי:</span> {student.peNotes}
         </div>
       )}
     </Card>
