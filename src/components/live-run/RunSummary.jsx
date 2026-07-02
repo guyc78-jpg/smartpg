@@ -28,7 +28,7 @@ export default function RunSummary({ session, students, className, test, passThr
   });
 
   return (
-    <div className="max-w-[520px] mx-auto p-3 pb-44 space-y-3" dir="rtl">
+    <div className="max-w-[520px] mx-auto p-3 pb-[calc(230px+env(safe-area-inset-bottom,0px))] md:pb-44 space-y-3" dir="rtl">
       <div className="rounded-2xl border bg-card p-4 space-y-1.5 text-sm">
         <div className="flex justify-between"><span className="text-muted-foreground">כיתה:</span><span className="font-bold">{className || '—'}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">מבדק:</span><span className="font-bold">{test?.name || session.setup.measurementLabel || '—'}</span></div>
@@ -99,7 +99,7 @@ export default function RunSummary({ session, students, className, test, passThr
 
       {invalidRows.length > 0 && <div className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">יש תלמיד שסומן “סיים” בלי זמן תקין. ערוך זמן או שנה סטטוס לפני שמירה.</div>}
 
-      <div className="fixed bottom-14 md:bottom-0 inset-x-0 bg-background/95 backdrop-blur border-t p-3 z-30">
+      <div className="fixed bottom-[calc(68px+env(safe-area-inset-bottom,0px))] md:bottom-0 inset-x-0 bg-background/95 backdrop-blur border-t p-3 z-30">
         <div className="max-w-[520px] mx-auto space-y-2">
           <Button disabled={invalidRows.length > 0 || saving} onClick={onSave} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
             <Save className="w-5 h-5" /> {saving ? 'שומר…' : test ? 'שמור להזנת המבדק' : 'שמור תוצאות'}
