@@ -1,12 +1,9 @@
-import { Link } from 'react-router-dom';
-import { Bell, LogOut, Moon, Settings, Sun, UserCheck, Users, Building2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Users, Building2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
-import { useTheme } from '@/hooks/useTheme';
+import HeaderActions from '@/components/app/HeaderActions';
 
 export default function HomeHeader({ classCount, studentCount }) {
-  const { user, logout } = useAuth();
-  const { dark, toggle } = useTheme();
+  const { user } = useAuth();
   const schoolName = typeof window !== 'undefined' ? localStorage.getItem('schoolName') : '';
   const teacherName = typeof window !== 'undefined' ? localStorage.getItem('teacherName') : '';
 
@@ -21,27 +18,7 @@ export default function HomeHeader({ classCount, studentCount }) {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Link
-            to="/substitute-fills"
-            className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60"
-            title="מילויי מקום"
-          >
-            <UserCheck className="w-4 h-4" />
-          </Link>
-          <Link to="/settings" className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="הגדרות">
-            <Settings className="w-4 h-4" />
-          </Link>
-          <button onClick={() => toast('אין התראות חדשות')} className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="התראות">
-            <Bell className="w-4 h-4" />
-          </button>
-          <button onClick={toggle} className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="מצב כהה">
-            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-          <button onClick={() => logout()} className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="יציאה">
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
+        <HeaderActions />
       </div>
 
       <div className="flex items-center justify-start gap-2 mt-1 text-xs font-medium text-muted-foreground">

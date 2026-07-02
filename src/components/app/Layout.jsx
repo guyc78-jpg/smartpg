@@ -4,10 +4,11 @@ import { Home, ClipboardList, FileText, ArrowRight, Moon, Sun, Settings, Calenda
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import BottomNav from '@/components/app/BottomNav';
+import HeaderActions from '@/components/app/HeaderActions';
 
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'ראשי' },
-  { to: '/schedule', icon: CalendarDays, label: 'מערכת' },
+  { to: '/schedule', icon: CalendarDays, label: 'מערכת שעות' },
   { to: '/live-run', icon: Activity, label: 'ריצה חיה' },
   { to: '/manage-tests', icon: ClipboardList, label: 'מבדקים' },
   { to: '/reports', icon: FileText, label: 'דוחות' },
@@ -75,6 +76,7 @@ export default function Layout({ children, title, backTo, subtitle, titleAction 
               {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
             </div>
             {titleAction && <div className="shrink-0">{titleAction}</div>}
+            <HeaderActions />
           </div>
         )}
       </header>

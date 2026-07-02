@@ -54,7 +54,7 @@ export default function ManageTestsPage() {
   const updateField = (test, field, value) => updateTest({ ...test, [field]: value });
 
   return (
-    <Layout title="מבדקי חנ״ג וטבלאות המרה">
+    <Layout title="מבדקים">
       <div className="max-w-4xl mx-auto space-y-3 p-4" dir="rtl">
         <div className="rounded-2xl bg-primary/10 border border-primary/20 p-3 text-xs text-primary leading-6">
           הגדירו לכל מבדק טבלת המרה לפי שכבה, מגדר וסוג. שורות ריקות, טווחים חופפים, ציונים לא חוקיים ותוצאות לא תקינות לא יישמרו.
