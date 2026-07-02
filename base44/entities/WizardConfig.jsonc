@@ -1,0 +1,52 @@
+{
+  "name": "WizardConfig",
+  "type": "object",
+  "properties": {
+    "wizard_id": {
+      "type": "string",
+      "description": "Unique wizard identifier"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "all",
+        "admin",
+        "user"
+      ],
+      "default": "all",
+      "description": "Which user role this wizard targets"
+    },
+    "is_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    }
+  },
+  "required": [
+    "wizard_id",
+    "title"
+  ]
+}
