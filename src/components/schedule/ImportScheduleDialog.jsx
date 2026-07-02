@@ -79,8 +79,12 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
       return;
     }
     setLoading(true);
-    const result = await onImport(preview.lessons);
-    setSummary(result);
+    try {
+      const result = await onImport(preview.lessons);
+      setSummary(result);
+    } catch (e) {
+      setError(`הייבוא נכשל באמצע — נסה שוב. (${e?.message || 'שגיאה לא ידועה'})`);
+    }
     setLoading(false);
   };
 
@@ -166,9 +170,21 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           {summary && (
-            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border p-3 text-center text-sm">
-              <div><div className="font-bold text-primary">{summary.lessonsSaved}</div><div className="text-[11px] text-muted-foreground">שיעורים נשמרו</div></div>
-              <div><div className="font-bold text-primary">{summary.classesCreated}</div><div className="text-[11px] text-muted-foreground">כיתות חדשות נוצרו</div></div>
+            <div className="space-y-2">
+              {summary.lessonsSaved === 0 && summary.duplicatesSkipped > 0 ? (
+                <p className="text-xs font-semibold rounded-xl bg-primary/10 text-primary p-3">
+                  כל {summary.duplicatesSkipped} השיעורים מהקובץ כבר קיימים במערכת השעות — אין מה לייבא מחדש. ניתן לצפות בהם בטאב "מערכת שבועית".
+                </p>
+              ) : (
+                <p className="text-xs font-semibold rounded-xl bg-primary/10 text-primary p-3">
+                  הייבוא הושלם בהצלחה!
+                </p>
+              )}
+              <div className="grid grid-cols-3 gap-2 rounded-2xl border border-border p-3 text-center text-sm">
+                <div><div className="font-bold text-primary">{summary.lessonsSaved}</div><div className="text-[11px] text-muted-foreground">שיעורים נשמרו</div></div>
+                <div><div className="font-bold text-primary">{summary.classesCreated}</div><div className="text-[11px] text-muted-foreground">כיתות חדשות נוצרו</div></div>
+                <div><div className="font-bold">{summary.duplicatesSkipped ?? 0}</div><div className="text-[11px] text-muted-foreground">כבר היו קיימים</div></div>
+              </div>
             </div>
           )}
 
