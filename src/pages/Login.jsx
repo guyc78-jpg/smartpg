@@ -1,125 +1,79 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
-import AuthLayout from "@/components/AuthLayout";
+import { LogIn } from "lucide-react";
 import GoogleIcon from "@/components/GoogleIcon";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      await base44.auth.loginViaEmailPassword(email, password);
-      window.location.href = "/";
-    } catch (err) {
-      setError(err.message || "אימייל או סיסמה שגויים");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleGoogle = () => {
     base44.auth.loginWithProvider("google", "/");
   };
 
   return (
-    <AuthLayout
-      icon={LogIn}
-      title="ברוכים הבאים"
-      subtitle="התחברו לחשבון שלכם"
-      footer={
-        <>
-          אין לכם חשבון?{" "}
-          <Link to="/register" className="text-primary font-medium hover:underline">
-            צרו חשבון
-          </Link>
-        </>
-      }
-    >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        התחברות עם Google
-      </Button>
-
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
+    <div dir="rtl" className="min-h-screen flex items-center justify-center app-loader-bg px-4">
+      <div className="w-full max-w-md flex flex-col items-center">
+        {/* Liquid Glass icon */}
+        <div
+          className="relative w-24 h-24 rounded-full flex items-center justify-center mb-8"
+          style={{
+            background: "linear-gradient(160deg, hsl(var(--card) / 0.75), hsl(var(--card) / 0.40))",
+            backdropFilter: "blur(28px) saturate(1.9)",
+            WebkitBackdropFilter: "blur(28px) saturate(1.9)",
+            boxShadow:
+              "0 0 0 1px rgb(var(--glass-border) / 0.35), inset 0 2px 0 rgb(var(--glass-border) / 0.65), inset 0 -2px 6px hsl(var(--primary) / 0.10), 0 0 32px hsl(var(--primary) / 0.25), 0 18px 40px -14px hsl(var(--primary) / 0.45)",
+            animation: "loader-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both",
+          }}
+        >
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center"
+            style={{
+              background: "linear-gradient(180deg, hsl(var(--accent)), hsl(var(--primary)))",
+              boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.45), inset 0 -2px 4px rgba(0,0,0,0.25), 0 6px 18px -6px hsl(var(--primary) / 0.6)",
+            }}
+          >
+            <LogIn className="w-8 h-8 text-white drop-shadow" aria-hidden="true" />
+          </div>
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">או</span>
+
+        {/* Wordmark */}
+        <div className="text-center mb-8" style={{ animation: "loader-fade-up 0.7s 0.15s ease-out both" }}>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">ברוכים הבאים</h1>
+          <p className="text-muted-foreground mt-2">התחברו כדי להמשיך ליומן שלכם</p>
+        </div>
+
+        {/* Glass card */}
+        <div
+          className="w-full rounded-3xl p-8 card-3d"
+          style={{ animation: "loader-fade-up 0.7s 0.3s ease-out both" }}
+        >
+          <button
+            onClick={handleGoogle}
+            className="group w-full h-14 rounded-2xl flex items-center justify-center gap-3 text-base font-semibold text-foreground transition-all duration-200 active:scale-[0.98]"
+            style={{
+              background: "linear-gradient(160deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.65))",
+              backdropFilter: "blur(20px) saturate(1.8)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.8)",
+              boxShadow:
+                "0 0 0 1px rgb(var(--glass-border) / 0.40), inset 0 1.5px 0 rgb(var(--glass-border) / 0.70), inset 0 -1px 0 rgba(0,0,0,0.05), 0 2px 4px rgba(10,20,45,0.06), 0 14px 32px -10px rgba(10,20,45,0.28)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow =
+                "0 0 0 1px hsl(var(--primary) / 0.35), inset 0 1.5px 0 rgb(var(--glass-border) / 0.80), 0 4px 8px rgba(10,20,45,0.08), 0 20px 44px -12px hsl(var(--primary) / 0.40)";
+              e.currentTarget.style.transform = "translateY(-2px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow =
+                "0 0 0 1px rgb(var(--glass-border) / 0.40), inset 0 1.5px 0 rgb(var(--glass-border) / 0.70), inset 0 -1px 0 rgba(0,0,0,0.05), 0 2px 4px rgba(10,20,45,0.06), 0 14px 32px -10px rgba(10,20,45,0.28)";
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+          >
+            <GoogleIcon className="w-6 h-6 shrink-0" />
+            התחברות עם Google
+          </button>
+
+          <p className="text-center text-xs text-muted-foreground mt-5">
+            התחברות מאובטחת באמצעות חשבון Google שלכם
+          </p>
         </div>
       </div>
-
-      {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">אימייל</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoFocus
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">סיסמה</Label>
-            <Link to="/forgot-password" className="text-xs text-primary hover:underline">
-              שכחתם סיסמה?
-            </Link>
-          </div>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
-          </div>
-        </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              מתחבר...
-            </>
-          ) : (
-            "התחברות"
-          )}
-        </Button>
-      </form>
-    </AuthLayout>
+    </div>
   );
 }
