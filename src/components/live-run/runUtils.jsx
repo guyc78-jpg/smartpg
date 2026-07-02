@@ -16,6 +16,11 @@ export function secondsFromMs(ms) {
   return Math.round((Number(ms || 0)) / 10) / 100;
 }
 
+export function formatResultSeconds(ms) {
+  const s = secondsFromMs(ms);
+  return s < 60 ? s.toFixed(2) : formatRunTime(ms);
+}
+
 export function msFromSeconds(seconds) {
   const value = Number(seconds);
   return Number.isFinite(value) && value >= 0 ? Math.round(value * 1000) : null;

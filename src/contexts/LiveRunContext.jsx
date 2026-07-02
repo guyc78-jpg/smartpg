@@ -99,6 +99,21 @@ export function LiveRunProvider({ children }) {
     });
   }, []);
 
+  const setLaps = useCallback((studentId, laps) => {
+    setSession(prev => {
+      if (!prev) return prev;
+      const participant = prev.participants[studentId];
+      if (!participant || participant.status !== 'running') return prev;
+      const elapsed = getElapsed(prev);
+      const nextParticipant = withHistory(participant, {
+        ...participant,
+        laps,
+        lapTimes: [...(participant.lapTimes || []), elapsed],
+      });
+      return { ...prev, participants: { ...prev.participants, [studentId]: nextParticipant }, saved: false };
+    });
+  }, []);
+
   const finishStudent = useCallback((studentId) => {
     setSession(prev => {
       if (!prev) return prev;
@@ -109,6 +124,7 @@ export function LiveRunProvider({ children }) {
         ...participant,
         status: 'finished',
         finishTimeMs: elapsed,
+        laps: prev.setup?.totalLaps ?? participant.laps,
         lapTimes: participant.lapTimes?.length ? participant.lapTimes : [elapsed],
       });
       return { ...prev, participants: { ...prev.participants, [studentId]: nextParticipant }, saved: false };
@@ -178,6 +194,7 @@ export function LiveRunProvider({ children }) {
     resetRun,
     closeSession,
     markLap,
+    setLaps,
     finishStudent,
     setStudentStatus,
     undoStudent,

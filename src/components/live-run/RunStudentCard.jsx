@@ -1,39 +1,66 @@
-import { Check, RotateCcw } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { CheckCircle2, RotateCcw, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { displayRunStudentName, formatRunTime } from './runUtils';
+import LapCircles from './LapCircles';
+import { displayRunStudentName, formatResultSeconds } from './runUtils';
 
-export default function RunStudentCard({ student, participant, rank, isFreeType, onFinish, onUndo, onDistanceChange }) {
-  const isRunning = participant.status === 'running';
-  const isFinished = participant.status === 'finished';
+export default function RunStudentCard({ student, participant, totalLaps, grade, onFinish, onNotParticipate, onUndo, onSetLaps }) {
+  const name = displayRunStudentName(student);
+  const status = participant.status;
+  const laps = participant.laps || 0;
+
+  if (status === 'not_participated' || status === 'not_completed') {
+    return (
+      <div className="rounded-2xl border bg-muted/40 p-3 flex items-center gap-2" dir="rtl">
+        <div className="flex-1 min-w-0 text-right">
+          <h3 className="font-extrabold text-[15px] truncate text-muted-foreground">{name}</h3>
+          <span className="text-xs text-muted-foreground">{status === 'not_completed' ? 'לא השלים/ה' : 'לא השתתף/ה'}</span>
+        </div>
+        <button onClick={onUndo} disabled={!participant.history?.length} className="w-9 h-9 rounded-full text-muted-foreground disabled:opacity-30 hover:bg-muted flex items-center justify-center" aria-label="בטל">
+          <RotateCcw className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
+  if (status === 'finished') {
+    return (
+      <div className="rounded-2xl border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900 p-3 flex items-center gap-2" dir="rtl">
+        <div className="flex-1 min-w-0 text-right">
+          <div className="flex items-center gap-2 justify-start">
+            <h3 className="font-extrabold text-[15px] truncate">{name}</h3>
+            {participant.finishTimeMs != null && (
+              <span className="font-mono font-black text-sm text-green-700 dark:text-green-400" dir="ltr">{formatResultSeconds(participant.finishTimeMs)}</span>
+            )}
+            {grade != null && (
+              <span className="rounded-md bg-green-600/15 text-green-700 dark:text-green-400 px-1.5 py-0.5 text-xs font-black shrink-0">{grade}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 mt-2 justify-start">
+            <LapCircles totalLaps={totalLaps} laps={laps} disabled />
+            <span className="text-xs text-muted-foreground font-semibold shrink-0">{laps}/{totalLaps}</span>
+          </div>
+        </div>
+        <button onClick={onUndo} className="w-9 h-9 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center shrink-0" aria-label="בטל סיום">
+          <RotateCcw className="w-4 h-4" />
+        </button>
+        <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />
+      </div>
+    );
+  }
 
   return (
-    <div className={`rounded-2xl border p-3 ${isFinished ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900' : 'bg-card border-border'}`}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          {isFinished && rank != null && <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-black flex items-center justify-center shrink-0">{rank}</span>}
-          <h3 className="font-extrabold text-[15px] truncate">{displayRunStudentName(student)}</h3>
-          {isRunning && <span className="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5 shrink-0">רץ/ה</span>}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {participant.finishTimeMs != null && <span className="font-mono font-bold text-sm" dir="ltr">{formatRunTime(participant.finishTimeMs)}</span>}
-          <button onClick={onUndo} disabled={!participant.history?.length} className="w-8 h-8 rounded-full text-muted-foreground disabled:opacity-30 hover:bg-muted flex items-center justify-center">
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          {isFinished ? (
-            <span className="w-9 h-9 rounded-full bg-green-600 text-white flex items-center justify-center"><Check className="w-4 h-4" /></span>
-          ) : (
-            <Button onClick={onFinish} className="h-9 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold"><Check className="w-3.5 h-3.5" /> סיים</Button>
-          )}
+    <div className="rounded-2xl border bg-card p-3 flex items-center gap-2" dir="rtl">
+      <div className="flex-1 min-w-0 text-right">
+        <h3 className="font-extrabold text-[15px] truncate">{name}</h3>
+        <div className="flex items-center gap-1.5 mt-2 justify-start">
+          <LapCircles totalLaps={totalLaps} laps={laps} onSetLaps={onSetLaps} />
+          <span className="text-xs text-muted-foreground font-semibold shrink-0">{laps}/{totalLaps}</span>
         </div>
       </div>
-
-      {isFreeType && (
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-xs text-muted-foreground shrink-0">מרחק (מ׳):</span>
-          <Input type="number" min="0" value={participant.resultDistance ?? ''} onChange={e => onDistanceChange(e.target.value)} className="h-9 text-sm max-w-[120px]" placeholder="אופציונלי" />
-        </div>
-      )}
+      <Button onClick={onFinish} className="h-10 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black shrink-0">סיים ✓</Button>
+      <button onClick={onNotParticipate} className="w-9 h-9 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center shrink-0" aria-label="לא השתתף/ה">
+        <XCircle className="w-5 h-5" />
+      </button>
     </div>
   );
 }
