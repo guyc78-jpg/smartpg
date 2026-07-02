@@ -3,7 +3,7 @@ import { Home, ClipboardList, CalendarDays, FileText } from 'lucide-react';
 
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'ראשי' },
-  { to: '/schedule', icon: CalendarDays, label: 'מערכת שעות' },
+  { to: '/schedule', icon: CalendarDays, label: 'מערכת' },
   { to: '/manage-tests', icon: ClipboardList, label: 'מבדקים' },
   { to: '/reports', icon: FileText, label: 'דוחות' },
 ];
