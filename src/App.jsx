@@ -29,6 +29,7 @@ import SchedulePage from './pages/SchedulePage';
 import LiveRunPage from './pages/LiveRunPage';
 import LessonManagePage from './pages/LessonManagePage';
 import LessonEditPage from './pages/LessonEditPage';
+import SubstituteFillsPage from './pages/SubstituteFillsPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -70,6 +71,7 @@ const AuthenticatedApp = () => {
           <Route path="/lesson-manage" element={<LessonManagePage />} />
           <Route path="/lesson-edit" element={<LessonEditPage />} />
           <Route path="/live-run" element={<LiveRunPage />} />
+          <Route path="/substitute-fills" element={<SubstituteFillsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<AppSettingsPage />} />
         </Route>

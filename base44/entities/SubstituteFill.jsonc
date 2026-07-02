@@ -1,0 +1,37 @@
+{
+  "name": "SubstituteFill",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "period": {
+      "type": "number"
+    },
+    "class_id": {
+      "type": "string",
+      "description": "Linked app class id, empty when free-text class"
+    },
+    "class_name": {
+      "type": "string",
+      "description": "Class display name (from list or free text)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_reported",
+        "reported",
+        "paid"
+      ],
+      "default": "not_reported"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "class_name"
+  ]
+}

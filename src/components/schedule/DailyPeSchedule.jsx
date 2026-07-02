@@ -1,14 +1,28 @@
 import { Link } from 'react-router-dom';
-import { Edit2, Activity, ChevronLeft } from 'lucide-react';
+import { Edit2, Activity, ChevronLeft, UserPlus } from 'lucide-react';
 import { formatPeriodStart } from '@/lib/periodTimes';
+
+function AddSubstituteLink({ dateIso }) {
+  return (
+    <Link to={`/substitute-fills?add=1&date=${dateIso}`} className="flex items-center justify-center gap-1.5 h-10 rounded-xl border border-dashed border-amber-400 text-amber-600 dark:text-amber-400 text-xs font-bold hover:bg-amber-50/60 dark:hover:bg-amber-950/20 transition-colors">
+      <UserPlus className="w-3.5 h-3.5" />
+      הוסף מילוי מקום
+    </Link>
+  );
+}
 
 export default function DailyPeSchedule({ lessons, classById, lessonTopics, dateIso }) {
   if (!lessons || lessons.length === 0) {
-    return <p className="text-center text-sm text-muted-foreground py-8">אין שיעורי חנ״ג היום</p>;
+    return (
+      <div className="space-y-2" dir="rtl">
+        <p className="text-center text-sm text-muted-foreground py-6">אין שיעורי חנ״ג היום</p>
+        <AddSubstituteLink dateIso={dateIso} />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" dir="rtl">
       {[...lessons].sort((a, b) => a.period - b.period).map(lesson => {
         const cls = classById[lesson.classId];
         const topic = (lessonTopics || []).find(t => t.classId === lesson.classId && t.date === dateIso && Number(t.period) === Number(lesson.period));
@@ -44,6 +58,7 @@ export default function DailyPeSchedule({ lessons, classById, lessonTopics, date
           </div>
         );
       })}
+      <AddSubstituteLink dateIso={dateIso} />
     </div>
   );
 }
