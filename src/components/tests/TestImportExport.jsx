@@ -3,6 +3,7 @@ import { FileSpreadsheet, FileText, Loader2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { exportTestsToExcel, exportTestsToWord, rowsToTests } from '@/lib/testImportExport';
+import { parseTestDocx } from '@/functions/parseTestDocx';
 import TestImportDialog from '@/components/tests/TestImportDialog.jsx';
 
 export default function TestImportExport({ tests, onImport, defaultGradeLevel }) {
@@ -10,7 +11,18 @@ export default function TestImportExport({ tests, onImport, defaultGradeLevel })
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [parsedTests, setParsedTests] = useState([]);
+  const [detectedGradeLevel, setDetectedGradeLevel] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const openPreview = (found, gradeLevel) => {
+    if (found.length === 0) {
+      toast.error('לא נמצאו מבדקים בקובץ');
+      return;
+    }
+    setDetectedGradeLevel(gradeLevel || '');
+    setParsedTests(found);
+    setDialogOpen(true);
+  };
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
@@ -19,6 +31,16 @@ export default function TestImportExport({ tests, onImport, defaultGradeLevel })
     setParsing(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      // Word files (e.g. גיליונות אות הכושר) are parsed by a dedicated backend parser
+      if (/\.docx?$/i.test(file.name)) {
+        const { data } = await parseTestDocx({ file_url });
+        if (data.error) throw new Error(data.error);
+        const rows = (data.rows || []).map(r => ({ ...r, gender: data.gender || '' }));
+        openPreview(rowsToTests(rows), (data.grade_level || '').replace(/['׳]/g, '').trim());
+        return;
+      }
+
       const res = await base44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
@@ -46,13 +68,7 @@ export default function TestImportExport({ tests, onImport, defaultGradeLevel })
       });
       if (res.status !== 'success') throw new Error(res.details || 'extract failed');
       const rows = Array.isArray(res.output) ? res.output : res.output?.rows || [];
-      const found = rowsToTests(rows);
-      if (found.length === 0) {
-        toast.error('לא נמצאו מבדקים בקובץ');
-        return;
-      }
-      setParsedTests(found);
-      setDialogOpen(true);
+      openPreview(rowsToTests(rows), '');
     } catch (err) {
       console.error('Test import failed:', err);
       toast.error('קריאת הקובץ נכשלה. ודא שהקובץ מכיל טבלאות מבדקים.');
@@ -95,7 +111,7 @@ export default function TestImportExport({ tests, onImport, defaultGradeLevel })
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         tests={parsedTests}
-        defaultGradeLevel={defaultGradeLevel}
+        defaultGradeLevel={detectedGradeLevel || defaultGradeLevel}
         onConfirm={handleConfirm}
         importing={importing}
       />
