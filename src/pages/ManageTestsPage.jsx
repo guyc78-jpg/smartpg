@@ -61,12 +61,14 @@ export default function ManageTestsPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="flex gap-1.5 w-full overflow-x-auto pb-1">
-            <Button size="sm" variant={selectedGradeLevel === 'all' ? 'default' : 'outline'} onClick={() => setSelectedGradeLevel('all')} className="h-8 rounded-full shrink-0">כל השכבות</Button>
+          <div className="grid grid-cols-7 gap-1.5 w-full" dir="rtl">
+            <button type="button" onClick={() => setSelectedGradeLevel('all')} className={`h-9 rounded-full text-xs font-bold liquid-chip ${selectedGradeLevel === 'all' ? 'liquid-chip-active' : ''}`}>
+              הכל
+            </button>
             {GRADE_LEVELS.map(gl => (
-              <Button key={gl} size="sm" variant={selectedGradeLevel === gl ? 'default' : 'outline'} onClick={() => setSelectedGradeLevel(gl)} className="h-8 rounded-full shrink-0">
+              <button key={gl} type="button" onClick={() => setSelectedGradeLevel(gl)} className={`h-9 rounded-full text-xs font-bold liquid-chip ${selectedGradeLevel === gl ? 'liquid-chip-active' : ''}`}>
                 {gl}׳
-              </Button>
+              </button>
             ))}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
