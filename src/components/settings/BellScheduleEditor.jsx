@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getBellTimes, saveBellTimes, resetBellTimes, getDefaultBellTimes } from '@/lib/periodTimes';
+import { base44 } from '@/api/base44Client';
 import { Bell, RotateCcw, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,14 +43,22 @@ export default function BellScheduleEditor() {
     }));
   };
 
-  const handleSave = () => {
+  const persistToSettings = async (bell) => {
+    const existing = await base44.entities.TeacherSettings.list();
+    if (existing.length > 0) await base44.entities.TeacherSettings.update(existing[0].id, { bell_schedule: bell });
+    else await base44.entities.TeacherSettings.create({ bell_schedule: bell });
+  };
+
+  const handleSave = async () => {
     saveBellTimes(times);
+    await persistToSettings(times);
     toast.success('מערכת הצלצולים נשמרה');
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     resetBellTimes();
     setTimes(getDefaultBellTimes());
+    await persistToSettings(null);
     toast.success('מערכת הצלצולים אופסה לברירת המחדל');
   };
 

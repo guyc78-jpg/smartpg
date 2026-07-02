@@ -1,0 +1,17 @@
+{
+  "name": "SentReminder",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Unique dedupe key, e.g. lesson_2026-07-02_3_<id> or test_<id>_<date>"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "key"
+  ]
+}

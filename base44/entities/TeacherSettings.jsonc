@@ -40,6 +40,10 @@
         "girls"
       ],
       "default": "boys"
+    },
+    "bell_schedule": {
+      "type": "object",
+      "description": "Custom bell schedule: { weekday: {period: [start, end]}, friday: {...} }"
     }
   },
   "required": []
