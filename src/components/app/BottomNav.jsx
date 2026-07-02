@@ -1,12 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, CalendarDays, Timer, Activity } from 'lucide-react';
+import { Home, ClipboardList, CalendarDays, FileText } from 'lucide-react';
 
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'ראשי' },
   { to: '/schedule', icon: CalendarDays, label: 'מערכת' },
-  { to: '/stopwatch', icon: Timer, label: 'סטופר' },
-  { to: '/live-run', icon: Activity, label: 'ריצה חיה' },
   { to: '/manage-tests', icon: ClipboardList, label: 'מבדקים' },
+  { to: '/reports', icon: FileText, label: 'דוחות' },
 ];
 
 function MobileNavItem({ to, icon: Icon, label }) {

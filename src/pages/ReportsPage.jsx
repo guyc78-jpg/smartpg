@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart3, Users, TrendingUp, AlertTriangle, Download } from 'lucide-react';
+import { BarChart3, Users, Download, School, Clock, XCircle, BookOpen } from 'lucide-react';
 import { SEMESTER_LABELS } from '@/lib/types';
 import { formatStudentName } from '@/lib/studentName';
 import { exportClassReportCSV } from '@/lib/exportReport';
@@ -51,6 +51,8 @@ export default function ReportsPage() {
   // Global stats
   const globalStats = useMemo(() => {
     let allGrades = [];
+    let gradesA = [];
+    let gradesB = [];
     let failCount = 0;
     let missingCount = 0;
 
@@ -70,12 +72,14 @@ export default function ReportsPage() {
           allGrades.push(annual.annualGrade);
           if (annual.annualGrade < redBelow) failCount++;
         }
+        if (annual.semA.semesterFinalGrade !== null) gradesA.push(annual.semA.semesterFinalGrade);
+        if (annual.semB.semesterFinalGrade !== null) gradesB.push(annual.semB.semesterFinalGrade);
         if (annual.semA.missingTests.length > 0 || annual.semB.missingTests.length > 0) missingCount++;
       });
     });
 
-    const avg = allGrades.length > 0 ? Math.round(allGrades.reduce((a, b) => a + b, 0) / allGrades.length) : null;
-    return { avg, totalStudents: data.students.length, totalClasses: data.classes.length, failCount, missingCount };
+    const avgOf = arr => (arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
+    return { avg: avgOf(allGrades), avgA: avgOf(gradesA), avgB: avgOf(gradesB), totalStudents: data.students.length, totalClasses: data.classes.length, failCount, missingCount };
   }, [data]);
 
   // Per-class summary
@@ -92,48 +96,80 @@ export default function ReportsPage() {
     <Layout title="דוחות">
       <div className="max-w-3xl mx-auto space-y-4 p-4" dir="rtl">
         {/* Global Dashboard */}
+        <div className="flex items-center gap-2 px-1">
+          <BarChart3 className="w-4 h-4 text-primary" />
+          <h2 className="font-bold text-sm">תמונת מצב כללית</h2>
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <Card className="card-3d rounded-xl p-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center"><Users className="w-4 h-4 text-primary" /></div>
-              <div>
-                <div className="text-lg font-bold">{globalStats.totalStudents}</div>
-                <div className="text-[10px] text-muted-foreground">תלמידים</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="card-3d rounded-xl p-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center"><TrendingUp className="w-4 h-4 text-primary" /></div>
-              <div>
-                <div className="text-lg font-bold">{globalStats.avg ?? '—'}</div>
-                <div className="text-[10px] text-muted-foreground">ממוצע שנתי</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="card-3d rounded-xl p-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-4 h-4 text-destructive" /></div>
-              <div>
-                <div className="text-lg font-bold">{globalStats.failCount}</div>
-                <div className="text-[10px] text-muted-foreground">נכשלים (&lt;55)</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="card-3d rounded-xl p-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center"><BarChart3 className="w-4 h-4 text-accent" /></div>
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><School className="w-4 h-4 text-primary" /></div>
               <div>
                 <div className="text-lg font-bold">{globalStats.totalClasses}</div>
                 <div className="text-[10px] text-muted-foreground">כיתות</div>
               </div>
             </div>
           </Card>
+          <Card className="card-3d rounded-xl p-3">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Users className="w-4 h-4 text-primary" /></div>
+              <div>
+                <div className="text-lg font-bold">{globalStats.totalStudents}</div>
+                <div className="text-[10px] text-muted-foreground">תלמידים</div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <Card className="card-3d rounded-xl p-3">
+          <div className="grid grid-cols-3 divide-x divide-x-reverse divide-border/40 text-center">
+            <div className="px-2">
+              <div className="text-[11px] text-muted-foreground mb-1">מחצית א'</div>
+              <div className="text-lg font-bold">{globalStats.avgA ?? '—'}</div>
+            </div>
+            <div className="px-2">
+              <div className="text-[11px] text-muted-foreground mb-1">מחצית ב'</div>
+              <div className="text-lg font-bold">{globalStats.avgB ?? '—'}</div>
+            </div>
+            <div className="px-2">
+              <div className="text-[11px] text-primary font-semibold mb-1">שנתי</div>
+              <div className="text-lg font-bold text-primary">{globalStats.avg ?? '—'}</div>
+            </div>
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Card className="card-3d rounded-xl p-3">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center"><Clock className="w-4 h-4 text-muted-foreground" /></div>
+              <div>
+                <div className={`text-lg font-bold ${globalStats.missingCount > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>{globalStats.missingCount}</div>
+                <div className="text-[10px] text-muted-foreground">חסרי מבדקים</div>
+              </div>
+            </div>
+          </Card>
+          <Card className="card-3d rounded-xl p-3">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center"><XCircle className="w-4 h-4 text-muted-foreground" /></div>
+              <div>
+                <div className={`text-lg font-bold ${globalStats.failCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>{globalStats.failCount}</div>
+                <div className="text-[10px] text-muted-foreground">נכשלים (מתחת ל-{redBelow})</div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Class report divider */}
+        <div className="flex items-center gap-3 pt-1">
+          <div className="flex-1 h-px bg-border/60" />
+          <span className="text-xs font-semibold text-muted-foreground">דוח כיתתי</span>
+          <div className="flex-1 h-px bg-border/60" />
         </div>
 
         {/* Class selector */}
         <Select value={selectedClass} onValueChange={setSelectedClass}>
-          <SelectTrigger className="h-10"><SelectValue placeholder="בחר כיתה לדוח מפורט" /></SelectTrigger>
+          <SelectTrigger className="h-10"><SelectValue placeholder="בחר כיתה" /></SelectTrigger>
           <SelectContent>
             {data.classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
           </SelectContent>
@@ -188,7 +224,11 @@ export default function ReportsPage() {
         )}
 
         {!selectedClass && (
-          <p className="text-center text-muted-foreground py-8 text-sm">בחר כיתה כדי לצפות בדוח מפורט</p>
+          <Card className="card-3d rounded-2xl p-8 text-center space-y-2">
+            <BookOpen className="w-8 h-8 text-primary mx-auto" />
+            <p className="font-bold text-sm">בחר כיתה לצפייה בדוח מפורט</p>
+            <p className="text-xs text-muted-foreground">ציונים שנתיים, ממוצעי מחציות וציוני מבדקים לכל תלמיד</p>
+          </Card>
         )}
       </div>
     </Layout>
