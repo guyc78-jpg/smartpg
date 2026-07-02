@@ -1,6 +1,6 @@
-// לוח צלצולים בית ספרי
+// לוח צלצולים בית ספרי — ברירת מחדל
 // ימים א'-ה'
-const WEEKDAY_TIMES = {
+const DEFAULT_WEEKDAY_TIMES = {
   1: ['08:15', '09:05'],
   2: ['09:05', '09:50'],
   3: ['10:15', '11:00'],
@@ -16,7 +16,7 @@ const WEEKDAY_TIMES = {
 };
 
 // יום ו'
-const FRIDAY_TIMES = {
+const DEFAULT_FRIDAY_TIMES = {
   1: ['08:15', '09:05'],
   2: ['09:05', '09:50'],
   3: ['10:15', '11:00'],
@@ -27,12 +27,46 @@ const FRIDAY_TIMES = {
 };
 
 const FRIDAY = 5;
+const STORAGE_KEY = 'bellSchedule.v1';
 
-function timesForDay(day) {
-  return day === FRIDAY ? FRIDAY_TIMES : WEEKDAY_TIMES;
+function loadCustom() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
-export const PERIODS = Object.keys(WEEKDAY_TIMES).map(Number);
+let custom = loadCustom();
+
+export function getBellTimes() {
+  return {
+    weekday: { ...DEFAULT_WEEKDAY_TIMES, ...(custom?.weekday || {}) },
+    friday: { ...DEFAULT_FRIDAY_TIMES, ...(custom?.friday || {}) },
+  };
+}
+
+export function saveBellTimes({ weekday, friday }) {
+  custom = { weekday, friday };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
+}
+
+export function resetBellTimes() {
+  custom = null;
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+export function getDefaultBellTimes() {
+  return { weekday: { ...DEFAULT_WEEKDAY_TIMES }, friday: { ...DEFAULT_FRIDAY_TIMES } };
+}
+
+function timesForDay(day) {
+  const { weekday, friday } = getBellTimes();
+  return day === FRIDAY ? friday : weekday;
+}
+
+export const PERIODS = Object.keys(DEFAULT_WEEKDAY_TIMES).map(Number);
 
 export function periodsForDay(day) {
   return Object.keys(timesForDay(day)).map(Number);

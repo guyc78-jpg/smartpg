@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import BellScheduleEditor from '@/components/settings/BellScheduleEditor';
 import { toast } from 'sonner';
 import { Loader2, Save } from 'lucide-react';
 
@@ -90,6 +91,9 @@ export default function AppSettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Bell Schedule */}
+        <BellScheduleEditor />
 
         {/* Grade Calculation */}
         <Card>
