@@ -14,8 +14,10 @@ export default function HomeHeader({ classCount, studentCount }) {
     <header dir="rtl" className="sticky top-0 z-40 glass-nav px-4 pt-2 pb-1.5" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}>
       <div className="flex items-center justify-between gap-2">
         <div className="text-right min-w-0">
-          <h1 className="text-base font-bold text-foreground truncate leading-tight">{teacherName || user?.full_name || 'ראשי'}</h1>
-          {schoolName && <p className="text-[11px] text-muted-foreground truncate leading-tight">{schoolName}</p>}
+          <h1 className="text-base font-bold text-foreground truncate leading-tight">
+            {teacherName || user?.full_name || 'ראשי'}
+            {schoolName && <span className="text-base font-bold text-foreground"> - {schoolName}</span>}
+          </h1>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
           <button onClick={() => logout()} className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="יציאה">
