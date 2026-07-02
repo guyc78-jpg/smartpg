@@ -30,8 +30,8 @@ export default function BottomNav() {
   return (
     <nav
       dir="rtl"
-      className="md:hidden fixed inset-x-3 liquid-pill rounded-full z-40"
-      style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)' }}
+      className="md:hidden fixed bottom-0 inset-x-0 liquid-pill rounded-t-2xl z-40"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="flex items-stretch justify-around h-[60px] px-1">
         {NAV_ITEMS.map(item => <MobileNavItem key={item.to} {...item} />)}

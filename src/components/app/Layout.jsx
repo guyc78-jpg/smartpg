@@ -81,7 +81,7 @@ export default function Layout({ children, title, backTo, subtitle, titleAction 
       </header>
 
       {/* Main Content — real space reserved via measured header height */}
-      <main className="flex-1 pb-[calc(84px+env(safe-area-inset-bottom,0px))] md:pb-0" style={{ paddingTop: 'var(--header-h)' }}>
+      <main className="flex-1 pb-[calc(68px+env(safe-area-inset-bottom,0px))] md:pb-0" style={{ paddingTop: 'var(--header-h)' }}>
         {children}
       </main>
 
