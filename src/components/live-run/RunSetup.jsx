@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Play, Timer, Users } from 'lucide-react';
+import { Check, Lock, Play, Timer, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,6 +17,7 @@ export default function RunSetup({ data, initial, onStart }) {
   const scheduledClasses = useMemo(() => data.classes.filter(c => peClassIds.includes(c.id)), [data.classes, peClassIds]);
   const allActiveClasses = useMemo(() => data.classes.filter(c => (c.status || 'active') === 'active'), [data.classes]);
   const peClasses = scheduledClasses.length > 0 ? scheduledClasses : allActiveClasses;
+  const locked = Boolean(initial?.lock && initial?.classId);
   const [classId, setClassId] = useState(initial?.classId || '');
   const scheduledPeriods = useMemo(() => getPeriodsForClassAndDate(data.scheduleLessons, date, classId), [data.scheduleLessons, date, classId]);
   const periods = scheduledPeriods.length > 0 ? scheduledPeriods : [1, 2, 3, 4, 5, 6, 7, 8];
@@ -28,8 +29,9 @@ export default function RunSetup({ data, initial, onStart }) {
   const [trackLength, setTrackLength] = useState(() => Number(localStorage.getItem('pe_track_length')) || 250);
 
   useEffect(() => {
+    if (locked) return;
     if (!peClasses.some(c => c.id === classId)) setClassId(peClasses[0]?.id || '');
-  }, [peClasses, classId]);
+  }, [peClasses, classId, locked]);
 
   useEffect(() => {
     if (!periods.includes(Number(period))) setPeriod(periods[0] || '');
@@ -97,10 +99,17 @@ export default function RunSetup({ data, initial, onStart }) {
       <section className="rounded-2xl border bg-card p-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="תאריך"><Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-11 rounded-xl" /></Field>
         <Field label="כיתה">
-          <Select value={classId} onValueChange={setClassId}>
-            <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="בחר כיתה" /></SelectTrigger>
-            <SelectContent>{peClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-          </Select>
+          {locked ? (
+            <div className="h-11 rounded-xl liquid-field flex items-center justify-between px-3 text-sm font-bold" dir="rtl">
+              <span className="truncate">{cls?.name || ''}</span>
+              <Lock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            </div>
+          ) : (
+            <Select value={classId} onValueChange={setClassId}>
+              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="בחר כיתה" /></SelectTrigger>
+              <SelectContent>{peClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          )}
         </Field>
         <Field label="שיעור">
           <Select value={period ? String(period) : ''} onValueChange={v => setPeriod(Number(v))}>

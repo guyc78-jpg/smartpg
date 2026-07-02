@@ -5,7 +5,7 @@ import { calculateAnnualGrade } from '@/lib/gradeCalc';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, ClipboardList, Award, Upload, Users, BookOpen } from 'lucide-react';
+import { Plus, Search, ClipboardList, Award, Upload, Users, BookOpen, Activity } from 'lucide-react';
 import ClassLessonJournal from '@/components/class/ClassLessonJournal';
 import { toast } from 'sonner';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
@@ -104,7 +104,7 @@ export default function ClassPage() {
       subtitle={`${students.length} תלמידים • ${GENDER_TRACK_LABELS[cls.genderTrack] || 'חנ״ג'}`}
     >
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => setTab('students')}
             className={`h-10 rounded-xl liquid-chip flex items-center justify-center gap-2 text-sm ${tab === 'students' ? 'liquid-chip-active' : ''}`}
@@ -117,6 +117,12 @@ export default function ClassPage() {
           >
             <BookOpen className="w-4 h-4" /> יומן שיעורים
           </button>
+          <Link
+            to={`/live-run?classId=${classId}&lock=1`}
+            className="h-10 rounded-xl liquid-chip flex items-center justify-center gap-2 text-sm"
+          >
+            <Activity className="w-4 h-4" /> ריצה חיה
+          </Link>
         </div>
 
         <div className={`grid ${isGrade12 ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>

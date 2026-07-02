@@ -59,7 +59,8 @@ export default function LiveRunPage() {
   };
 
   const params = new URLSearchParams(window.location.search);
-  const initial = { classId: params.get('classId') || '', period: params.get('period') || '', date: params.get('date') || '' };
+  const initial = { classId: params.get('classId') || '', period: params.get('period') || '', date: params.get('date') || '', lock: params.get('lock') === '1' };
+  const lockedClass = initial.lock && initial.classId ? data.classes.find(c => c.id === initial.classId) : null;
 
   const resetRun = () => {
     if (window.confirm('איפוס הריצה ימחק את כל הזמנים הזמניים. להמשיך?')) run.resetRun();
@@ -117,7 +118,15 @@ export default function LiveRunPage() {
   };
 
   if (!session) {
-    return <Layout title="ריצה חיה" subtitle="מדידת תלמידים בשיעורי חנ״ג" backTo="/"><RunSetup data={data} initial={initial} onStart={run.startSession} /></Layout>;
+    return (
+      <Layout
+        title={lockedClass ? `ריצה חיה — ${lockedClass.name}` : 'ריצה חיה'}
+        subtitle="מדידת תלמידים בשיעורי חנ״ג"
+        backTo={lockedClass ? `/class/${lockedClass.id}` : '/'}
+      >
+        <RunSetup data={data} initial={initial} onStart={run.startSession} />
+      </Layout>
+    );
   }
 
   if (session.phase === 'edit') {
