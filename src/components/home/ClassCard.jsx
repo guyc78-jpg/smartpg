@@ -10,13 +10,13 @@ export default function ClassCard({ cls, studentCount, onEdit, onDelete, onArchi
         <Link to={`/class/${cls.id}`} className="h-8 w-8 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary" title="נוכחות">
           <UserCheck className="w-4 h-4" />
         </Link>
-        <div className="text-right min-w-0">
+        <Link to={`/class/${cls.id}`} className="text-right min-w-0 block">
           <div className="flex items-center gap-2 justify-start overflow-x-auto no-scrollbar">
             <span className="whitespace-nowrap font-bold text-[15px]">{cls.name}</span>
             <Badge variant="secondary" className="shrink-0 text-[10px]">{GENDER_TRACK_LABELS[cls.genderTrack] || 'בנים'}</Badge>
           </div>
           <div className="text-xs text-muted-foreground">{studentCount} תלמידים</div>
-        </div>
+        </Link>
       </div>
 
       <div className="flex items-center gap-1 shrink-0">

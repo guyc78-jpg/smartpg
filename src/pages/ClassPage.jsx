@@ -54,7 +54,10 @@ export default function ClassPage() {
   const students = useMemo(
     () => data.students
       .filter(s => s.classId === classId)
-      .sort((a, b) => formatStudentName(a).localeCompare(formatStudentName(b), 'he')),
+      .sort((a, b) =>
+        (a.lastName || '').localeCompare(b.lastName || '', 'he')
+        || (a.firstName || '').localeCompare(b.firstName || '', 'he')
+        || formatStudentName(a).localeCompare(formatStudentName(b), 'he')),
     [data.students, classId]
   );
 
