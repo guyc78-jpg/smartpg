@@ -88,7 +88,7 @@ export default function RunSetup({ data, initial, onStart }) {
   };
 
   return (
-    <div className="max-w-[520px] mx-auto px-3 pt-3 pb-24 space-y-4" dir="rtl">
+    <div className="w-full max-w-[520px] mx-auto px-3 pt-3 pb-24 space-y-4 overflow-x-hidden" dir="rtl">
       <section className="rounded-3xl bg-primary text-primary-foreground p-4 shadow-lg">
         <div className="flex items-center gap-2 mb-1"><Timer className="w-5 h-5" /><h2 className="text-xl font-black">ריצה חיה</h2></div>
         <p className="text-sm text-primary-foreground/85">בחר כיתה, מבדק ומסלול — ומדוד סיבובים, זמנים וציונים בזמן אמת.</p>

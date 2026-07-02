@@ -42,7 +42,7 @@ export default function Layout({ children, title, backTo, subtitle, titleAction 
   }, [title, subtitle, backTo, titleAction]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir="rtl" style={{ '--header-h': `${headerHeight}px` }}>
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background flex flex-col" dir="rtl" style={{ '--header-h': `${headerHeight}px` }}>
       <header
         ref={headerRef}
         className="fixed inset-x-0 top-0 z-40 glass-nav"
@@ -82,7 +82,7 @@ export default function Layout({ children, title, backTo, subtitle, titleAction 
       </header>
 
       {/* Main Content — real space reserved via measured header height */}
-      <main className="flex-1 pb-[calc(68px+env(safe-area-inset-bottom,0px))] md:pb-0" style={{ paddingTop: 'var(--header-h)' }}>
+      <main className="flex-1 w-full max-w-full overflow-x-hidden pb-[calc(68px+env(safe-area-inset-bottom,0px))] md:pb-0" style={{ paddingTop: 'var(--header-h)' }}>
         {children}
       </main>
 

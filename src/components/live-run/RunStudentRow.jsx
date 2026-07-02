@@ -13,8 +13,8 @@ export default function RunStudentRow({ student, participant, raceStarted, raceR
   const lastTime = finished ? participant.finishTimeMs : (lapTimes.length ? lapTimes[lapTimes.length - 1] : 0);
 
   return (
-    <div className={`border-b last:border-0 px-3 py-2.5 ${out ? 'bg-muted/30' : 'bg-card'}`} dir="rtl">
-      <div className="flex items-center gap-3">
+    <div className={`w-full max-w-full overflow-x-hidden border-b last:border-0 px-3 py-2.5 ${out ? 'bg-muted/30' : 'bg-card'}`} dir="rtl">
+      <div className="flex items-center gap-3 w-full max-w-full min-w-0">
         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${finished ? 'bg-green-100 dark:bg-green-950/40' : 'bg-muted'}`}>
           {finished ? <Check className="w-5 h-5 text-green-600" strokeWidth={3} /> : <User className={`w-5 h-5 ${out ? 'text-muted-foreground/50' : 'text-muted-foreground'}`} />}
         </div>

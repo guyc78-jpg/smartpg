@@ -132,7 +132,7 @@ export default function LiveRunPage() {
 
   return (
     <Layout title="ריצה חיה" subtitle={`${currentClass?.name || ''} · ${session.setup.measurementLabel || ''}`}>
-      <div className="max-w-[520px] mx-auto pb-44" dir="rtl">
+      <div className="w-full max-w-[520px] mx-auto pb-44 overflow-x-hidden" dir="rtl">
         {/* Stats bar */}
         <section className="sticky z-30 bg-muted/70 backdrop-blur border-b" style={{ top: 'var(--header-h, 0px)' }}>
           <div className="grid grid-cols-2 text-center py-2.5 relative">
@@ -183,7 +183,7 @@ export default function LiveRunPage() {
 
       {/* Fixed bottom action */}
       <div className="fixed inset-x-0 z-40 px-4 bottom-[calc(80px+env(safe-area-inset-bottom,0px))] md:bottom-4">
-        <div className="max-w-[520px] mx-auto">
+        <div className="w-full max-w-[520px] mx-auto">
           {session.running ? (
             <Button onClick={() => setEndDialogOpen(true)} className="w-full h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-lg font-black btn-3d">
               <Square className="w-5 h-5 fill-current" /> סיום מרוץ

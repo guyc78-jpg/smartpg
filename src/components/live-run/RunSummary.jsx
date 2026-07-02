@@ -28,7 +28,7 @@ export default function RunSummary({ session, students, className, test, passThr
   });
 
   return (
-    <div className="max-w-[520px] mx-auto p-3 pb-[calc(230px+env(safe-area-inset-bottom,0px))] md:pb-44 space-y-3" dir="rtl">
+    <div className="w-full max-w-[520px] mx-auto p-3 pb-[calc(230px+env(safe-area-inset-bottom,0px))] md:pb-44 space-y-3 overflow-x-hidden" dir="rtl">
       <div className="rounded-2xl border bg-card p-4 space-y-1.5 text-sm">
         <div className="flex justify-between"><span className="text-muted-foreground">כיתה:</span><span className="font-bold">{className || '—'}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">מבדק:</span><span className="font-bold">{test?.name || session.setup.measurementLabel || '—'}</span></div>
@@ -51,7 +51,7 @@ export default function RunSummary({ session, students, className, test, passThr
       </div>
 
       <div className="rounded-2xl border bg-card overflow-hidden">
-        <div className="grid grid-cols-[24px_1fr_58px_54px_40px_52px] gap-1 px-3 py-2 text-xs font-bold text-muted-foreground border-b bg-muted/40">
+        <div className="grid grid-cols-[20px_minmax(0,1fr)_54px_44px_34px_48px] gap-1 px-2.5 py-2 text-xs font-bold text-muted-foreground border-b bg-muted/40">
           <span>#</span><span className="text-right">שם</span><span className="text-center">זמן</span><span className="text-center">סיבובים</span><span className="text-center">ציון</span><span className="text-center">מצב</span>
         </div>
         {sorted.map(student => {
@@ -60,7 +60,7 @@ export default function RunSummary({ session, students, className, test, passThr
           const rank = isFinished ? finished.indexOf(student) + 1 : null;
           const grade = gradeFor(p);
           return (
-            <div key={student.id} className="grid grid-cols-[24px_1fr_58px_54px_40px_52px] gap-1 px-3 py-2.5 items-center border-b last:border-0 text-sm">
+            <div key={student.id} className="grid grid-cols-[20px_minmax(0,1fr)_54px_44px_34px_48px] gap-1 px-2.5 py-2.5 items-center border-b last:border-0 text-sm">
               <span className="text-muted-foreground text-xs">{rank ?? '—'}</span>
               <span className="font-bold truncate text-right">{displayRunStudentName(student)}</span>
               <span className="text-center font-mono font-bold" dir="ltr">{isFinished && p.finishTimeMs ? formatResultSeconds(p.finishTimeMs) : '—'}</span>
@@ -85,7 +85,7 @@ export default function RunSummary({ session, students, className, test, passThr
             const participant = participants[student.id];
             const seconds = participant.finishTimeMs ? secondsFromMs(participant.finishTimeMs) : '';
             return (
-              <div key={student.id} className="grid grid-cols-[1fr_120px_90px] gap-2 items-center">
+              <div key={student.id} className="grid grid-cols-[minmax(0,1fr)_110px_80px] gap-2 items-center w-full max-w-full">
                 <span className="text-sm font-bold truncate text-right">{displayRunStudentName(student)}</span>
                 <select value={participant.status} onChange={e => onEdit(student.id, { status: e.target.value, finishTimeMs: e.target.value === 'finished' ? participant.finishTimeMs || session.elapsedBeforePause : null })} className="h-9 rounded-md border border-input bg-background px-2 text-xs">
                   {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
@@ -100,7 +100,7 @@ export default function RunSummary({ session, students, className, test, passThr
       {invalidRows.length > 0 && <div className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">יש תלמיד שסומן “סיים” בלי זמן תקין. ערוך זמן או שנה סטטוס לפני שמירה.</div>}
 
       <div className="fixed bottom-[calc(68px+env(safe-area-inset-bottom,0px))] md:bottom-0 inset-x-0 bg-background/95 backdrop-blur border-t p-3 z-30">
-        <div className="max-w-[520px] mx-auto space-y-2">
+        <div className="w-full max-w-[520px] mx-auto space-y-2">
           <Button disabled={invalidRows.length > 0 || saving} onClick={onSave} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
             <Save className="w-5 h-5" /> {saving ? 'שומר…' : test ? 'שמור להזנת המבדק' : 'שמור תוצאות'}
           </Button>
