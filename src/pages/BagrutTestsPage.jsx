@@ -7,12 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatStudentName } from '@/lib/studentName';
+import BagrutSummary from '@/components/bagrut/BagrutSummary';
 
 export default function BagrutTestsPage() {
   const { classId } = useParams();
   const { data, setBagrutResult } = useApp();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [listOpen, setListOpen] = useState(false);
+  const [view, setView] = useState('entry');
 
   const cls = data.classes.find(c => c.id === classId);
   const students = useMemo(
@@ -46,6 +48,17 @@ export default function BagrutTestsPage() {
   return (
     <Layout title={`בגרות חנ״ג — ${cls.name}`} backTo={`/class/${classId}`}>
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
+        {/* View tabs */}
+        <div className="flex justify-start gap-1.5">
+          {[['entry', 'הזנת ציונים'], ['summary', 'סיכום כיתתי']].map(([key, label]) => (
+            <button key={key} onClick={() => setView(key)} className={`liquid-chip rounded-full px-4 py-1.5 text-xs ${view === key ? 'liquid-chip-active' : ''}`}>{label}</button>
+          ))}
+        </div>
+
+        {view === 'summary' ? (
+          <BagrutSummary cls={cls} students={students} components={components} bagrutResults={data.bagrutResults} redBelow={redBelow} />
+        ) : (
+        <>
         {/* Component selector */}
         <div className="relative">
           <button onClick={() => setListOpen(o => !o)} className="w-full flex items-center justify-between btn-3d bg-card rounded-xl px-4 py-2">
@@ -107,6 +120,8 @@ export default function BagrutTestsPage() {
             );
           })}
         </div>
+        </>
+        )}
       </div>
     </Layout>
   );

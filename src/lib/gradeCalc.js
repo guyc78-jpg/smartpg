@@ -106,6 +106,26 @@ export function calculateSemesterGrades(studentId, tests, results, behaviorGrade
   return { testsAvg, behaviorGrade, semesterFinalGrade, missingTests, conductedCount: relevantTests.length };
 }
 
+// Calculate weighted Bagrut grade for a student from component results
+export function calculateBagrutGrade(studentId, components, bagrutResults) {
+  let weightedSum = 0;
+  let totalWeight = 0;
+  const missing = [];
+  for (const comp of components) {
+    const weight = Number(comp.weight) || 0;
+    if (weight <= 0) continue;
+    const r = bagrutResults.find(x => x.studentId === studentId && x.componentId === comp.id);
+    if (r?.status === 'exempt' || r?.status === 'not_relevant') continue;
+    if (r?.score !== null && r?.score !== undefined) {
+      weightedSum += r.score * weight;
+      totalWeight += weight;
+    } else {
+      missing.push(comp.name);
+    }
+  }
+  return { grade: totalWeight > 0 ? Math.round(weightedSum / totalWeight) : null, missing };
+}
+
 // Calculate annual grade for a student
 export function calculateAnnualGrade(studentId, tests, results, behaviorGrades, settings, conductedTestIdsA, conductedTestIdsB, peExempt) {
   const semA = calculateSemesterGrades(studentId, tests, results, behaviorGrades, settings, conductedTestIdsA, 'A', peExempt);
