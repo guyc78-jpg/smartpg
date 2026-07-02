@@ -43,7 +43,8 @@ export default function TestImportExport({ tests, onImport, onDeleteAll, default
         const { data } = await parseTestDocx({ file_url });
         if (data.error) throw new Error(data.error);
         const rows = (data.rows || []).map(r => ({ ...r, gender: data.gender || '' }));
-        openPreview(rowsToTests(rows), (data.grade_level || '').replace(/['׳]/g, '').trim());
+        const glMatch = (data.grade_level || '').match(/יב|יא|[זחטי]/);
+        openPreview(rowsToTests(rows), glMatch ? glMatch[0] : '');
         return;
       }
 
