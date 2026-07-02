@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { FileSpreadsheet, FileText, Loader2, Trash2, Upload } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Loader2, Trash2, Upload } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -106,12 +107,21 @@ export default function TestImportExport({ tests, onImport, onDeleteAll, default
         {parsing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
         {parsing ? 'קורא קובץ…' : 'ייבוא'}
       </button>
-      <button type="button" onClick={() => tests.length ? exportTestsToExcel(tests) : toast.error('אין מבדקים לייצוא בסינון הנוכחי')} className={chip}>
-        <FileSpreadsheet className="w-3.5 h-3.5" /> ייצוא Excel
-      </button>
-      <button type="button" onClick={() => tests.length ? exportTestsToWord(tests) : toast.error('אין מבדקים לייצוא בסינון הנוכחי')} className={chip}>
-        <FileText className="w-3.5 h-3.5" /> ייצוא Word
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" className={chip}>
+            <Download className="w-3.5 h-3.5" /> ייצוא
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" dir="rtl">
+          <DropdownMenuItem onClick={() => tests.length ? exportTestsToExcel(tests) : toast.error('אין מבדקים לייצוא בסינון הנוכחי')}>
+            <FileSpreadsheet className="w-3.5 h-3.5 ml-2" /> ייצוא Excel
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => tests.length ? exportTestsToWord(tests) : toast.error('אין מבדקים לייצוא בסינון הנוכחי')}>
+            <FileText className="w-3.5 h-3.5 ml-2" /> ייצוא Word
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {isAdmin && onDeleteAll && (
         <button type="button" onClick={() => setDeleteAllOpen(true)} disabled={deletingAll} className={`${chip} text-destructive`}>
           {deletingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
