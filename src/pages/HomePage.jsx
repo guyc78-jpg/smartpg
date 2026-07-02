@@ -29,9 +29,12 @@ export default function HomePage() {
 
   const visibleClasses = useMemo(() => {
     if (!gradeFilter) return activeClasses;
-    return activeClasses.filter(c =>
-      (c.gradeLevel || '') === gradeFilter || (c.name || '').replace(/["'׳״]/g, '').startsWith(gradeFilter)
-    );
+    const classGrade = (c) => {
+      if (c.gradeLevel) return c.gradeLevel;
+      const match = (c.name || '').replace(/["'׳״]/g, '').trim().match(/^([א-ת]+)/);
+      return match ? match[1] : '';
+    };
+    return activeClasses.filter(c => classGrade(c) === gradeFilter);
   }, [activeClasses, gradeFilter]);
 
   const studentCountByClass = useMemo(() => {
