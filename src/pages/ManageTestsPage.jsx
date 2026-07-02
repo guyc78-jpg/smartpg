@@ -18,6 +18,7 @@ const GRADE_ORDER = { 'ז': 0, 'ח': 1, 'ט': 2, 'י': 3, 'יא': 4, 'יב': 5 }
 export default function ManageTestsPage() {
   const { data, updateTest, addTest, deleteTest, defaultGenderTrack } = useApp();
   const [expandedTest, setExpandedTest] = useState(null);
+  const [openGroups, setOpenGroups] = useState({});
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
   const [selectedGenderTrack, setSelectedGenderTrack] = useState(defaultGenderTrack);
   const [selectedType, setSelectedType] = useState('all');
@@ -96,11 +97,27 @@ export default function ManageTestsPage() {
         </div>
 
         <div className="space-y-2">
-          {filteredTests.map(test => {
+          {filteredTests.map((test, idx) => {
             const isExpanded = expandedTest === test.id;
             const className = data.classes.find(c => c.id === test.classId)?.name;
+            const grouped = selectedGradeLevel === 'all';
+            const isFirstOfGroup = grouped && (idx === 0 || filteredTests[idx - 1].gradeLevel !== test.gradeLevel);
+            const groupOpen = !grouped || !!openGroups[test.gradeLevel];
+            const groupCount = grouped ? filteredTests.filter(t => t.gradeLevel === test.gradeLevel).length : 0;
             return (
-              <Card key={test.id} className="card-3d rounded-xl overflow-hidden">
+              <div key={test.id} className="space-y-2">
+              {isFirstOfGroup && (
+                <button
+                  type="button"
+                  onClick={() => setOpenGroups(p => ({ ...p, [test.gradeLevel]: !p[test.gradeLevel] }))}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl liquid-chip text-right"
+                >
+                  <span className="text-sm font-bold">שכבה {test.gradeLevel}׳ <span className="text-xs font-normal text-muted-foreground">({groupCount})</span></span>
+                  {groupOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </button>
+              )}
+              {groupOpen && (
+              <Card className="card-3d rounded-xl overflow-hidden">
                 <button onClick={() => setExpandedTest(isExpanded ? null : test.id)} className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-right">
                   <div className="min-w-0">
                     <div className="font-bold text-sm truncate">{test.name}</div>
@@ -137,6 +154,8 @@ export default function ManageTestsPage() {
                   </CardContent>
                 )}
               </Card>
+              )}
+              </div>
             );
           })}
 
