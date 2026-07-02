@@ -5,6 +5,7 @@ import { useApp } from '@/store/AppProvider';
 import { useAuth } from '@/lib/AuthContext';
 import BottomNav from '@/components/app/BottomNav';
 import HomeHeader from '@/components/home/HomeHeader';
+import HomeStatsBar from '@/components/home/HomeStatsBar';
 import ClassCard from '@/components/home/ClassCard';
 import DailyScheduleCard from '@/components/home/DailyScheduleCard';
 import GradeFilterPills from '@/components/home/GradeFilterPills';
@@ -75,9 +76,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col" dir="rtl">
-      <HomeHeader classCount={activeClasses.length} studentCount={data.students.length} />
+      <HomeHeader />
 
       <main className="flex-1 px-4 pt-2 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-3">
+        <HomeStatsBar classCount={activeClasses.length} studentCount={data.students.length} />
         <DailyScheduleCard scheduleLessons={data.scheduleLessons || []} classById={classById} />
 
         <GradeFilterPills selected={gradeFilter} onSelect={setGradeFilter} />
