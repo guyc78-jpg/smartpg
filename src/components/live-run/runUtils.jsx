@@ -12,6 +12,15 @@ export function formatRunTime(ms) {
   return hours > 0 ? `${String(hours).padStart(2, '0')}:${base}` : base;
 }
 
+export function formatClockTime(ms) {
+  const totalSeconds = Math.floor(Math.max(0, Number(ms || 0)) / 1000);
+  const seconds = totalSeconds % 60;
+  const minutes = Math.floor(totalSeconds / 60) % 60;
+  const hours = Math.floor(totalSeconds / 3600);
+  const base = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  return hours > 0 ? `${String(hours).padStart(2, '0')}:${base}` : base;
+}
+
 export function secondsFromMs(ms) {
   return Math.round((Number(ms || 0)) / 10) / 100;
 }

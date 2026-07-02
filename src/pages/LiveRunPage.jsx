@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Flag, Play, RotateCcw, Search, Square, Target } from 'lucide-react';
+import { Pause, Play, RotateCcw, Search, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,10 @@ import { base44 } from '@/api/base44Client';
 import { useApp } from '@/store/AppProvider';
 import { useLiveRun } from '@/contexts/LiveRunContext';
 import RunSetup from '@/components/live-run/RunSetup';
-import RunStudentCard from '@/components/live-run/RunStudentCard';
+import RunStudentRow from '@/components/live-run/RunStudentRow';
 import RunSummary from '@/components/live-run/RunSummary';
-import { formatRunTime, secondsFromMs, sortRunStudents } from '@/components/live-run/runUtils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { displayRunStudentName, formatClockTime, secondsFromMs } from '@/components/live-run/runUtils';
 import { convertRawToGrade } from '@/lib/gradeCalc';
 
 export default function LiveRunPage() {
@@ -20,6 +21,7 @@ export default function LiveRunPage() {
   const { session, elapsedMs } = run;
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [endDialogOpen, setEndDialogOpen] = useState(false);
 
   const selectedStudents = useMemo(() => {
     if (!session) return [];
@@ -57,8 +59,16 @@ export default function LiveRunPage() {
     return {
       running: values.filter(p => p.status === 'running').length,
       finished: values.filter(p => p.status === 'finished').length,
+      participating: values.filter(p => p.status === 'running' || p.status === 'finished').length,
     };
   }, [session]);
+
+  const handleLap = (studentId) => {
+    const p = session?.participants?.[studentId];
+    if (!p || p.status !== 'running') return;
+    if ((p.laps || 0) + 1 >= totalLaps) run.finishStudent(studentId);
+    else run.markLap(studentId);
+  };
 
   const params = new URLSearchParams(window.location.search);
   const initial = { classId: params.get('classId') || '', period: params.get('period') || '', date: params.get('date') || '' };
@@ -67,9 +77,7 @@ export default function LiveRunPage() {
     if (window.confirm('איפוס הריצה ימחק את כל הזמנים הזמניים. להמשיך?')) run.resetRun();
   };
 
-  const finishRun = () => {
-    if (window.confirm('לעבור למסך סיכום? תלמידים שעדיין רצים יסומנו כלא השלימו / לא השתתפו.')) run.finishRun();
-  };
+
 
   const saveSummary = async () => {
     if (!session || saving) return;
@@ -133,55 +141,94 @@ export default function LiveRunPage() {
   }
 
   const searchTerm = search.trim().toLowerCase();
-  const sortedStudents = sortRunStudents(selectedStudents, session.participants)
+  const raceStarted = session.running || elapsedMs > 0;
+  const sortedStudents = [...selectedStudents]
+    .sort((a, b) => displayRunStudentName(a).localeCompare(displayRunStudentName(b), 'he'))
     .filter(s => !searchTerm || `${s.name || ''} ${s.firstName || ''} ${s.lastName || ''}`.toLowerCase().includes(searchTerm));
 
   return (
     <Layout title="ריצה חיה" subtitle={`${currentClass?.name || ''} · ${session.setup.measurementLabel || ''}`}>
-      <div className="max-w-[520px] mx-auto px-2 pt-3 pb-28 space-y-3" dir="rtl">
-        <section className="sticky z-30 rounded-b-3xl bg-background/95 backdrop-blur border-b px-2 pb-3 text-center space-y-3 relative" style={{ top: 'var(--header-h, 0px)' }}>
-          <button onClick={resetRun} aria-label="איפוס ריצה" className="absolute left-2 top-2 h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center" title="איפוס ריצה">
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          <div className="font-mono text-6xl font-black tracking-wider text-foreground" dir="ltr">{formatRunTime(elapsedMs)} 🏃</div>
-          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground font-semibold">
-            <span className="flex items-center gap-1"><Target className="w-3.5 h-3.5" /> רצים: {counts.running}</span>
-            <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> סיימו: {counts.finished}</span>
+      <div className="max-w-[520px] mx-auto pb-44" dir="rtl">
+        {/* Stats bar */}
+        <section className="sticky z-30 bg-muted/70 backdrop-blur border-b" style={{ top: 'var(--header-h, 0px)' }}>
+          <div className="grid grid-cols-2 text-center py-2.5 relative">
+            <div className="border-l border-border/60">
+              <p className="text-xs text-muted-foreground font-semibold">משתתפים</p>
+              <p className="text-lg font-black text-primary leading-tight" dir="ltr">{counts.participating}/{selectedStudents.length}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold">זמן כולל</p>
+              <p className="text-lg font-black text-primary font-mono leading-tight" dir="ltr">{formatClockTime(elapsedMs)}</p>
+            </div>
+            <div className="absolute left-1.5 top-1.5 flex flex-col gap-1">
+              {raceStarted && (
+                <button onClick={session.running ? run.pauseTimer : run.startTimer} aria-label={session.running ? 'השהה' : 'המשך'} className="h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center">
+                  {session.running ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                </button>
+              )}
+              <button onClick={resetRun} aria-label="איפוס ריצה" title="איפוס ריצה" className="h-7 w-7 rounded-full text-muted-foreground hover:bg-muted flex items-center justify-center">
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {session.running ? (
-              <Button onClick={run.pauseTimer} className="h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-lg font-black"><Square className="w-4 h-4" /> עצור</Button>
-            ) : (
-              <Button onClick={run.startTimer} className="h-14 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-lg font-black"><Play className="w-4 h-4" /> {elapsedMs ? 'המשך' : 'התחל'}</Button>
-            )}
-            <Button variant="outline" onClick={finishRun} className="h-14 rounded-2xl text-lg font-black"><Flag className="w-4 h-4" /> סיים ריצה</Button>
-          </div>
-          <div className="relative">
-            <Search className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="חיפוש תלמיד/ה" className="w-full h-10 rounded-xl border border-input bg-background pr-9 pl-3 text-sm" />
+          <div className="px-3 pb-2 relative">
+            <Search className="w-4 h-4 text-muted-foreground absolute right-6 top-1/2 -translate-y-[calc(50%+4px)]" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="חיפוש תלמיד/ה" className="w-full h-9 rounded-xl border border-input bg-background pr-9 pl-3 text-sm" />
           </div>
         </section>
 
-        <div className="space-y-2">
+        {/* Student list */}
+        <div className="bg-card">
           {sortedStudents.map(student => (
-            <RunStudentCard
+            <RunStudentRow
               key={student.id}
               student={student}
               participant={session.participants[student.id]}
-              totalLaps={totalLaps}
+              raceStarted={raceStarted}
+              raceRunning={session.running}
               grade={gradeFor(session.participants[student.id])}
               passThreshold={passThreshold}
               attendanceStatus={attendanceByStudent[student.id]}
               onAttendanceChange={(status) => handleAttendance(student.id, status)}
-              onFinish={() => run.finishStudent(student.id)}
+              onLap={() => handleLap(student.id)}
               onNotParticipate={() => run.setStudentStatus(student.id, 'not_participated')}
               onUndo={() => run.undoStudent(student.id)}
-              onSetLaps={(laps) => run.setLaps(student.id, laps)}
             />
           ))}
           {sortedStudents.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">לא נמצאו תלמידים.</div>}
         </div>
       </div>
+
+      {/* Fixed bottom action */}
+      <div className="fixed inset-x-0 z-40 px-4 bottom-[calc(80px+env(safe-area-inset-bottom,0px))] md:bottom-4">
+        <div className="max-w-[520px] mx-auto">
+          {session.running ? (
+            <Button onClick={() => setEndDialogOpen(true)} className="w-full h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-lg font-black btn-3d">
+              <Square className="w-5 h-5 fill-current" /> סיום מרוץ
+            </Button>
+          ) : (
+            <Button onClick={run.startTimer} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
+              <Play className="w-5 h-5 fill-current" /> {elapsedMs > 0 ? 'המשך מרוץ' : 'התחל מרוץ'}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* End race confirmation */}
+      <AlertDialog open={endDialogOpen} onOpenChange={setEndDialogOpen}>
+        <AlertDialogContent dir="rtl" className="max-w-[360px] rounded-2xl">
+          <AlertDialogHeader className="text-right">
+            <AlertDialogTitle className="text-right">סיום מרוץ</AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              האם ברצונך לסיים את מרוץ {session.setup.measurementLabel || 'הריצה'}? תלמידים שעדיין רצים יסומנו כלא השלימו / לא השתתפו.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1 mt-0">ביטול</AlertDialogCancel>
+            <AlertDialogAction className="flex-1" onClick={() => run.finishRun()}>אישור</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
