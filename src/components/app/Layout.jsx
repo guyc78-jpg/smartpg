@@ -4,7 +4,7 @@ import { Home, ClipboardList, FileText, ArrowRight, Moon, Sun, Settings, Calenda
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import BottomNav from '@/components/app/BottomNav';
-import HeaderActions from '@/components/app/HeaderActions';
+import HeaderMoreMenu from '@/components/app/HeaderMoreMenu';
 
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'ראשי' },
@@ -25,7 +25,7 @@ function NavItem({ to, icon: Icon, label }) {
   );
 }
 
-export default function Layout({ children, title, backTo, subtitle, titleAction }) {
+export default function Layout({ children, title, backTo, subtitle, titleAction, menuItems }) {
   const { dark, toggle } = useTheme();
   const location = useLocation();
   const headerRef = useRef(null);
@@ -76,7 +76,7 @@ export default function Layout({ children, title, backTo, subtitle, titleAction 
               {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
             </div>
             {titleAction && <div className="shrink-0">{titleAction}</div>}
-            <HeaderActions />
+            <HeaderMoreMenu items={menuItems} />
           </div>
         )}
       </header>

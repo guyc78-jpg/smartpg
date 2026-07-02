@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useApp } from '@/store/AppProvider';
 import Layout from '@/components/app/Layout';
-import { Button } from '@/components/ui/button';
 import ImportScheduleDialog from '@/components/schedule/ImportScheduleDialog';
 import WeeklyScheduleGrid from '@/components/schedule/WeeklyScheduleGrid';
 import LiveNowBanner from '@/components/schedule/LiveNowBanner';
@@ -66,16 +65,10 @@ export default function SchedulePage() {
   };
 
   return (
-    <Layout title="מערכת שעות" titleAction={
-      <div className="flex items-center gap-1">
-        <Button size="sm" variant="ghost" onClick={() => setImportOpen(true)} className="h-8 w-8 p-0" aria-label="ייבוא מערכת">
-          <Upload className="w-4 h-4" />
-        </Button>
-        <Button size="sm" variant="ghost" onClick={() => setDeleteOpen(true)} className="h-8 w-8 p-0 text-destructive hover:text-destructive" aria-label="מחיקת כל המערכת">
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </div>
-    }>
+    <Layout title="מערכת שעות" menuItems={[
+      { label: 'ייבוא מערכת', icon: Upload, onClick: () => setImportOpen(true) },
+      { label: 'מחיקת כל המערכת', icon: Trash2, destructive: true, onClick: () => setDeleteOpen(true) },
+    ]}>
       <div className="max-w-3xl mx-auto p-4 space-y-4" dir="rtl">
         <div className="grid grid-cols-2 rounded-full liquid-pill p-1 gap-1">
           <button

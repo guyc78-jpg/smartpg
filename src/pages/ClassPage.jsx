@@ -102,22 +102,6 @@ export default function ClassPage() {
       title={cls.name}
       backTo="/"
       subtitle={`${students.length} תלמידים • ${GENDER_TRACK_LABELS[cls.genderTrack] || 'חנ״ג'}`}
-      titleAction={
-        <div className="flex gap-1">
-          <Link to={`/class/${classId}/tests`}>
-            <Button size="sm" variant="outline" className="h-8 gap-1 text-xs">
-              <ClipboardList className="w-3.5 h-3.5" /> מבדקים
-            </Button>
-          </Link>
-          {isGrade12 && (
-            <Link to={`/class/${classId}/bagrut`}>
-              <Button size="sm" variant="outline" className="h-8 gap-1 text-xs">
-                <Award className="w-3.5 h-3.5" /> בגרות
-              </Button>
-            </Link>
-          )}
-        </div>
-      }
     >
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
         <div className="grid grid-cols-2 gap-2">
@@ -133,6 +117,23 @@ export default function ClassPage() {
           >
             <BookOpen className="w-4 h-4" /> יומן שיעורים
           </button>
+        </div>
+
+        <div className={`grid ${isGrade12 ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
+          <Link
+            to={`/class/${classId}/tests`}
+            className="h-10 rounded-xl liquid-chip flex items-center justify-center gap-2 text-sm font-bold"
+          >
+            <ClipboardList className="w-4 h-4" /> מבדקי כיתה
+          </Link>
+          {isGrade12 && (
+            <Link
+              to={`/class/${classId}/bagrut`}
+              className="h-10 rounded-xl liquid-chip flex items-center justify-center gap-2 text-sm font-bold"
+            >
+              <Award className="w-4 h-4" /> בגרות
+            </Link>
+          )}
         </div>
 
         {tab === 'journal' ? (

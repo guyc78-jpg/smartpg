@@ -1,5 +1,5 @@
 import { useAuth } from '@/lib/AuthContext';
-import HeaderActions from '@/components/app/HeaderActions';
+import HeaderMoreMenu from '@/components/app/HeaderMoreMenu';
 
 export default function HomeHeader() {
   const { user } = useAuth();
@@ -16,7 +16,7 @@ export default function HomeHeader() {
             <p className="text-xs text-muted-foreground truncate leading-tight">{schoolName}</p>
           )}
         </div>
-        <HeaderActions />
+        <HeaderMoreMenu />
       </div>
     </header>
   );
