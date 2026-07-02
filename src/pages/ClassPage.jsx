@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
 import ImportStudentsDialog from '@/components/students/ImportStudentsDialog';
-import StudentRow from '@/components/students/StudentRow';
+import StudentCard from '@/components/students/StudentCard';
 import { SEMESTER_LABELS, GENDER_TRACK_LABELS } from '@/lib/types';
 import { formatStudentName } from '@/lib/studentName';
 
@@ -190,21 +190,28 @@ export default function ClassPage() {
           </div>
         </Card>
 
-        <Card className="card-3d rounded-2xl overflow-hidden divide-y divide-border/40">
+        <div className="space-y-2">
           {filtered.map(student => {
             const annual = calculateAnnualGrade(student.id, classTests, data.results, data.behaviorGrades, data.settings, conductedTestIdsA, conductedTestIdsB, student.peExempt);
             const displayGrade = viewMode === 'annual' ? annual.annualGrade : viewMode === 'A' ? annual.semA.semesterFinalGrade : annual.semB.semesterFinalGrade;
+            const completedResults = data.results.filter(r => r.studentId === student.id && r.status === 'completed').length;
+            const progress = classTests.length ? `${completedResults}/${classTests.length}` : '—';
             const redBelow = data.settings.gradeColorThresholds?.redBelow ?? 55;
             const isLow = displayGrade !== null && displayGrade < redBelow;
 
             return (
-              <StudentRow
+              <StudentCard
                 key={student.id}
                 student={student}
                 classId={classId}
                 displayGrade={displayGrade}
+                annual={annual}
+                viewMode={viewMode}
+                progress={progress}
                 isLow={isLow}
                 highlighted={highlightId === student.id}
+                onEdit={() => openEdit(student)}
+                onDelete={() => setDeleteStudentTarget({ id: student.id, name: formatStudentName(student) })}
               />
             );
           })}
@@ -214,7 +221,7 @@ export default function ClassPage() {
               {students.length === 0 ? 'אין תלמידים בכיתה. הוסף תלמיד או ייבא קובץ.' : 'לא נמצאו תלמידים.'}
             </p>
           )}
-        </Card>
+        </div>
 
         <StudentFormDialog
           open={studentDialogOpen}
