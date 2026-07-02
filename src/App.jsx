@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import AppLoader from '@/components/app/AppLoader';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -18,18 +18,28 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 
 import HomePage from './pages/HomePage';
-import ClassPage from './pages/ClassPage';
-import StudentProfilePage from './pages/StudentProfilePage';
-import TestsPage from './pages/TestsPage';
-import ManageTestsPage from './pages/ManageTestsPage';
-import AppSettingsPage from './pages/AppSettingsPage';
-import ReportsPage from './pages/ReportsPage';
-import BagrutTestsPage from './pages/BagrutTestsPage';
-import SchedulePage from './pages/SchedulePage';
-import LiveRunPage from './pages/LiveRunPage';
-import LessonManagePage from './pages/LessonManagePage';
-import LessonEditPage from './pages/LessonEditPage';
-import SubstituteFillsPage from './pages/SubstituteFillsPage';
+const ClassPage = lazy(() => import('./pages/ClassPage'));
+const StudentProfilePage = lazy(() => import('./pages/StudentProfilePage'));
+const TestsPage = lazy(() => import('./pages/TestsPage'));
+const ManageTestsPage = lazy(() => import('./pages/ManageTestsPage'));
+const AppSettingsPage = lazy(() => import('./pages/AppSettingsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const BagrutTestsPage = lazy(() => import('./pages/BagrutTestsPage'));
+const SchedulePage = lazy(() => import('./pages/SchedulePage'));
+const LiveRunPage = lazy(() => import('./pages/LiveRunPage'));
+const LessonManagePage = lazy(() => import('./pages/LessonManagePage'));
+const LessonEditPage = lazy(() => import('./pages/LessonEditPage'));
+const SubstituteFillsPage = lazy(() => import('./pages/SubstituteFillsPage'));
+
+const PageFallback = () => (
+  <div className="min-h-screen flex items-center justify-center" dir="rtl">
+    <div className="flex gap-1.5">
+      <span className="w-2 h-2 rounded-full bg-primary animate-loading-dot" />
+      <span className="w-2 h-2 rounded-full bg-primary animate-loading-dot" style={{ animationDelay: '0.15s' }} />
+      <span className="w-2 h-2 rounded-full bg-primary animate-loading-dot" style={{ animationDelay: '0.3s' }} />
+    </div>
+  </div>
+);
 
 const AppShell = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -55,6 +65,7 @@ const AppShell = () => {
     {(appReady || loaderGone) && (
     <ErrorBoundary>
       <LiveRunProvider>
+      <Suspense fallback={<PageFallback />}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -77,6 +88,7 @@ const AppShell = () => {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
       <FloatingRunTimer />
       </LiveRunProvider>
     </ErrorBoundary>

@@ -35,12 +35,14 @@ export const AuthProvider = ({ children }) => {
       });
       
       try {
-        const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
+        // Run public-settings fetch and user auth check in parallel to speed up startup
+        const settingsPromise = appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
+        const authPromise = appParams.token ? checkUserAuth() : null;
+        const publicSettings = await settingsPromise;
         setAppPublicSettings(publicSettings);
         
-        // If we got the app public settings successfully, check if user is authenticated
-        if (appParams.token) {
-          await checkUserAuth();
+        if (authPromise) {
+          await authPromise;
         } else {
           setIsLoadingAuth(false);
           setIsAuthenticated(false);
