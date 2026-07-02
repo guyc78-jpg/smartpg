@@ -30,8 +30,63 @@ Deno.serve(async (req) => {
 
     if (raw_only) return Response.json({ text });
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `לפניך תוכן של גיליון מבחני חינוך גופני (אות הכושר) שחולץ מקובץ Word. הטבלאות מוצגות כשורות שבהן תאים מופרדים ב-"|".
+    const parseVal = (v) => {
+      const s = String(v).trim();
+      if (s.includes(':')) {
+        const [m, sec] = s.split(':');
+        return Number(m) * 60 + Number(sec);
+      }
+      return Number(s);
+    };
+
+    // --- Fast deterministic table parsing (skips the LLM when the structure is standard) ---
+    const cleanCell = (s) => s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
+    const htmlTables = [...html.matchAll(/<table[\s\S]*?<\/table>/g)].map((m) =>
+      [...m[0].matchAll(/<tr[\s\S]*?<\/tr>/g)].map((r) =>
+        [...r[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)].map((c) => cleanCell(c[1]))
+      )
+    );
+
+    const detTests = [];
+    for (const table of htmlTables) {
+      if (table.length < 4) continue;
+      const header = table[0];
+      const gradeCol = header.findIndex((h) => h.includes('ציון'));
+      if (gradeCol === -1) continue;
+      const dataRows = table.slice(1).filter((r) => {
+        const g = Number(String(r[gradeCol] || '').trim());
+        return Number.isFinite(g) && g > 0 && g <= 100;
+      });
+      if (dataRows.length < 3) continue;
+      for (let col = 0; col < header.length; col++) {
+        if (col === gradeCol) continue;
+        const name = (header[col] || '').trim();
+        if (!name) continue;
+        const thresholds = [];
+        for (const r of dataRows) {
+          const raw = String(r[col] || '').trim();
+          if (!raw) continue;
+          if (!Number.isFinite(parseVal(raw))) continue;
+          thresholds.push({ result: raw, grade: Number(String(r[gradeCol]).trim()) });
+        }
+        if (thresholds.length < 3) continue;
+        const byGrade = [...thresholds].sort((a, b) => a.grade - b.grade);
+        const lowerIsBetter = parseVal(byGrade[byGrade.length - 1].result) < parseVal(byGrade[0].result);
+        const isTime = thresholds.some((t) => String(t.result).includes(':'));
+        detTests.push({ test_name: name, unit: isTime ? 'דקות' : '', lower_is_better: lowerIsBetter, thresholds });
+      }
+    }
+
+    let result;
+    if (detTests.length > 0) {
+      result = {
+        grade_level: (text.match(/שכבה\s*(יב|יא|[זחטי])/) || [])[1] || '',
+        gender: text.includes('בנות') ? 'בנות' : text.includes('בנים') ? 'בנים' : '',
+        tests: detTests,
+      };
+    } else {
+      result = await base44.integrations.Core.InvokeLLM({
+        prompt: `לפניך תוכן של גיליון מבחני חינוך גופני (אות הכושר) שחולץ מקובץ Word. הטבלאות מוצגות כשורות שבהן תאים מופרדים ב-"|".
 
 מבנה הטבלה: העמודה הראשונה היא "ציון", וכל עמודה נוספת היא מבדק. כל שורה מציינת: כדי לקבל את הציון שבעמודה הראשונה, נדרשת התוצאה שבתא של אותו מבדק.
 
@@ -45,26 +100,27 @@ Deno.serve(async (req) => {
 
 תוכן המסמך:
 ${text.slice(0, 30000)}`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          grade_level: { type: 'string', description: 'שכבת הגיל במסמך, למשל ז / ח / ט / י / יא / יב (בלי גרש)' },
-          gender: { type: 'string', description: 'בנים או בנות' },
-          tests: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                test_name: { type: 'string' },
-                unit: { type: 'string' },
-                lower_is_better: { type: 'boolean' },
-                thresholds: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      result: { type: 'string' },
-                      grade: { type: 'number' },
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            grade_level: { type: 'string', description: 'שכבת הגיל במסמך, למשל ז / ח / ט / י / יא / יב (בלי גרש)' },
+            gender: { type: 'string', description: 'בנים או בנות' },
+            tests: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  test_name: { type: 'string' },
+                  unit: { type: 'string' },
+                  lower_is_better: { type: 'boolean' },
+                  thresholds: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        result: { type: 'string' },
+                        grade: { type: 'number' },
+                      },
                     },
                   },
                 },
@@ -72,18 +128,9 @@ ${text.slice(0, 30000)}`,
             },
           },
         },
-      },
-    });
+      });
+    }
 
-    // Build conversion-table rows (contiguous ranges) from per-grade thresholds
-    const parseVal = (v) => {
-      const s = String(v).trim();
-      if (s.includes(':')) {
-        const [m, sec] = s.split(':');
-        return Number(m) * 60 + Number(sec);
-      }
-      return Number(s);
-    };
     const formatVal = (num, isTime) => {
       if (!isTime) return num;
       const m = Math.floor(num / 60);
