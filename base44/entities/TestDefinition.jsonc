@@ -5,10 +5,16 @@
     "name": {
       "type": "string"
     },
+    "test_type": {
+      "type": "string"
+    },
     "weight": {
       "type": "number"
     },
     "grade_level": {
+      "type": "string"
+    },
+    "class_id": {
       "type": "string"
     },
     "gender_track": {
@@ -18,6 +24,20 @@
         "girls"
       ],
       "default": "boys"
+    },
+    "semester": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B"
+      ]
+    },
+    "test_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "unit": {
+      "type": "string"
     },
     "conversion_table": {
       "type": "array",

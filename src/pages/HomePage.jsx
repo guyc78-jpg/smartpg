@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ChevronDown, Plus, Trash2, Users } from 'lucide-react';
 import { useApp } from '@/store/AppProvider';
+import { useAuth } from '@/lib/AuthContext';
 import BottomNav from '@/components/app/BottomNav';
 import HomeHeader from '@/components/home/HomeHeader';
 import ClassCard from '@/components/home/ClassCard';
@@ -15,6 +16,8 @@ import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 
 export default function HomePage() {
   const { data, addClass, addStudent, editClass, deleteClass, archiveClass, deleteAllData, defaultGenderTrack } = useApp();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [myClassesOpen, setMyClassesOpen] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -83,9 +86,11 @@ export default function HomePage() {
             <button onClick={() => setAddOpen(true)} className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary" title="הוסף כיתה">
               <Plus className="w-4 h-4" />
             </button>
-            <button onClick={() => setDeleteAllOpen(true)} className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="מחק הכל">
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {isAdmin && (
+              <button onClick={() => setDeleteAllOpen(true)} className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="מחק הכל">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
           <button onClick={() => setMyClassesOpen(o => !o)} className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
             <ChevronDown className={`w-4 h-4 transition-transform ${myClassesOpen ? '' : '-rotate-90'}`} />
@@ -121,7 +126,7 @@ export default function HomePage() {
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}
         title={`מחיקת ${deleteTarget?.name || ''}`}
-        description="מחיקת הכיתה תסיר אותה מהרשימה. תלמידים ורשומות קיימות לא יימחקו אוטומטית."
+        description="מחיקת הכיתה תמחק גם את כל התלמידים, הנוכחות, הציונים והרשומות המשויכים אליה לצמיתות. האם להמשיך?"
         onConfirm={handleDeleteClass}
       />
       <ConfirmDeleteDialog

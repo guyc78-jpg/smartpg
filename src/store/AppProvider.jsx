@@ -45,18 +45,18 @@ export function AppProvider({ children }) {
         base44.entities.SchoolClass.list('-created_date', 500),
         base44.entities.Student.list('-created_date', 500),
         base44.entities.TestDefinition.list('-created_date', 500),
-        base44.entities.TestResult.list('-created_date', 1000),
-        base44.entities.BehaviorGrade.list('-created_date', 1000),
+        base44.entities.TestResult.list('-created_date', 5000),
+        base44.entities.BehaviorGrade.list('-created_date', 5000),
         base44.entities.TeacherSettings.list('-created_date', 100),
         base44.entities.BagrutComponent.list('-created_date', 500),
-        base44.entities.BagrutResult.list('-created_date', 1000),
-        base44.entities.ClassTestStatus.list('-created_date', 1000),
-        base44.entities.GradeOverride.list('-created_date', 1000),
-        base44.entities.TestAttempt.list('-created_date', 1000),
-        base44.entities.LessonTopic.list('-created_date', 1000),
-        base44.entities.TeacherSchedule.list('-created_date', 1000),
-        base44.entities.Attendance.list('-created_date', 1000),
-        base44.entities.Substitution.list('-created_date', 1000),
+        base44.entities.BagrutResult.list('-created_date', 5000),
+        base44.entities.ClassTestStatus.list('-created_date', 5000),
+        base44.entities.GradeOverride.list('-created_date', 5000),
+        base44.entities.TestAttempt.list('-created_date', 5000),
+        base44.entities.LessonTopic.list('-created_date', 5000),
+        base44.entities.TeacherSchedule.list('-created_date', 5000),
+        base44.entities.Attendance.list('-created_date', 5000),
+        base44.entities.Substitution.list('-created_date', 5000),
       ]);
 
       const classes = (classesData || []).map(c => ({
@@ -244,9 +244,37 @@ export function AppProvider({ children }) {
   }, [defaultGenderTrack]);
 
   const deleteClass = useCallback(async (id) => {
+    const studentIds = data.students.filter(s => s.classId === id).map(s => s.id);
     await base44.entities.SchoolClass.delete(id);
-    setData(d => ({ ...d, classes: d.classes.filter(c => c.id !== id) }));
-  }, []);
+    if (studentIds.length > 0) {
+      await base44.entities.Student.deleteMany({ class_id: id });
+      await base44.entities.TestResult.deleteMany({ student_id: { $in: studentIds } });
+      await base44.entities.BehaviorGrade.deleteMany({ student_id: { $in: studentIds } });
+      await base44.entities.BagrutResult.deleteMany({ student_id: { $in: studentIds } });
+      await base44.entities.TestAttempt.deleteMany({ student_id: { $in: studentIds } });
+      await base44.entities.GradeOverride.deleteMany({ student_id: { $in: studentIds } });
+    }
+    await base44.entities.Attendance.deleteMany({ class_id: id });
+    await base44.entities.LessonTopic.deleteMany({ class_id: id });
+    await base44.entities.TeacherSchedule.deleteMany({ class_id: id });
+    await base44.entities.ClassTestStatus.deleteMany({ class_id: id });
+    await base44.entities.RunMeasurement.deleteMany({ class_id: id });
+    await base44.entities.PeStopwatchLog.deleteMany({ class_id: id });
+    setData(d => ({
+      ...d,
+      classes: d.classes.filter(c => c.id !== id),
+      students: d.students.filter(s => s.classId !== id),
+      results: d.results.filter(r => !studentIds.includes(r.studentId)),
+      behaviorGrades: d.behaviorGrades.filter(b => !studentIds.includes(b.studentId)),
+      bagrutResults: d.bagrutResults.filter(r => !studentIds.includes(r.studentId)),
+      testAttempts: d.testAttempts.filter(a => !studentIds.includes(a.studentId)),
+      gradeOverrides: d.gradeOverrides.filter(o => o.classId !== id),
+      attendance: d.attendance.filter(a => a.classId !== id),
+      lessonTopics: d.lessonTopics.filter(l => l.classId !== id),
+      scheduleLessons: d.scheduleLessons.filter(l => l.classId !== id),
+      classTestStatuses: d.classTestStatuses.filter(s => s.classId !== id),
+    }));
+  }, [data.students]);
 
   const editClass = useCallback(async (id, classData, gradeLevel, genderTrack) => {
     const payloadData = typeof classData === 'object'
@@ -610,14 +638,14 @@ export function AppProvider({ children }) {
 
   // --- Attendance ---
   const setAttendance = useCallback(async (studentId, classId, date, status) => {
-    const existing = await base44.entities.Attendance.filter({ student_id: studentId, date });
+    const existing = await base44.entities.Attendance.filter({ student_id: studentId, class_id: classId, date });
     if (existing.length > 0) {
       await base44.entities.Attendance.update(existing[0].id, { status });
     } else {
       await base44.entities.Attendance.create({ student_id: studentId, class_id: classId, date, status });
     }
     setData(d => {
-      const filtered = d.attendance.filter(a => !(a.studentId === studentId && a.date === date));
+      const filtered = d.attendance.filter(a => !(a.studentId === studentId && a.classId === classId && a.date === date));
       return { ...d, attendance: [...filtered, { id: existing[0]?.id || generateId(), studentId, classId, date, status, notes: '' }] };
     });
   }, []);
