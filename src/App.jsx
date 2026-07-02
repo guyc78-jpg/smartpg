@@ -11,8 +11,6 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { AppProvider } from '@/store/AppProvider';
 import { LiveRunProvider } from '@/contexts/LiveRunContext';
 import FloatingRunTimer from '@/components/live-run/FloatingRunTimer';
-import { StopwatchProvider } from '@/contexts/StopwatchContext';
-import FloatingStopwatch from '@/components/stopwatch/FloatingStopwatch';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -31,7 +29,6 @@ import SchedulePage from './pages/SchedulePage';
 import LiveRunPage from './pages/LiveRunPage';
 import LessonManagePage from './pages/LessonManagePage';
 import LessonEditPage from './pages/LessonEditPage';
-import StopwatchPage from './pages/StopwatchPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -57,7 +54,6 @@ const AuthenticatedApp = () => {
     <ErrorBoundary>
     <AppProvider>
       <LiveRunProvider>
-      <StopwatchProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -73,7 +69,6 @@ const AuthenticatedApp = () => {
           <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/lesson-manage" element={<LessonManagePage />} />
           <Route path="/lesson-edit" element={<LessonEditPage />} />
-          <Route path="/stopwatch" element={<StopwatchPage />} />
           <Route path="/live-run" element={<LiveRunPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<AppSettingsPage />} />
@@ -81,8 +76,6 @@ const AuthenticatedApp = () => {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <FloatingRunTimer />
-      <FloatingStopwatch />
-      </StopwatchProvider>
       </LiveRunProvider>
     </AppProvider>
     </ErrorBoundary>

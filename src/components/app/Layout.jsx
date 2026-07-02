@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, FileText, ArrowRight, Moon, Sun, Settings, CalendarDays, Timer, Activity } from 'lucide-react';
+import { Home, ClipboardList, FileText, ArrowRight, Moon, Sun, Settings, CalendarDays, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import BottomNav from '@/components/app/BottomNav';
@@ -8,7 +8,6 @@ import BottomNav from '@/components/app/BottomNav';
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'ראשי' },
   { to: '/schedule', icon: CalendarDays, label: 'מערכת' },
-  { to: '/stopwatch', icon: Timer, label: 'סטופר' },
   { to: '/live-run', icon: Activity, label: 'ריצה חיה' },
   { to: '/manage-tests', icon: ClipboardList, label: 'מבדקים' },
   { to: '/reports', icon: FileText, label: 'דוחות' },

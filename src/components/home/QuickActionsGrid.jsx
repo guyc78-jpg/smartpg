@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom';
-import { CalendarDays, CalendarRange, Timer, Activity, ClipboardList, Upload } from 'lucide-react';
+import { CalendarDays, CalendarRange, Activity, ClipboardList, Upload } from 'lucide-react';
 
 const ACTIONS = [
   { to: '/schedule#daily-journal', label: 'מערכת יומית', icon: CalendarDays },
   { to: '/schedule#weekly-schedule', label: 'מערכת שבועית', icon: CalendarRange },
-  { to: '/stopwatch', label: 'סטופר חכם', icon: Timer },
   { to: '/live-run', label: 'ריצה חיה', icon: Activity },
   { to: '/manage-tests', label: 'מדידות כושר', icon: ClipboardList },
   { to: '/schedule?import=1', label: 'ייבוא מערכת', icon: Upload },

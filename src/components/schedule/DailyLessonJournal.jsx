@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, ChevronDown, Edit2, Timer, Activity, ChevronLeft, Plus } from 'lucide-react';
+import { Calendar, ChevronDown, Edit2, Activity, ChevronLeft, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { periodsForDay, formatPeriodRange, getCurrentPeriod } from '@/lib/periodTimes';
@@ -60,14 +60,10 @@ export default function DailyLessonJournal({ dateIso, onDateChange, scheduleLess
                   {lesson ? (
                     <>
                       <p className="text-xs text-muted-foreground">{topic?.topic || 'טרם הוגדר נושא לשיעור'}</p>
-                      <div className="grid grid-cols-4 gap-1.5">
+                      <div className="grid grid-cols-3 gap-1.5">
                         <Link to={`/lesson-edit?classId=${lesson.classId}&period=${p}&date=${dateIso}`} className="h-10 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
                           <Edit2 className="w-3.5 h-3.5" />
                           עריכה
-                        </Link>
-                        <Link to={`/stopwatch?classId=${lesson.classId}&period=${p}&date=${dateIso}`} className="h-10 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
-                          <Timer className="w-3.5 h-3.5" />
-                          סטופר
                         </Link>
                         <Link to={`/live-run?classId=${lesson.classId}&period=${p}&date=${dateIso}`} className="h-10 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
                           <Activity className="w-3.5 h-3.5" />

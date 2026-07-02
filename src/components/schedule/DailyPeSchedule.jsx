@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Edit2, Timer, Activity, ChevronLeft } from 'lucide-react';
+import { Edit2, Activity, ChevronLeft } from 'lucide-react';
 import { formatPeriodStart } from '@/lib/periodTimes';
 
 export default function DailyPeSchedule({ lessons, classById, lessonTopics, dateIso }) {
@@ -27,14 +27,10 @@ export default function DailyPeSchedule({ lessons, classById, lessonTopics, date
                 <p className="text-xs text-muted-foreground break-words">{topic?.topic || 'טרם הוגדר נושא'}</p>
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
               <Link to={editUrl} className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
                 <Edit2 className="w-3.5 h-3.5" />
                 עריכה
-              </Link>
-              <Link to={`/stopwatch?classId=${lesson.classId}&period=${lesson.period}&date=${dateIso}`} className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
-                <Timer className="w-3.5 h-3.5" />
-                סטופר
               </Link>
               <Link to={`/live-run?classId=${lesson.classId}&period=${lesson.period}&date=${dateIso}`} className="h-9 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
                 <Activity className="w-3.5 h-3.5" />
