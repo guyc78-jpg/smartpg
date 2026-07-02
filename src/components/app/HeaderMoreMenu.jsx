@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LogoutConfirmDialog from '@/components/app/LogoutConfirmDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,17 +10,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Bell, LogOut, Moon, Settings, Sun, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/lib/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
 
 const itemClass = 'flex items-center justify-start gap-2.5 text-sm font-medium cursor-pointer rounded-lg px-2.5 py-2 text-right';
 
 export default function HeaderMoreMenu({ items = [] }) {
-  const { logout } = useAuth();
   const { dark, toggle } = useTheme();
   const navigate = useNavigate();
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   return (
+    <>
     <DropdownMenu dir="rtl">
       <DropdownMenuTrigger asChild>
         <button
@@ -54,10 +56,12 @@ export default function HeaderMoreMenu({ items = [] }) {
           {dark ? 'מצב בהיר' : 'מצב כהה'}
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-border/50" />
-        <DropdownMenuItem onClick={() => logout()} className={itemClass}>
+        <DropdownMenuItem onClick={() => setLogoutOpen(true)} className={itemClass}>
           <LogOut className="w-4 h-4 shrink-0" /> יציאה / החלפת משתמש
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    <LogoutConfirmDialog open={logoutOpen} onOpenChange={setLogoutOpen} />
+    </>
   );
 }
