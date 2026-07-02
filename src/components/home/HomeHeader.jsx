@@ -8,10 +8,15 @@ export default function HomeHeader({ classCount, studentCount }) {
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
   const schoolName = typeof window !== 'undefined' ? localStorage.getItem('schoolName') : '';
+  const teacherName = typeof window !== 'undefined' ? localStorage.getItem('teacherName') : '';
 
   return (
-    <header className="sticky top-0 z-40 glass-nav px-4 pt-4 pb-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}>
+    <header dir="rtl" className="sticky top-0 z-40 glass-nav px-4 pt-4 pb-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}>
       <div className="flex items-start justify-between gap-2">
+        <div className="text-right">
+          <h1 className="text-lg font-bold text-foreground">{teacherName || user?.full_name || 'ראשי'}</h1>
+          {schoolName && <p className="text-xs text-muted-foreground">{schoolName}</p>}
+        </div>
         <div className="flex items-center gap-1">
           <button onClick={() => logout()} className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="יציאה">
             <LogOut className="w-[18px] h-[18px]" />
@@ -29,13 +34,9 @@ export default function HomeHeader({ classCount, studentCount }) {
             <User className="w-[18px] h-[18px]" />
           </Link>
         </div>
-        <div className="text-right">
-          <h1 className="text-lg font-bold text-foreground">{user?.full_name || 'ראשי'}</h1>
-          {schoolName && <p className="text-xs text-muted-foreground">{schoolName}</p>}
-        </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2 mt-3 text-sm font-medium text-muted-foreground">
+      <div className="flex items-center justify-start gap-2 mt-3 text-sm font-medium text-muted-foreground">
         <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {studentCount} תלמידים</span>
         <span className="text-border">|</span>
         <span className="flex items-center gap-1"><Building2 className="w-4 h-4" /> {classCount} כיתות</span>
