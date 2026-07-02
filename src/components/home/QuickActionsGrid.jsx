@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CalendarDays, CalendarRange, Activity, ClipboardList, Upload } from 'lucide-react';
+import { CalendarDays, CalendarRange, Activity, ClipboardList, Upload, FileText } from 'lucide-react';
 
 const ACTIONS = [
   { to: '/schedule#daily-journal', label: 'מערכת יומית', icon: CalendarDays },
@@ -7,6 +7,7 @@ const ACTIONS = [
   { to: '/live-run', label: 'ריצה חיה', icon: Activity },
   { to: '/manage-tests', label: 'מדידות כושר', icon: ClipboardList },
   { to: '/schedule?import=1', label: 'ייבוא מערכת', icon: Upload },
+  { to: '/reports', label: 'דוחות', icon: FileText },
 ];
 
 export default function QuickActionsGrid() {
