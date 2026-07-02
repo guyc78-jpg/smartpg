@@ -44,32 +44,35 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
     if (!selectedFile) return;
     setLoading(true);
 
-    const isCsv = selectedFile.name.toLowerCase().endsWith('.csv');
-    let importedRows = [];
-    if (isCsv) {
-      const text = await selectedFile.text();
-      const report = parseTeacherReportCsv(text);
-      if (report && report.matched > 0) {
-        setDirectPreview(report);
-        setLoading(false);
+    try {
+      const isCsv = selectedFile.name.toLowerCase().endsWith('.csv');
+      let importedRows = [];
+      if (isCsv) {
+        const text = await selectedFile.text();
+        const report = parseTeacherReportCsv(text);
+        if (report && report.matched > 0) {
+          setDirectPreview(report);
+          return;
+        }
+        importedRows = parseScheduleCsv(text);
+      } else {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
+        const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({ file_url, json_schema: IMPORT_SCHEMA });
+        importedRows = Array.isArray(extracted.output) ? extracted.output : extracted.output?.rows || [];
+      }
+
+      if (!importedRows.length) {
+        setError('לא נמצאו שורות בקובץ. ודא שהקובץ כולל כותרות ורשומות מערכת שעות.');
         return;
       }
-      importedRows = parseScheduleCsv(text);
-    } else {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
-      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({ file_url, json_schema: IMPORT_SCHEMA });
-      importedRows = Array.isArray(extracted.output) ? extracted.output : extracted.output?.rows || [];
-    }
 
-    if (!importedRows.length) {
-      setError('לא נמצאו שורות בקובץ. ודא שהקובץ כולל כותרות ורשומות מערכת שעות.');
+      setRows(importedRows);
+      setMapping(guessScheduleMapping(Object.keys(importedRows[0] || {})));
+    } catch (e) {
+      setError(`קריאת הקובץ נכשלה — נסה שוב. (${e?.message || 'שגיאה לא ידועה'})`);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setRows(importedRows);
-    setMapping(guessScheduleMapping(Object.keys(importedRows[0] || {})));
-    setLoading(false);
   };
 
   const handleImport = async () => {
@@ -90,7 +93,7 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[720px] rounded-2xl max-h-[88vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[720px] rounded-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-base font-bold">ייבוא מערכת שעות — סינון שיעורי חנ״ג</DialogTitle>
         </DialogHeader>
@@ -142,7 +145,7 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
 
               {preview.lessons.length > 0 && (
                 <div className="overflow-x-auto rounded-xl border border-border">
-                  <table className="w-full text-xs text-right min-w-[440px]">
+                  <table className="w-full text-xs text-right">
                     <thead className="bg-muted/70">
                       <tr>
                         <th className="p-2">יום</th>
