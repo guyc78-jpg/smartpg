@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, LogOut, Moon, Settings, Sun, UserCheck } from 'lucide-react';
-import { toast } from 'sonner';
+import { LogOut, Moon, Settings, Sun, UserCheck } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import LogoutConfirmDialog from '@/components/app/LogoutConfirmDialog';
+import PushToggleButton from '@/components/app/PushToggleButton';
 
 const btnClass = 'h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60 transition-colors active:scale-95';
 
@@ -18,9 +18,7 @@ export default function HeaderActions() {
       <Link to="/settings" className={btnClass} title="הגדרות">
         <Settings className="w-4 h-4" />
       </Link>
-      <button onClick={() => toast('אין התראות חדשות')} className={btnClass} title="התראות">
-        <Bell className="w-4 h-4" />
-      </button>
+      <PushToggleButton className={btnClass} />
       <button onClick={toggle} className={btnClass} title="מצב כהה">
         {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>
