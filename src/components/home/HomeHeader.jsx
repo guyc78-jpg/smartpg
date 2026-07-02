@@ -19,20 +19,26 @@ export default function HomeHeader({ classCount, studentCount }) {
             {schoolName && <span className="text-sm font-normal text-muted-foreground"> - {schoolName}</span>}
           </h1>
         </div>
-        <div className="flex items-center gap-0.5 shrink-0">
-          <Link to="/substitute-fills" className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="מילויי מקום">
+        <div className="flex items-center gap-1 shrink-0">
+          <Link
+            to="/substitute-fills"
+            className="h-8 flex items-center gap-1.5 px-2.5 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors"
+            title="מילויי מקום"
+          >
             <UserCheck className="w-4 h-4" />
+            <span>מילוי מקום</span>
           </Link>
-          <Link to="/settings" className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="הגדרות">
+          <span className="w-px h-5 bg-border mx-0.5" aria-hidden="true" />
+          <Link to="/settings" className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="הגדרות">
             <Settings className="w-4 h-4" />
           </Link>
-          <button onClick={() => toast('אין התראות חדשות')} className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="התראות">
+          <button onClick={() => toast('אין התראות חדשות')} className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="התראות">
             <Bell className="w-4 h-4" />
           </button>
-          <button onClick={toggle} className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="מצב כהה">
+          <button onClick={toggle} className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="מצב כהה">
             {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <button onClick={() => logout()} className="h-7 w-7 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="יציאה">
+          <button onClick={() => logout()} className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-lg hover:bg-secondary/60" title="יציאה">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
