@@ -17,7 +17,7 @@ import { convertRawToGrade } from '@/lib/gradeCalc';
 
 export default function LiveRunPage() {
   const navigate = useNavigate();
-  const { data, setTestResult, setClassTestStatus } = useApp();
+  const { data, setClassTestStatus, loadAll } = useApp();
   const run = useLiveRun();
   const { session, elapsedMs } = run;
   const [search, setSearch] = useState('');
@@ -73,9 +73,12 @@ export default function LiveRunPage() {
     setSaving(true);
     try {
       const { classId, date, period, measurementType, trackLength, testId, semester } = session.setup;
+      const periodNum = period !== '' && period != null && Number.isFinite(Number(period)) ? Number(period) : null;
+      const studentIds = selectedStudents.map(s => s.id);
 
-      const existing = await base44.entities.RunMeasurement.filter({ class_id: classId, date, period, measurement_type: measurementType });
-      const existingByStudent = Object.fromEntries(existing.map(r => [r.student_id, r]));
+      // --- Run measurements (batched) ---
+      const existing = await base44.entities.RunMeasurement.filter({ class_id: classId, date, measurement_type: measurementType });
+      const existingByStudent = Object.fromEntries(existing.filter(r => (r.period ?? null) === periodNum).map(r => [r.student_id, r]));
 
       const toCreate = [];
       const toUpdate = [];
@@ -83,7 +86,7 @@ export default function LiveRunPage() {
         const participant = session.participants[student.id];
         const completed = participant.status === 'finished';
         const payload = {
-          student_id: student.id, class_id: classId, date, period,
+          student_id: student.id, class_id: classId, date, period: periodNum,
           measurement_type: measurementType,
           result_seconds: completed ? secondsFromMs(participant.finishTimeMs) : null,
           result_distance: participant.laps && trackLength ? Math.round(participant.laps * trackLength) : null,
@@ -96,22 +99,38 @@ export default function LiveRunPage() {
       if (toCreate.length > 0) await base44.entities.RunMeasurement.bulkCreate(toCreate);
       if (toUpdate.length > 0) await base44.entities.RunMeasurement.bulkUpdate(toUpdate);
 
+      // --- Test results (batched) ---
       if (testId) {
+        const sem = semester || 'A';
+        const existingResults = await base44.entities.TestResult.filter({ test_id: testId, semester: sem, student_id: { $in: studentIds } });
+        const resultByStudent = Object.fromEntries(existingResults.map(r => [r.student_id, r]));
+        const resCreate = [];
+        const resUpdate = [];
         for (const student of selectedStudents) {
           const p = session.participants[student.id];
           const status = p.status === 'finished' ? 'completed' : p.status === 'not_completed' ? 'not_completed' : 'not_participated';
           const raw = p.status === 'finished' && p.finishTimeMs != null ? secondsFromMs(p.finishTimeMs) : null;
-          await setTestResult(student.id, testId, semester || 'A', raw, status, {
+          const payload = {
+            student_id: student.id, test_id: testId, semester: sem, raw_score: raw, status,
             run_time_seconds: raw, laps_completed: p.laps ?? null, live_run_id: session.id,
-          });
+          };
+          const match = resultByStudent[student.id];
+          if (match) resUpdate.push({ id: match.id, ...payload });
+          else resCreate.push(payload);
         }
-        await setClassTestStatus(classId, testId, semester || 'A', 'conducted');
+        if (resCreate.length > 0) await base44.entities.TestResult.bulkCreate(resCreate);
+        if (resUpdate.length > 0) await base44.entities.TestResult.bulkUpdate(resUpdate);
+        await setClassTestStatus(classId, testId, sem, 'conducted');
       }
 
+      await loadAll();
       run.markSaved();
       run.closeSession();
       toast.success(testId ? 'התוצאות נשמרו כציוני המבדק' : 'התוצאות נשמרו');
       navigate(testId ? `/class/${classId}/tests` : `/class/${classId}`);
+    } catch (e) {
+      console.error('Failed to save run summary:', e);
+      toast.error('השמירה נכשלה. בדוק את החיבור ונסה שוב.');
     } finally {
       setSaving(false);
     }
