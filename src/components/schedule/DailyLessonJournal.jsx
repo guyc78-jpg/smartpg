@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, ChevronDown, Edit2, Timer, Activity, ChevronLeft, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { PERIODS, formatPeriodRange, getCurrentPeriod } from '@/lib/periodTimes';
+import { periodsForDay, formatPeriodRange, getCurrentPeriod } from '@/lib/periodTimes';
 
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
@@ -29,7 +29,7 @@ export default function DailyLessonJournal({ dateIso, onDateChange, scheduleLess
       )}
 
       <div className="space-y-2">
-        {PERIODS.map(p => {
+        {periodsForDay(dayIdx).map(p => {
           const lesson = lessonAt(p);
           const cls = lesson ? classById[lesson.classId] : null;
           const topic = lesson
@@ -50,7 +50,7 @@ export default function DailyLessonJournal({ dateIso, onDateChange, scheduleLess
                 </span>
                 <span className="flex-1" />
                 <span className={`font-mono text-sm font-bold tracking-wide shrink-0 ${isCurrent ? 'text-foreground' : 'text-muted-foreground'}`} dir="ltr">
-                  {formatPeriodRange(p)}
+                  {formatPeriodRange(p, dayIdx)}
                 </span>
                 <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               </button>

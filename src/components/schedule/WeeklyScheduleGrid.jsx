@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { PERIODS, getCurrentPeriod } from '@/lib/periodTimes';
+import { PERIODS, periodsForDay, getCurrentPeriod } from '@/lib/periodTimes';
 
 const DAYS = [0, 1, 2, 3, 4, 5];
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
@@ -39,6 +39,10 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                 </div>
               </th>
               {DAYS.map(d => {
+                const dayHasPeriod = periodsForDay(d).includes(p);
+                if (!dayHasPeriod) {
+                  return <td key={d} className="h-14 min-w-[92px] border-b border-l border-border/50 bg-muted/60" />;
+                }
                 const cellLessons = lessonsAt(d, p);
                 const isTodayCol = d === today;
                 return (

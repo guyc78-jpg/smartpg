@@ -28,7 +28,7 @@ export default function AssignLessonDialog({ open, onOpenChange, slot, classes, 
         <div className="space-y-4">
           <div className="rounded-xl bg-muted/50 p-3 text-sm font-semibold flex items-center justify-between">
             <span>יום {DAY_NAMES[slot.day]} · שעה {slot.period}</span>
-            <span className="font-mono text-muted-foreground" dir="ltr">{formatPeriodRange(slot.period)}</span>
+            <span className="font-mono text-muted-foreground" dir="ltr">{formatPeriodRange(slot.period, slot.day)}</span>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">כיתה</Label>
