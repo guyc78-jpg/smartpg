@@ -8,6 +8,8 @@ import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { GRADE_LEVELS, GENDER_TRACK_LABELS, SEMESTER_LABELS, TEST_TYPES } from '@/lib/types';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import ConversionTableEditor from '@/components/tests/ConversionTableEditor.jsx';
+import TestImportExport from '@/components/tests/TestImportExport.jsx';
+import { usesTimeFormat } from '@/lib/testImportExport';
 import { toast } from 'sonner';
 
 const selectClass = 'h-8 w-full rounded-md border border-input bg-background px-2 text-xs';
@@ -53,6 +55,11 @@ export default function ManageTestsPage() {
 
   const updateField = (test, field, value) => updateTest({ ...test, [field]: value });
 
+  const handleImport = async (tests) => {
+    for (const t of tests) await addTest(t);
+    return tests.length;
+  };
+
   return (
     <Layout title="מבדקים">
       <div className="max-w-4xl mx-auto space-y-3 p-4" dir="rtl">
@@ -79,6 +86,7 @@ export default function ManageTestsPage() {
               <Plus className="w-3.5 h-3.5 ml-1" /> הוסף מבדק
             </Button>
           </div>
+          <TestImportExport tests={filteredTests} onImport={handleImport} />
         </div>
 
         <div className="space-y-2">
@@ -118,7 +126,7 @@ export default function ManageTestsPage() {
 
                     <div className="rounded-xl border border-border p-2 space-y-2">
                       <div className="text-xs font-bold">טבלת המרה מתוצאה לציון</div>
-                      <ConversionTableEditor rows={test.conversionTable} unit={test.unit} onSave={rows => { updateField(test, 'conversionTable', rows); toast.success('טבלת ההמרה נשמרה'); }} />
+                      <ConversionTableEditor rows={test.conversionTable} unit={test.unit} timeBased={usesTimeFormat(test.name)} onSave={rows => { updateField(test, 'conversionTable', rows); toast.success('טבלת ההמרה נשמרה'); }} />
                     </div>
                   </CardContent>
                 )}
