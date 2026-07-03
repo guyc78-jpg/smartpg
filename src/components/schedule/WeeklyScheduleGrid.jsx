@@ -97,12 +97,6 @@ style={{
                           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 1px hsl(var(--primary) / 0.15), 0 4px 10px -4px hsl(var(--primary) / 0.35)',
                         }}
                       >
-                        {isLiveNow && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground text-[9px] font-black px-1.5 py-px leading-tight">
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground animate-pulse" />
-                            כעת
-                          </span>
-                        )}
                         <p className="text-xs font-bold text-primary truncate leading-tight">
                           {[...new Set(cellLessons.map(l => l.subject || 'חינוך גופני'))].join(', ')}
                         </p>
