@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock, UserPlus, Users } from 'lucide-react';
 import { periodsForDay, formatPeriodRange, getCurrentPeriod } from '@/lib/periodTimes';
 import LessonTopicInline from '@/components/home/LessonTopicInline';
+import QuickSubstituteFillDialog from '@/components/home/QuickSubstituteFillDialog';
 
 function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -24,6 +25,7 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
   const [open, setOpen] = useState(false);
   const [offset, setOffset] = useState(() => initialOffset(scheduleLessons));
   const [expandedPeriod, setExpandedPeriod] = useState(null);
+  const [fillSlot, setFillSlot] = useState(null);
 
   const date = useMemo(() => {
     const d = new Date();
@@ -129,13 +131,13 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
                           </Link>
                         )}
                         {!hasClass && (
-                          <Link
-                            to={`/substitute-fills?add=1&date=${dateISO}&period=${p}`}
+                          <button
+                            onClick={() => setFillSlot({ period: p, subject: label })}
                             className="inline-flex items-center gap-1 text-xs font-bold text-warning hover:opacity-80"
                           >
                             <UserPlus className="w-3.5 h-3.5" />
                             הוסף מילוי מקום
-                          </Link>
+                          </button>
                         )}
                       </div>
                     )}
@@ -162,6 +164,17 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
           </div>
         </div>
       )}
+
+      <QuickSubstituteFillDialog
+        open={Boolean(fillSlot)}
+        onOpenChange={(o) => { if (!o) setFillSlot(null); }}
+        classes={Object.values(classById || {}).filter(c => (c.status || 'active') === 'active')}
+        date={dateISO}
+        dateLabel={dateLabel}
+        day={day}
+        initialPeriod={fillSlot?.period}
+        defaultSubject={fillSlot?.subject}
+      />
     </div>
   );
 }

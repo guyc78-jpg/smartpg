@@ -17,6 +17,14 @@
       "type": "string",
       "description": "Class display name (from list or free text)"
     },
+    "subject": {
+      "type": "string",
+      "description": "Lesson subject/topic for the fill"
+    },
+    "location": {
+      "type": "string",
+      "description": "Location (hall, field...)"
+    },
     "status": {
       "type": "string",
       "enum": [
