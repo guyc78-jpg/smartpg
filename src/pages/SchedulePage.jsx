@@ -8,17 +8,19 @@ import LiveNowBanner from '@/components/schedule/LiveNowBanner';
 import DailyLessonJournal from '@/components/schedule/DailyLessonJournal';
 import AssignLessonDialog from '@/components/schedule/AssignLessonDialog';
 import DeleteScheduleDialog from '@/components/schedule/DeleteScheduleDialog';
+import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import { Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SchedulePage() {
-  const { data, loadAll, importSchedule } = useApp();
+  const { data, loadAll, importSchedule, deleteClass } = useApp();
   const [tab, setTab] = useState('grid');
   const [dateIso, setDateIso] = useState(new Date().toISOString().slice(0, 10));
   const [assignSlot, setAssignSlot] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [lessonTopics, setLessonTopics] = useState([]);
+  const [orphanClass, setOrphanClass] = useState(null);
 
   const fetchTopics = useCallback(async () => {
     const rows = await base44.entities.LessonTopic.list('-date');
@@ -58,10 +60,17 @@ export default function SchedulePage() {
   };
 
   const handleAssignDelete = async () => {
-    await base44.entities.TeacherSchedule.delete(assignSlot.lesson.id);
+    const deletedLesson = assignSlot.lesson;
+    await base44.entities.TeacherSchedule.delete(deletedLesson.id);
     setAssignSlot(null);
     await loadAll();
     toast.success('השיעור הוסר מהמערכת');
+    // Two-way sync: if this was the class's last lesson in the schedule, offer to delete the class too
+    const cid = deletedLesson.classId;
+    if (cid && classById[cid]) {
+      const remaining = data.scheduleLessons.filter(l => l.classId === cid && l.id !== deletedLesson.id);
+      if (remaining.length === 0) setOrphanClass(classById[cid]);
+    }
   };
 
   return (
@@ -128,6 +137,18 @@ export default function SchedulePage() {
             }
             await loadAll();
             toast.success('מערכת השעות נמחקה');
+          }}
+        />
+
+        <ConfirmDeleteDialog
+          open={!!orphanClass}
+          onOpenChange={(v) => { if (!v) setOrphanClass(null); }}
+          title={`למחוק את כיתה ${orphanClass?.name || ''} מהדשבורד?`}
+          description="הכיתה לא מופיעה יותר במערכת השעות. מחיקה תסיר אותה מהדשבורד כולל התלמידים והציונים שלה. לא ניתן לבטל פעולה זו."
+          confirmLabel="מחק כיתה"
+          onConfirm={async () => {
+            await deleteClass(orphanClass.id);
+            toast.success(`כיתה ${orphanClass.name} נמחקה מהדשבורד`);
           }}
         />
 
