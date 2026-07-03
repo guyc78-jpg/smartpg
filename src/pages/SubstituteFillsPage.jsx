@@ -12,13 +12,14 @@ import SubstituteSummaryBar from '@/components/substitute/SubstituteSummaryBar';
 import SubstituteFillRow from '@/components/substitute/SubstituteFillRow';
 import { STATUS_NEXT, exportFillsCsv } from '@/components/substitute/substituteUtils';
 
+const localIso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const MONTH_NAMES = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 const TABS = [{ key: 'today', label: 'היום' }, { key: 'week', label: 'השבוע' }, { key: 'month', label: 'החודש' }, { key: 'all', label: 'הכל' }];
 
 export default function SubstituteFillsPage() {
   const { data } = useApp();
   const [searchParams] = useSearchParams();
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = localIso(new Date());
 
   const [fills, setFills] = useState([]);
   const [month, setMonth] = useState(() => {
@@ -56,7 +57,7 @@ export default function SubstituteFillsPage() {
       const now = new Date(todayIso + 'T00:00:00');
       const start = new Date(now); start.setDate(now.getDate() - now.getDay());
       const end = new Date(start); end.setDate(start.getDate() + 6);
-      const s = start.toISOString().slice(0, 10), e = end.toISOString().slice(0, 10);
+      const s = localIso(start), e = localIso(end);
       list = fills.filter(f => f.date >= s && f.date <= e);
     } else if (tab === 'month') list = monthFills;
     if (classFilter !== 'all') list = list.filter(f => f.className === classFilter);

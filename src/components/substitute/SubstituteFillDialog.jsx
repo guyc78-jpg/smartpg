@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EditDialog, { Field, fieldClass } from '@/components/app/EditDialog';
+import { periodsForDay } from '@/lib/periodTimes';
 import { STATUS_LABELS } from './substituteUtils';
 
 const FREE_TEXT = '__free';
@@ -16,7 +17,8 @@ export default function SubstituteFillDialog({ open, onOpenChange, classes, init
 
   useEffect(() => {
     if (!open) return;
-    setDate(initial?.date || new Date().toISOString().slice(0, 10));
+    const n = new Date();
+    setDate(initial?.date || `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`);
     setPeriod(initial?.period ? String(initial.period) : '');
     setClassChoice(FREE_TEXT);
     setFreeName('');
@@ -46,7 +48,7 @@ export default function SubstituteFillDialog({ open, onOpenChange, classes, init
         <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className={fieldClass}><SelectValue placeholder="בחר שיעור (לא חובה)" /></SelectTrigger>
           <SelectContent>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(p => <SelectItem key={p} value={String(p)}>שיעור {p}</SelectItem>)}
+            {periodsForDay(date ? new Date(date + 'T00:00:00').getDay() : 0).map(p => <SelectItem key={p} value={String(p)}>שיעור {p}</SelectItem>)}
           </SelectContent>
         </Select>
       </Field>

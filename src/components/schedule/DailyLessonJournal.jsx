@@ -10,7 +10,8 @@ const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמיש
 export default function DailyLessonJournal({ dateIso, onDateChange, scheduleLessons, classById, lessonTopics, onAssign }) {
   const [expanded, setExpanded] = useState(null);
   const dayIdx = new Date(dateIso + 'T00:00:00').getDay();
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const n = new Date();
+  const todayIso = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
   const currentPeriod = dateIso === todayIso ? getCurrentPeriod() : null;
 
   const dayLessons = (scheduleLessons || []).filter(l => l.dayOfWeek === dayIdx);
