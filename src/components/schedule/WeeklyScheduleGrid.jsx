@@ -23,9 +23,14 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
       <table className="border-separate border-spacing-0 w-full min-w-[620px]">
         <thead>
           <tr>
-            <th className="sticky right-0 z-20 w-12 bg-gradient-to-b from-primary to-primary/85 text-primary-foreground text-[10px] font-bold p-1 rounded-tr-2xl">
-              <div className="text-right pr-0.5">יום</div>
-              <div className="text-left pl-0.5 border-t border-primary-foreground/25 mt-0.5 pt-0.5">שעה</div>
+            <th className="sticky right-0 z-20 w-12 h-11 p-0 bg-gradient-to-b from-primary to-primary/85 text-primary-foreground rounded-tr-2xl overflow-hidden">
+              <div className="relative w-full h-full">
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                  <line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                </svg>
+                <span className="absolute top-[5px] left-[7px] text-[10px] font-bold leading-none">יום</span>
+                <span className="absolute bottom-[5px] right-[6px] text-[10px] font-bold leading-none">שעה</span>
+              </div>
             </th>
             {DAYS.map(d => (
               <th
