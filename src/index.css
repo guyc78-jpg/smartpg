@@ -126,6 +126,20 @@
   #root {
     min-height: 100%;
   }
+  /* Native selects & their option lists — full RTL */
+  select {
+    direction: rtl;
+    text-align: right;
+  }
+  select option, select optgroup {
+    direction: rtl;
+    text-align: right;
+  }
+  /* Radix portals (selects, dropdowns, popovers) render outside #root — force RTL */
+  [data-radix-popper-content-wrapper] {
+    direction: rtl;
+    text-align: right;
+  }
 }
 
 @layer utilities {
