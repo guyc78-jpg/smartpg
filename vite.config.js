@@ -6,7 +6,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   logLevel: 'error', // Suppress warnings, only show errors
   optimizeDeps: {
-    // Force re-optimization — stale dep cache served 504 (outdated optimize dep) and blocked app boot
+    // Force re-optimization — stale dep cache served 504 (outdated optimize dep) and blocked app boot (restart 2)
     force: true,
   },
   plugins: [

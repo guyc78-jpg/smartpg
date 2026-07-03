@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+
 import { base44 } from '@/api/base44Client';
 import { getVapidPublicKey } from '@/functions/getVapidPublicKey';
 import { sendPushNotification } from '@/functions/sendPushNotification';
