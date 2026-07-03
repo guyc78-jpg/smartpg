@@ -13,7 +13,8 @@ export default function TestImportDialog({ open, onOpenChange, tests, defaultGra
       setGradeLevel(defaultGradeLevel || 'ז');
       setSelected(new Set(tests.map((_, i) => i)));
     }
-  }, [open, tests, defaultGradeLevel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const toggle = (i) => {
     setSelected(current => {
@@ -36,11 +37,20 @@ export default function TestImportDialog({ open, onOpenChange, tests, defaultGra
           <DialogTitle className="text-right">ייבוא מבדקים מקובץ</DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center gap-2 justify-start">
-          <span className="text-sm font-bold">שכבה:</span>
-          <select value={gradeLevel} onChange={e => setGradeLevel(e.target.value)} className="h-9 rounded-xl liquid-field px-3 text-sm">
-            {GRADE_LEVELS.map(gl => <option key={gl} value={gl}>{gl}׳</option>)}
-          </select>
+        <div className="space-y-1.5">
+          <span className="text-sm font-bold block text-right">ייבוא לשכבה:</span>
+          <div className="grid grid-cols-6 gap-1.5" dir="rtl">
+            {GRADE_LEVELS.map(gl => (
+              <button
+                key={gl}
+                type="button"
+                onClick={() => setGradeLevel(gl)}
+                className={`h-9 rounded-full text-xs font-bold liquid-chip ${gradeLevel === gl ? 'liquid-chip-active' : ''}`}
+              >
+                {gl}׳
+              </button>
+            ))}
+          </div>
         </div>
 
         <p className="text-xs text-primary font-medium text-right">
