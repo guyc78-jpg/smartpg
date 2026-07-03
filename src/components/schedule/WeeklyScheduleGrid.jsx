@@ -23,13 +23,19 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
       <table className="border-separate border-spacing-0 w-full min-w-[620px]">
         <thead>
           <tr>
-            <th className="sticky right-0 z-20 w-12 h-11 p-0 bg-gradient-to-b from-primary to-primary/85 text-primary-foreground rounded-tr-2xl overflow-hidden">
+            <th
+              className="sticky right-0 z-20 w-12 h-11 p-0 text-primary rounded-tr-2xl overflow-hidden backdrop-blur-xl"
+              style={{
+                background: 'linear-gradient(160deg, hsl(var(--primary) / 0.22), hsl(var(--card) / 0.55))',
+                boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,0.6), inset -1px 0 0 rgba(255,255,255,0.35), inset 0 -1px 0 hsl(var(--primary) / 0.2), 0 4px 12px -4px hsl(var(--primary) / 0.35)',
+              }}
+            >
               <div className="relative w-full h-full">
                 <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                  <line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                  <line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" strokeOpacity="0.35" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
                 </svg>
-                <span className="absolute top-[5px] left-[7px] text-[10px] font-bold leading-none">יום</span>
-                <span className="absolute bottom-[5px] right-[6px] text-[10px] font-bold leading-none">שעה</span>
+                <span className="absolute top-[5px] left-[7px] text-[10px] font-black leading-none drop-shadow-sm">יום</span>
+                <span className="absolute bottom-[5px] right-[6px] text-[10px] font-black leading-none drop-shadow-sm">שעה</span>
               </div>
             </th>
             {DAYS.map(d => (
