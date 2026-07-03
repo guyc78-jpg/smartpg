@@ -86,7 +86,6 @@ style={{
                     className={`h-14 min-w-[92px] border-b border-l border-border/50 p-1 cursor-pointer transition-colors align-middle
                       ${isTodayCol ? 'bg-primary/5 border-l-primary/40' : rowIdx % 2 === 1 ? 'bg-muted/30' : 'bg-card/60'}
                       ${isTodayCol && p === currentPeriod ? 'bg-primary/15 shadow-inner' : ''}
-                      ${isLiveNow ? 'relative ring-2 ring-inset ring-primary rounded-lg' : ''}
                       hover:bg-primary/10`}
                   >
                     {cellLessons.length > 0 ? (
@@ -94,7 +93,9 @@ style={{
                         className="text-center space-y-0.5 rounded-xl px-1 py-1 backdrop-blur-md"
                         style={{
                           background: 'linear-gradient(160deg, hsl(var(--primary) / 0.16), hsl(var(--card) / 0.55))',
-                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 1px hsl(var(--primary) / 0.15), 0 4px 10px -4px hsl(var(--primary) / 0.35)',
+                          boxShadow: isLiveNow
+                            ? 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 2px hsl(var(--primary)), 0 4px 12px -4px hsl(var(--primary) / 0.55)'
+                            : 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 1px hsl(var(--primary) / 0.15), 0 4px 10px -4px hsl(var(--primary) / 0.35)',
                         }}
                       >
                         <p className="text-xs font-bold text-primary truncate leading-tight">
