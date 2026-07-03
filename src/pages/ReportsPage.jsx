@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart3, Users, Download, School, Clock, XCircle, BookOpen } from 'lucide-react';
-import { SEMESTER_LABELS } from '@/lib/types';
+import { SEMESTER_LABELS, GRADE_LEVELS } from '@/lib/types';
 import { formatStudentName } from '@/lib/studentName';
 import { exportClassReportCSV } from '@/lib/exportReport';
 
@@ -15,6 +15,20 @@ export default function ReportsPage() {
   const { data } = useApp();
   const [selectedClass, setSelectedClass] = useState('');
   const [viewMode, setViewMode] = useState('annual');
+
+  const sortedClasses = useMemo(() => {
+    const gradeIdx = c => {
+      const i = GRADE_LEVELS.indexOf(c.gradeLevel);
+      return i === -1 ? 99 : i;
+    };
+    const numOf = c => {
+      const m = (c.name || '').match(/\d+/);
+      return m ? Number(m[0]) : 0;
+    };
+    return [...data.classes].sort((a, b) =>
+      gradeIdx(a) - gradeIdx(b) || numOf(a) - numOf(b) || (a.name || '').localeCompare(b.name || '', 'he')
+    );
+  }, [data.classes]);
 
   const redBelow = data.settings.gradeColorThresholds?.redBelow ?? 55;
   const cls = data.classes.find(c => c.id === selectedClass);
@@ -171,7 +185,7 @@ export default function ReportsPage() {
         <Select value={selectedClass} onValueChange={setSelectedClass}>
           <SelectTrigger className="h-10"><SelectValue placeholder="בחר כיתה" /></SelectTrigger>
           <SelectContent>
-            {data.classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            {sortedClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
           </SelectContent>
         </Select>
 
