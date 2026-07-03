@@ -41,15 +41,15 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
             {DAYS.map(d => (
               <th
                 key={d}
-                className={`h-11 text-sm font-black px-2 backdrop-blur-xl ${d === today ? 'text-primary-foreground' : 'text-primary'} ${d === DAYS[DAYS.length - 1] ? 'rounded-tl-2xl' : ''}`}
+                className={`h-11 text-sm font-black px-2 backdrop-blur-xl text-primary-foreground ${d === DAYS[DAYS.length - 1] ? 'rounded-tl-2xl' : ''}`}
                 style={d === today
                   ? {
                       background: 'linear-gradient(160deg, hsl(var(--primary) / 0.92), hsl(var(--primary) / 0.75))',
                       boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.1), 0 6px 16px -6px hsl(var(--primary) / 0.6)',
                     }
                   : {
-                      background: 'linear-gradient(160deg, hsl(var(--primary) / 0.38), hsl(var(--card) / 0.45))',
-                      boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,0.5), inset 1px 0 0 rgba(255,255,255,0.2), inset 0 -1px 0 hsl(var(--primary) / 0.25)',
+                      background: 'linear-gradient(160deg, hsl(var(--primary) / 0.60), hsl(var(--primary) / 0.38))',
+                      boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,0.45), inset 1px 0 0 rgba(255,255,255,0.18), inset 0 -1px 0 hsl(var(--primary) / 0.35)',
                     }}
               >
                 {DAY_NAMES[d]}
@@ -62,12 +62,12 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
             <tr key={p}>
               <th
                 className="sticky right-0 z-10 border-b border-l border-border/40 p-1 backdrop-blur-xl"
-                style={{
-                  background: 'linear-gradient(160deg, hsl(var(--primary) / 0.30), hsl(var(--card) / 0.55))',
-                  boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.3), inset 1.5px 0 0 rgba(255,255,255,0.35)',
+style={{
+                  background: 'linear-gradient(160deg, hsl(var(--primary) / 0.55), hsl(var(--primary) / 0.32))',
+                  boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.25), inset 1.5px 0 0 rgba(255,255,255,0.3)',
                 }}
               >
-                <div className={`w-8 h-8 mx-auto rounded-lg flex items-center justify-center text-sm font-black ${p === currentPeriod ? 'text-primary-foreground shadow-[inset_0_1.5px_0_rgba(255,255,255,0.5),0_4px_10px_-3px_hsl(var(--primary)/0.6)] bg-gradient-to-b from-primary to-primary/80' : 'text-primary'}`}>
+                <div className={`w-8 h-8 mx-auto rounded-lg flex items-center justify-center text-sm font-black ${p === currentPeriod ? 'text-primary-foreground shadow-[inset_0_1.5px_0_rgba(255,255,255,0.5),0_4px_10px_-3px_hsl(var(--primary)/0.6)] bg-gradient-to-b from-primary to-primary/80' : 'text-primary-foreground'}`}>
                   {p}
                 </div>
               </th>
