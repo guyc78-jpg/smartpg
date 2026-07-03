@@ -58,7 +58,14 @@ const AppShell = () => {
 
   if (appReady && authError) {
     if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
-    if (authError.type === 'auth_required') { navigateToLogin(); return null; }
+    if (authError.type === 'auth_required') {
+      const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+      if (!authRoutes.includes(window.location.pathname)) {
+        window.location.href = '/login';
+        return null;
+      }
+      // On an auth page — fall through and render it so the user can actually log in
+    }
   }
 
   return (
