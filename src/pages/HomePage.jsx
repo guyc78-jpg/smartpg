@@ -13,6 +13,13 @@ import HomeActionButtons from '@/components/home/HomeActionButtons';
 import AddClassDialog from '@/components/app/AddClassDialog';
 import EditClassDialog from '@/components/app/EditClassDialog';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
+import { GRADE_LEVELS } from '@/lib/types';
+
+const classGradeOf = (c) => {
+  if (c.gradeLevel) return c.gradeLevel;
+  const match = (c.name || '').replace(/["'׳״]/g, '').trim().match(/^([א-ת]+)/);
+  return match ? match[1] : '';
+};
 
 export default function HomePage() {
   const { data, addClass, addStudent, editClass, deleteClass, archiveClass, deleteAllData, defaultGenderTrack } = useApp();
@@ -25,17 +32,24 @@ export default function HomePage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
-  const activeClasses = useMemo(() => (data.classes || []).filter(c => (c.status || 'active') === 'active'), [data.classes]);
+  const activeClasses = useMemo(() => {
+    const gradeIdx = c => {
+      const i = GRADE_LEVELS.indexOf(classGradeOf(c));
+      return i === -1 ? 99 : i;
+    };
+    const numOf = c => {
+      const m = (c.name || '').match(/\d+/);
+      return m ? Number(m[0]) : 0;
+    };
+    return (data.classes || [])
+      .filter(c => (c.status || 'active') === 'active')
+      .sort((a, b) => gradeIdx(a) - gradeIdx(b) || numOf(a) - numOf(b) || (a.name || '').localeCompare(b.name || '', 'he'));
+  }, [data.classes]);
   const classById = useMemo(() => Object.fromEntries(data.classes.map(c => [c.id, c])), [data.classes]);
 
   const visibleClasses = useMemo(() => {
     if (!gradeFilter) return activeClasses;
-    const classGrade = (c) => {
-      if (c.gradeLevel) return c.gradeLevel;
-      const match = (c.name || '').replace(/["'׳״]/g, '').trim().match(/^([א-ת]+)/);
-      return match ? match[1] : '';
-    };
-    return activeClasses.filter(c => classGrade(c) === gradeFilter);
+    return activeClasses.filter(c => classGradeOf(c) === gradeFilter);
   }, [activeClasses, gradeFilter]);
 
   const studentCountByClass = useMemo(() => {
