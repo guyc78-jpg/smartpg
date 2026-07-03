@@ -11,6 +11,25 @@ import { periodsForDay, formatPeriodRange } from '@/lib/periodTimes';
 const NO_CLASS = '__none';
 const OTHER_CLASS = '__other';
 
+const GRADE_ORDER = ['ז', 'ח', 'ט', 'י', 'יא', 'יב'];
+function gradeRank(cls) {
+  const source = (cls.grade_level || cls.name || '').replace(/["'׳״]/g, '');
+  // Match longest grades first so י"א/י"ב don't match as י
+  for (let i = GRADE_ORDER.length - 1; i >= 0; i--) {
+    if (source.startsWith(GRADE_ORDER[i])) return i;
+  }
+  return GRADE_ORDER.length;
+}
+function classNumber(cls) {
+  const m = (cls.name || '').match(/\d+/);
+  return m ? Number(m[0]) : 0;
+}
+function sortClasses(classes) {
+  return [...classes].sort((a, b) =>
+    gradeRank(a) - gradeRank(b) || classNumber(a) - classNumber(b) || (a.name || '').localeCompare(b.name || '', 'he')
+  );
+}
+
 function FieldLabel({ children }) {
   return <p className="text-xs font-bold text-muted-foreground mb-1.5 text-right">{children}</p>;
 }
@@ -97,7 +116,7 @@ export default function QuickSubstituteFillDialog({ open, onOpenChange, classes,
               <SelectTrigger className="liquid-field h-11 rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_CLASS}>— ללא כיתה —</SelectItem>
-                {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {sortClasses(classes).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 <SelectItem value={OTHER_CLASS}>כיתה אחרת (הקלדה חופשית)</SelectItem>
               </SelectContent>
             </Select>
