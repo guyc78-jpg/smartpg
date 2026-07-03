@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Lock, Play, Timer, Users } from 'lucide-react';
+import { BookOpen, Calendar, Check, ClipboardList, Clock, Info, Lock, Pencil, Play, Ruler, Users, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -7,7 +7,18 @@ import { getPeClassIdsForDate, getPeriodsForClassAndDate } from '@/lib/peLessons
 import { displayRunStudentName } from './runUtils';
 
 function Field({ label, children }) {
-  return <div className="space-y-1.5"><label className="text-sm font-bold block text-right">{label}</label>{children}</div>;
+  return <div className="space-y-1"><label className="text-xs font-bold block text-right text-muted-foreground">{label}</label>{children}</div>;
+}
+
+function CardTitle({ title, icon: Icon }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <h3 className="text-base font-black text-right">{title}</h3>
+      <span className="w-9 h-9 rounded-xl glass-surface flex items-center justify-center text-primary shrink-0">
+        <Icon className="w-[18px] h-[18px]" />
+      </span>
+    </div>
+  );
 }
 
 export default function RunSetup({ data, initial, onStart }) {
@@ -90,40 +101,57 @@ export default function RunSetup({ data, initial, onStart }) {
   };
 
   return (
-    <div className="w-full max-w-[520px] mx-auto px-3 pt-3 pb-24 space-y-4 overflow-x-hidden" dir="rtl">
-      <section className="rounded-3xl bg-primary text-primary-foreground p-4 shadow-lg">
-        <div className="flex items-center gap-2 mb-1"><Timer className="w-5 h-5" /><h2 className="text-xl font-black">ריצה חיה</h2></div>
-        <p className="text-sm text-primary-foreground/85">בחר כיתה, מבדק ומסלול — ומדוד סיבובים, זמנים וציונים בזמן אמת.</p>
+    <div className="w-full max-w-[520px] mx-auto px-3 pt-2 pb-24 space-y-2.5 overflow-x-hidden" dir="rtl">
+      {/* Intro card */}
+      <section className="card-3d rounded-3xl p-3.5 flex items-center justify-between gap-3" style={{ background: 'linear-gradient(160deg, hsl(var(--primary) / 0.10), hsl(var(--card) / 0.45))' }}>
+        <div className="min-w-0 text-right">
+          <h2 className="text-base font-black">ריצה חיה</h2>
+          <p className="text-xs text-muted-foreground leading-snug">בחר כיתה, מבדק ומסלול — ומדוד סיבובים, זמנים וציונים בזמן אמת.</p>
+        </div>
+        <span className="w-10 h-10 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shrink-0 shadow-lg">
+          <Zap className="w-5 h-5" />
+        </span>
       </section>
 
-      <section className="rounded-2xl border bg-card p-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="תאריך"><Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-11 rounded-xl" /></Field>
-        <Field label="כיתה">
-          {locked ? (
-            <div className="h-11 rounded-xl liquid-field flex items-center justify-between px-3 text-sm font-bold" dir="rtl">
-              <span className="truncate">{cls?.name || ''}</span>
-              <Lock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+      {/* Run details */}
+      <section className="card-3d rounded-3xl p-3 space-y-2.5">
+        <CardTitle title="פרטי ריצה" icon={ClipboardList} />
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="כיתה">
+            {locked ? (
+              <div className="h-10 rounded-xl liquid-field flex items-center justify-between px-3 text-sm font-bold" dir="rtl">
+                <span className="truncate">{cls?.name || ''}</span>
+                <Lock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              </div>
+            ) : (
+              <Select value={classId} onValueChange={setClassId}>
+                <SelectTrigger className="h-10 rounded-xl text-sm font-bold">
+                  <span className="flex items-center gap-1.5 min-w-0"><BookOpen className="w-3.5 h-3.5 text-primary shrink-0" /><SelectValue placeholder="בחר כיתה" /></span>
+                </SelectTrigger>
+                <SelectContent>{peClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              </Select>
+            )}
+          </Field>
+          <Field label="תאריך">
+            <div className="relative">
+              <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-10 rounded-xl text-sm font-bold pl-8" />
+              <Calendar className="w-3.5 h-3.5 text-primary absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
-          ) : (
-            <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="בחר כיתה" /></SelectTrigger>
-              <SelectContent>{peClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-            </Select>
-          )}
-        </Field>
+          </Field>
+        </div>
         <Field label="שיעור">
           <Select value={period ? String(period) : ''} onValueChange={v => setPeriod(Number(v))}>
-            <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="בחר שיעור" /></SelectTrigger>
+            <SelectTrigger className="h-10 rounded-xl text-sm font-bold">
+              <span className="flex items-center gap-1.5 min-w-0"><Clock className="w-3.5 h-3.5 text-primary shrink-0" /><SelectValue placeholder="בחר שיעור" /></span>
+            </SelectTrigger>
             <SelectContent>{periods.map(p => <SelectItem key={p} value={String(p)}>שיעור {p}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
-      </section>
-      {peClasses.length === 0 && <p className="text-xs text-muted-foreground text-center">אין כיתות פעילות להצגה.</p>}
-
-      <section className="rounded-2xl border bg-card p-3 space-y-3">
         <Field label="מבדק (לחישוב ציון אוטומטי)">
           <Select value={testId} onValueChange={handleTestChange}>
-            <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="בחר מבדק" /></SelectTrigger>
+            <SelectTrigger className="h-10 rounded-xl text-sm font-bold">
+              <span className="flex items-center gap-1.5 min-w-0"><ClipboardList className="w-3.5 h-3.5 text-primary shrink-0" /><SelectValue placeholder="בחר מבדק" /></span>
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">ללא מבדק — מדידה בלבד</SelectItem>
               {relevantTests.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
@@ -133,31 +161,52 @@ export default function RunSetup({ data, initial, onStart }) {
         {testId !== 'none' && (
           <Field label="מחצית">
             <div className="grid grid-cols-2 gap-2">
-              <Button type="button" variant={semester === 'A' ? 'default' : 'outline'} onClick={() => setSemester('A')} className="h-10 rounded-xl font-bold">מחצית א'</Button>
-              <Button type="button" variant={semester === 'B' ? 'default' : 'outline'} onClick={() => setSemester('B')} className="h-10 rounded-xl font-bold">מחצית ב'</Button>
+              <Button type="button" variant={semester === 'A' ? 'default' : 'outline'} onClick={() => setSemester('A')} className="h-9 rounded-xl font-bold text-sm">מחצית א'</Button>
+              <Button type="button" variant={semester === 'B' ? 'default' : 'outline'} onClick={() => setSemester('B')} className="h-9 rounded-xl font-bold text-sm">מחצית ב'</Button>
             </div>
           </Field>
         )}
+        {peClasses.length === 0 && <p className="text-xs text-muted-foreground text-center">אין כיתות פעילות להצגה.</p>}
       </section>
 
-      <section className="rounded-2xl border bg-card p-3 grid grid-cols-2 gap-3">
-        <Field label="מרחק ריצה (מ')"><Input type="number" min="1" value={distance} onChange={e => setDistance(e.target.value)} className="h-11 rounded-xl text-center font-bold" /></Field>
-        <Field label="אורך הקפה במגרש (מ')"><Input type="number" min="1" value={trackLength} onChange={e => setTrackLength(e.target.value)} className="h-11 rounded-xl text-center font-bold" /></Field>
-        <div className="col-span-2 rounded-xl bg-primary/5 p-2.5 text-center text-sm font-black text-primary">
+      {/* Distances */}
+      <section className="card-3d rounded-3xl p-3 space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="מרחק ריצה (מ')">
+            <div className="relative">
+              <Input type="number" min="1" value={distance} onChange={e => setDistance(e.target.value)} className="h-10 rounded-xl text-center font-bold" />
+              <Ruler className="w-3.5 h-3.5 text-primary absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </Field>
+          <Field label="אורך הקפה במגרש (מ')">
+            <div className="relative">
+              <Input type="number" min="1" value={trackLength} onChange={e => setTrackLength(e.target.value)} className="h-10 rounded-xl text-center font-bold" />
+              <Pencil className="w-3.5 h-3.5 text-primary absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </Field>
+        </div>
+        <div className="rounded-xl bg-primary/10 border border-primary/15 px-3 py-2 flex items-center justify-center gap-1.5 text-sm font-black text-primary">
+          <Info className="w-3.5 h-3.5" />
           {totalLaps > 0 ? `${totalLaps} סיבובים לריצה` : 'הזן מרחק ואורך הקפה'}
         </div>
       </section>
 
-      <section className="space-y-2">
-        <div className="flex items-center justify-between text-sm font-bold">
-          <span className="flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> תלמידים משתתפים ({selectedIds.length}/{students.length})</span>
-          {students.length > 0 && (
-            <button type="button" onClick={toggleAll} className="text-xs font-semibold text-primary hover:underline">
-              {allSelected ? 'נקה הכל' : 'בחר הכל'}
-            </button>
-          )}
+      {/* Students */}
+      <section className="card-3d rounded-3xl p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <h3 className="text-base font-black">תלמידים <span className="text-xs font-bold text-muted-foreground">({selectedIds.length}/{students.length})</span></h3>
+            {students.length > 0 && (
+              <button type="button" onClick={toggleAll} className="text-xs font-semibold text-primary hover:underline shrink-0">
+                {allSelected ? 'נקה הכל' : 'בחר הכל'}
+              </button>
+            )}
+          </div>
+          <span className="w-9 h-9 rounded-xl glass-surface flex items-center justify-center text-primary shrink-0">
+            <Users className="w-[18px] h-[18px]" />
+          </span>
         </div>
-        <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="rounded-2xl overflow-hidden border border-border/50">
           {students.map(student => {
             const checked = selectedIds.includes(student.id);
             return (
@@ -165,13 +214,13 @@ export default function RunSetup({ data, initial, onStart }) {
                 type="button"
                 key={student.id}
                 onClick={() => toggleStudent(student.id)}
-                className="w-full h-11 flex items-center justify-between gap-2 px-3 border-b last:border-0 text-right hover:bg-muted/40 transition-colors"
+                className="w-full h-10 flex items-center justify-between gap-2 px-3 border-b border-border/40 last:border-0 text-right hover:bg-muted/40 transition-colors"
               >
                 <span className={`text-sm font-semibold truncate ${checked ? 'text-foreground' : 'text-muted-foreground'}`}>
                   {displayRunStudentName(student)}
                 </span>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 transition-colors ${checked ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/40 bg-transparent'}`}>
-                  {checked && <Check className="w-4 h-4" strokeWidth={3} />}
+                <span className={`w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 border-2 transition-colors ${checked ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/40 bg-transparent'}`}>
+                  {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
                 </span>
               </button>
             );
@@ -181,8 +230,8 @@ export default function RunSetup({ data, initial, onStart }) {
         </div>
       </section>
 
-      <div className="sticky bottom-16 md:bottom-4 z-20 bg-background/80 backdrop-blur pt-2">
-        <Button onClick={handleStart} disabled={!cls || !period || selectedStudents.length === 0 || totalLaps <= 0} className="w-full h-16 rounded-2xl text-xl font-black btn-3d">
+      <div className="sticky z-20 pt-2" style={{ bottom: 'calc(var(--safe-area-bottom) + 5rem)' }}>
+        <Button onClick={handleStart} disabled={!cls || !period || selectedStudents.length === 0 || totalLaps <= 0} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
           <Play className="w-5 h-5" /> התחל ריצה חיה
         </Button>
       </div>
