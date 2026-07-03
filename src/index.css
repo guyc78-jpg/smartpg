@@ -11,24 +11,24 @@
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
     --safe-area-left: env(safe-area-inset-left, 0px);
 
-    --background: 210 20% 98%;
-    --foreground: 220 25% 10%;
+    --background: 208 100% 99%;
+    --foreground: 220 40% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card-foreground: 220 40% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover-foreground: 220 40% 12%;
     --primary: 217 72% 30%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 215 30% 94%;
+    --secondary: 207 75% 95%;
     --secondary-foreground: 217 50% 20%;
-    --muted: 215 20% 96%;
-    --muted-foreground: 217 15% 50%;
+    --muted: 208 65% 96%;
+    --muted-foreground: 215 25% 42%;
     --accent: 217 85% 45%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 217 20% 90%;
-    --input: 217 20% 90%;
+    --border: 210 55% 90%;
+    --input: 210 55% 90%;
     --ring: 217 72% 30%;
     --radius: 1.1rem;
     --warning: 38 92% 50%;
@@ -49,9 +49,9 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    --shadow-3d: 0 1px 1px rgba(0,0,0,0.03), 0 8px 24px -8px rgba(20,30,60,0.10), inset 0 1px 0 rgba(255,255,255,0.5);
-    --shadow-3d-hover: 0 2px 2px rgba(0,0,0,0.04), 0 16px 40px -12px rgba(20,30,60,0.16), inset 0 1px 0 rgba(255,255,255,0.6);
-    --shadow-3d-active: 0 1px 1px rgba(0,0,0,0.05), 0 4px 12px -4px rgba(20,30,60,0.12), inset 0 1px 0 rgba(255,255,255,0.4);
+    --shadow-3d: 0 1px 1px rgba(120,160,220,0.04), 0 8px 24px -8px rgba(80,130,200,0.10), inset 0 1px 0 rgba(255,255,255,0.7);
+    --shadow-3d-hover: 0 2px 2px rgba(120,160,220,0.05), 0 16px 40px -12px rgba(80,130,200,0.16), inset 0 1px 0 rgba(255,255,255,0.8);
+    --shadow-3d-active: 0 1px 1px rgba(120,160,220,0.06), 0 4px 12px -4px rgba(80,130,200,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
     --glass-border: 255 255 255;
 
     --chart-1: 12 76% 61%;
@@ -155,9 +155,9 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 60% 45% at 85% -5%, hsl(217 90% 62% / 0.16), transparent 65%),
-    radial-gradient(ellipse 50% 40% at 10% 15%, hsl(190 85% 60% / 0.13), transparent 60%),
-    radial-gradient(ellipse 55% 45% at 50% 110%, hsl(250 75% 65% / 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 45% at 85% -5%, hsl(210 100% 80% / 0.22), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 10% 15%, hsl(195 100% 82% / 0.20), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 50% 110%, hsl(220 90% 85% / 0.18), transparent 60%),
     hsl(var(--background));
 }
 .dark body::before {
@@ -170,32 +170,32 @@ body::before {
 
 @layer components {
   .card-3d {
-    background: linear-gradient(160deg, hsl(var(--card) / 0.62), hsl(var(--card) / 0.42));
+    background: linear-gradient(160deg, rgba(255,255,255,0.85), rgba(245,250,255,0.65));
     backdrop-filter: blur(32px) saturate(1.9);
     -webkit-backdrop-filter: blur(32px) saturate(1.9);
     border: 1px solid transparent;
     box-shadow:
-      0 0 0 1px rgb(var(--glass-border) / 0.22),
-      inset 0 1.5px 0 rgb(var(--glass-border) / 0.55),
-      inset 0 -1px 0 rgb(var(--glass-border) / 0.10),
-      0 1px 2px rgba(10,20,45,0.05),
-      0 12px 32px -12px rgba(10,20,45,0.14);
+      0 0 0 1px rgba(190,215,245,0.55),
+      inset 0 1.5px 0 rgba(255,255,255,0.95),
+      inset 0 -1px 0 rgba(255,255,255,0.35),
+      0 1px 2px rgba(100,150,220,0.05),
+      0 12px 32px -12px rgba(90,140,210,0.16);
     transition: box-shadow 0.25s ease-out, transform 0.25s ease-out;
   }
   .card-3d:hover {
     box-shadow:
-      0 0 0 1px rgb(var(--glass-border) / 0.28),
-      inset 0 1.5px 0 rgb(var(--glass-border) / 0.65),
-      inset 0 -1px 0 rgb(var(--glass-border) / 0.12),
-      0 2px 4px rgba(10,20,45,0.06),
-      0 20px 48px -16px rgba(10,20,45,0.20);
+      0 0 0 1px rgba(170,205,245,0.65),
+      inset 0 1.5px 0 rgba(255,255,255,1),
+      inset 0 -1px 0 rgba(255,255,255,0.4),
+      0 2px 4px rgba(100,150,220,0.06),
+      0 20px 48px -16px rgba(90,140,210,0.22);
   }
   .card-3d:active {
     box-shadow:
-      0 0 0 1px rgb(var(--glass-border) / 0.22),
-      inset 0 1px 0 rgb(var(--glass-border) / 0.45),
-      0 1px 2px rgba(10,20,45,0.06),
-      0 6px 16px -8px rgba(10,20,45,0.16);
+      0 0 0 1px rgba(190,215,245,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.85),
+      0 1px 2px rgba(100,150,220,0.06),
+      0 6px 16px -8px rgba(90,140,210,0.18);
   }
   .dark .card-3d {
     background: linear-gradient(160deg, hsl(var(--card) / 0.72), hsl(var(--card) / 0.50));
@@ -231,36 +231,41 @@ body::before {
     transform: translateY(0) scale(0.99);
   }
   .glass-surface {
-    background: linear-gradient(160deg, hsl(var(--card) / 0.60), hsl(var(--card) / 0.40));
+    background: linear-gradient(160deg, rgba(255,255,255,0.88), rgba(242,248,255,0.70));
     backdrop-filter: blur(32px) saturate(1.9);
     -webkit-backdrop-filter: blur(32px) saturate(1.9);
-    border: 1px solid rgb(var(--glass-border) / 0.20);
-    box-shadow: inset 0 1px 0 rgb(var(--glass-border) / 0.45);
+    border: 1px solid rgba(195,220,248,0.60);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.95),
+      inset 0 0 24px rgba(210,232,255,0.35),
+      0 12px 36px -14px rgba(90,140,210,0.20);
   }
   .dark .glass-surface {
     border-color: rgb(var(--glass-border) / 0.10);
     box-shadow: inset 0 1px 0 rgb(var(--glass-border) / 0.12);
   }
   .glass-nav {
-    background: hsl(var(--background) / 0.55);
+    background: rgba(250,253,255,0.72);
     backdrop-filter: blur(36px) saturate(1.9);
     -webkit-backdrop-filter: blur(36px) saturate(1.9);
-    box-shadow: inset 0 -1px 0 rgb(var(--glass-border) / 0.18);
+    box-shadow:
+      inset 0 -1px 0 rgba(195,220,248,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.9);
   }
   .dark .glass-nav {
     box-shadow: inset 0 -1px 0 rgb(var(--glass-border) / 0.08);
   }
   /* Floating Liquid Glass pill (bottom nav) */
   .liquid-pill {
-    background: linear-gradient(160deg, hsl(var(--card) / 0.68), hsl(var(--card) / 0.48));
+    background: linear-gradient(160deg, rgba(255,255,255,0.88), rgba(240,248,255,0.70));
     backdrop-filter: blur(36px) saturate(2);
     -webkit-backdrop-filter: blur(36px) saturate(2);
     box-shadow:
-      0 0 0 1px rgb(var(--glass-border) / 0.26),
-      inset 0 1.5px 0 rgb(var(--glass-border) / 0.60),
-      inset 0 -1px 0 rgb(var(--glass-border) / 0.10),
-      0 4px 8px rgba(10,20,45,0.08),
-      0 20px 44px -14px rgba(10,20,45,0.30);
+      0 0 0 1px rgba(185,212,245,0.60),
+      inset 0 1.5px 0 rgba(255,255,255,0.98),
+      inset 0 -1px 0 rgba(255,255,255,0.30),
+      0 4px 8px rgba(100,150,220,0.08),
+      0 20px 44px -14px rgba(80,130,205,0.28);
   }
   .dark .liquid-pill {
     background: linear-gradient(160deg, hsl(var(--card) / 0.80), hsl(var(--card) / 0.58));
@@ -273,21 +278,21 @@ body::before {
   }
   /* ===== Liquid Glass chip (filters, tabs, pills, selectable items) ===== */
   .liquid-chip {
-    background: linear-gradient(160deg, hsl(var(--card) / 0.55), hsl(var(--card) / 0.35));
+    background: linear-gradient(160deg, rgba(255,255,255,0.85), rgba(240,248,255,0.60));
     backdrop-filter: blur(20px) saturate(1.8);
     -webkit-backdrop-filter: blur(20px) saturate(1.8);
-    border: 1px solid rgb(var(--glass-border) / 0.30);
+    border: 1px solid rgba(195,220,248,0.65);
     box-shadow:
-      inset 0 1px 0 rgb(var(--glass-border) / 0.50),
-      0 2px 8px -2px rgba(10,20,45,0.10);
+      inset 0 1px 0 rgba(255,255,255,0.95),
+      0 2px 8px -2px rgba(100,150,220,0.12);
     color: hsl(var(--foreground));
     transition: background 0.2s ease-out, box-shadow 0.2s ease-out, transform 0.18s ease-out, color 0.2s ease-out;
   }
   .liquid-chip:hover {
-    background: linear-gradient(160deg, hsl(var(--card) / 0.72), hsl(var(--card) / 0.50));
+    background: linear-gradient(160deg, rgba(255,255,255,0.95), rgba(238,247,255,0.75));
     box-shadow:
-      inset 0 1px 0 rgb(var(--glass-border) / 0.60),
-      0 4px 14px -4px rgba(10,20,45,0.16);
+      inset 0 1px 0 rgba(255,255,255,1),
+      0 4px 14px -4px rgba(90,140,210,0.20);
     transform: translateY(-1px);
   }
   .liquid-chip:active { transform: scale(0.97); }
@@ -318,20 +323,20 @@ body::before {
   }
   /* ===== Liquid Glass field (inputs, selects, textareas) ===== */
   .liquid-field {
-    background: linear-gradient(160deg, hsl(var(--card) / 0.85), hsl(var(--card) / 0.65)) !important;
+    background: linear-gradient(160deg, rgba(255,255,255,0.96), rgba(246,251,255,0.85)) !important;
     backdrop-filter: blur(16px) saturate(1.6);
     -webkit-backdrop-filter: blur(16px) saturate(1.6);
-    border: 1px solid rgb(var(--glass-border) / 0.35);
+    border: 1px solid rgba(190,216,246,0.70);
     box-shadow:
-      inset 0 1px 0 rgb(var(--glass-border) / 0.55),
-      0 2px 8px -4px rgba(10,20,45,0.08);
+      inset 0 1px 0 rgba(255,255,255,1),
+      0 2px 8px -4px rgba(100,150,220,0.10);
     color: hsl(var(--foreground));
     transition: box-shadow 0.2s ease-out, border-color 0.2s ease-out;
   }
   .liquid-field:focus, .liquid-field:focus-within {
     border-color: hsl(var(--primary) / 0.45);
     box-shadow:
-      inset 0 1px 0 rgb(var(--glass-border) / 0.55),
+      inset 0 1px 0 rgba(255,255,255,1),
       0 0 0 3px hsl(var(--primary) / 0.15),
       0 4px 12px -4px hsl(var(--primary) / 0.25);
   }
