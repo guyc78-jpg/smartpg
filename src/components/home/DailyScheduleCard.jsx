@@ -136,6 +136,15 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
                             מעבר לכיתה ←
                           </Link>
                         )}
+                        {!hasClass && (
+                          <Link
+                            to={`/substitute-fills?add=1&date=${dateISO}&period=${p}`}
+                            className="inline-flex items-center gap-1 text-xs font-bold text-warning hover:opacity-80"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            הוסף מילוי מקום
+                          </Link>
+                        )}
                       </div>
                     )}
                   </div>
