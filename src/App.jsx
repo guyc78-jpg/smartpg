@@ -12,12 +12,12 @@ import { AppProvider, useApp } from '@/store/AppProvider';
 import { LiveRunProvider } from '@/contexts/LiveRunContext';
 import FloatingRunTimer from '@/components/live-run/FloatingRunTimer';
 
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import ForgotPassword from '@/pages/ForgotPassword';
-import ResetPassword from '@/pages/ResetPassword';
+const Login = lazy(() => import('@/pages/Login'));
+const Register = lazy(() => import('@/pages/Register'));
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 
-import HomePage from './pages/HomePage';
+const HomePage = lazy(() => import('./pages/HomePage'));
 const ClassPage = lazy(() => import('./pages/ClassPage'));
 const StudentProfilePage = lazy(() => import('./pages/StudentProfilePage'));
 const TestsPage = lazy(() => import('./pages/TestsPage'));

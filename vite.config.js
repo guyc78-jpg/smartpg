@@ -5,6 +5,13 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   logLevel: 'error', // Suppress warnings, only show errors
+  server: {
+    warmup: {
+      // Pre-transform the app's module graph on server start so cold loads
+      // don't wait through a >60s on-demand transform waterfall (splash hang)
+      clientFiles: ['./src/main.jsx', './src/pages/HomePage.jsx', './src/pages/Login.jsx'],
+    },
+  },
   plugins: [
     base44({
       // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
