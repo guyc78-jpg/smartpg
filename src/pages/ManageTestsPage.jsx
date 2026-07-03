@@ -110,10 +110,10 @@ export default function ManageTestsPage() {
                 <button
                   type="button"
                   onClick={() => setOpenGroups(p => ({ ...p, [test.gradeLevel]: !p[test.gradeLevel] }))}
-                  className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl text-right bg-gradient-to-l from-primary/90 to-accent/80 text-primary-foreground shadow-md hover:shadow-lg transition-shadow"
+                  className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-right bg-primary/10 border border-primary/15 text-primary hover:bg-primary/15 transition-colors"
                 >
-                  <span className="text-sm font-bold">שכבה {test.gradeLevel}׳ <span className="text-xs font-normal opacity-80">({groupCount} מבדקים)</span></span>
-                  {groupOpen ? <ChevronUp className="w-4 h-4 opacity-90" /> : <ChevronDown className="w-4 h-4 opacity-90" />}
+                  <span className="text-sm font-bold">שכבה {test.gradeLevel}׳ <span className="text-xs font-normal opacity-70">({groupCount} מבדקים)</span></span>
+                  {groupOpen ? <ChevronUp className="w-4 h-4 opacity-70" /> : <ChevronDown className="w-4 h-4 opacity-70" />}
                 </button>
               )}
               {groupOpen && (
