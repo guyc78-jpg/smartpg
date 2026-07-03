@@ -116,8 +116,8 @@ export default function QuickSubstituteFillDialog({ open, onOpenChange, classes,
               <SelectTrigger className="liquid-field h-11 rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_CLASS}>— ללא כיתה —</SelectItem>
-                {sortClasses(classes).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 <SelectItem value={OTHER_CLASS}>כיתה אחרת (הקלדה חופשית)</SelectItem>
+                {sortClasses(classes).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
             {isOther && (
