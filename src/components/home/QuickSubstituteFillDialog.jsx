@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { periodsForDay, formatPeriodRange } from '@/lib/periodTimes';
 
 const NO_CLASS = '__none';
+const OTHER_CLASS = '__other';
 
 function FieldLabel({ children }) {
   return <p className="text-xs font-bold text-muted-foreground mb-1.5 text-right">{children}</p>;
@@ -33,6 +34,7 @@ function TogglePair({ options, value, onChange }) {
 
 export default function QuickSubstituteFillDialog({ open, onOpenChange, classes, date, dateLabel, day, initialPeriod, defaultSubject, onSaved }) {
   const [classId, setClassId] = useState(NO_CLASS);
+  const [customClassName, setCustomClassName] = useState('');
   const [subject, setSubject] = useState('');
   const [location, setLocation] = useState('');
   const [period, setPeriod] = useState('');
@@ -44,6 +46,7 @@ export default function QuickSubstituteFillDialog({ open, onOpenChange, classes,
   useEffect(() => {
     if (!open) return;
     setClassId(NO_CLASS);
+    setCustomClassName('');
     setSubject(defaultSubject || '');
     setLocation('');
     setPeriod(initialPeriod ? String(initialPeriod) : '');
@@ -54,7 +57,9 @@ export default function QuickSubstituteFillDialog({ open, onOpenChange, classes,
   }, [open, initialPeriod, defaultSubject]);
 
   const selectedClass = classes.find(c => c.id === classId);
-  const canSave = Boolean(selectedClass || subject.trim());
+  const isOther = classId === OTHER_CLASS;
+  const finalClassName = selectedClass?.name || (isOther ? customClassName.trim() : '');
+  const canSave = Boolean(finalClassName || subject.trim());
 
   const handleSave = async () => {
     setSaving(true);
@@ -62,7 +67,7 @@ export default function QuickSubstituteFillDialog({ open, onOpenChange, classes,
       date,
       period: period ? Number(period) : null,
       class_id: selectedClass ? selectedClass.id : '',
-      class_name: selectedClass?.name || subject.trim(),
+      class_name: finalClassName || subject.trim(),
       subject: subject.trim(),
       location: location.trim(),
       status: paid ? 'paid' : reported ? 'reported' : 'not_reported',
@@ -93,8 +98,18 @@ export default function QuickSubstituteFillDialog({ open, onOpenChange, classes,
               <SelectContent>
                 <SelectItem value={NO_CLASS}>— ללא כיתה —</SelectItem>
                 {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                <SelectItem value={OTHER_CLASS}>כיתה אחרת (הקלדה חופשית)</SelectItem>
               </SelectContent>
             </Select>
+            {isOther && (
+              <Input
+                value={customClassName}
+                onChange={e => setCustomClassName(e.target.value)}
+                placeholder="שם הכיתה, למשל ז'3"
+                className="liquid-field h-11 rounded-xl text-right mt-2"
+                autoFocus
+              />
+            )}
           </div>
 
           <div>
