@@ -111,7 +111,7 @@ export default function RunSetup({ data, initial, onStart }) {
   };
 
   return (
-    <div className="w-full max-w-[520px] mx-auto px-3 pt-2 pb-24 space-y-2.5 overflow-x-hidden" dir="rtl">
+    <div className="w-full max-w-[520px] mx-auto px-3 pt-2 pb-44 space-y-2.5 overflow-x-hidden" dir="rtl">
       {/* Intro card */}
       <section className="card-3d rounded-3xl p-3.5 flex items-center justify-between gap-3 !shadow-[0_0_0_1px_rgb(255,255,255,0.25),inset_0_2px_0_rgba(255,255,255,0.6),0_6px_12px_-4px_rgba(20,30,60,0.15),0_24px_48px_-16px_rgba(20,30,60,0.35)]" style={{ background: 'linear-gradient(160deg, hsl(var(--primary) / 0.10), hsl(var(--card) / 0.45))' }}>
         <div className="min-w-0 text-right">
@@ -225,7 +225,7 @@ export default function RunSetup({ data, initial, onStart }) {
         </div>
       </section>
 
-      <div className="sticky z-20 pt-2" style={{ bottom: 'calc(var(--safe-area-bottom) + 5rem)' }}>
+      <div className="fixed inset-x-0 z-20 px-3 max-w-[520px] mx-auto" style={{ bottom: 'calc(var(--safe-area-bottom) + 5rem)' }}>
         <Button onClick={handleStart} disabled={!cls || !period || selectedStudents.length === 0 || totalLaps <= 0} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
           <Play className="w-5 h-5" /> התחל ריצה חיה
         </Button>
