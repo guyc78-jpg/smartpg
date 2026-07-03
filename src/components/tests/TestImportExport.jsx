@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Download, FileSpreadsheet, FileText, Loader2, Trash2, Upload } from 'lucide-react';
+import { Copy, Download, FileSpreadsheet, FileText, FileUp, Loader2, Trash2, Upload } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
@@ -7,9 +7,10 @@ import { useAuth } from '@/lib/AuthContext';
 import { exportTestsToExcel, exportTestsToWord, rowsToTests } from '@/lib/testImportExport';
 import { parseTestDocx } from '@/functions/parseTestDocx';
 import TestImportDialog from '@/components/tests/TestImportDialog.jsx';
+import CopyTestsDialog from '@/components/tests/CopyTestsDialog.jsx';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 
-export default function TestImportExport({ tests, onImport, onDeleteAll, defaultGradeLevel }) {
+export default function TestImportExport({ tests, allTests, onImport, onDeleteAll, defaultGradeLevel }) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const fileRef = useRef(null);
@@ -20,6 +21,7 @@ export default function TestImportExport({ tests, onImport, onDeleteAll, default
   const [parsedTests, setParsedTests] = useState([]);
   const [detectedGradeLevel, setDetectedGradeLevel] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false);
 
   const openPreview = (found, gradeLevel) => {
     if (found.length === 0) {
@@ -103,10 +105,22 @@ export default function TestImportExport({ tests, onImport, onDeleteAll, default
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap" dir="rtl">
-      <button type="button" onClick={() => fileRef.current?.click()} disabled={parsing} className={chip}>
-        {parsing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-        {parsing ? 'קורא קובץ…' : 'ייבוא'}
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" disabled={parsing} className={chip}>
+            {parsing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+            {parsing ? 'קורא קובץ…' : 'ייבוא'}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" dir="rtl">
+          <DropdownMenuItem onClick={() => fileRef.current?.click()}>
+            <FileUp className="w-3.5 h-3.5 ml-2" /> ייבוא מקובץ
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setCopyDialogOpen(true)}>
+            <Copy className="w-3.5 h-3.5 ml-2" /> העתקה משכבה אחרת
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button type="button" className={chip}>
@@ -147,6 +161,17 @@ export default function TestImportExport({ tests, onImport, onDeleteAll, default
           } finally {
             setDeletingAll(false);
           }
+        }}
+      />
+
+      <CopyTestsDialog
+        open={copyDialogOpen}
+        onOpenChange={setCopyDialogOpen}
+        allTests={allTests || tests}
+        defaultTargetGrade={defaultGradeLevel}
+        onConfirm={async (chosen) => {
+          const count = await onImport(chosen);
+          toast.success(`הועתקו ${count} מבדקים בהצלחה`);
         }}
       />
 

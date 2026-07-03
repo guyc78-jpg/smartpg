@@ -93,7 +93,7 @@ export default function ManageTestsPage() {
               <Plus className="w-3.5 h-3.5 ml-1" /> הוסף מבדק
             </Button>
           </div>
-          <TestImportExport tests={filteredTests} onImport={handleImport} onDeleteAll={handleDeleteAll} defaultGradeLevel={selectedGradeLevel === 'all' ? 'ז' : selectedGradeLevel} />
+          <TestImportExport tests={filteredTests} allTests={data.tests} onImport={handleImport} onDeleteAll={handleDeleteAll} defaultGradeLevel={selectedGradeLevel === 'all' ? 'ז' : selectedGradeLevel} />
         </div>
 
         <div className="space-y-2">
