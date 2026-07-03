@@ -117,14 +117,6 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
                     </button>
                     {expanded && (
                       <div className="px-3 pb-2.5 pt-0.5 space-y-1 text-right">
-                        {lessons.map(l => (
-                          <div key={l.id} className="text-xs text-muted-foreground">
-                            <span className="font-semibold text-foreground">{l.subject || 'חינוך גופני'}</span>
-                            {(classById[l.classId]?.name || l.className) && (
-                              <span> · {classById[l.classId]?.name || l.className}</span>
-                            )}
-                          </div>
-                        ))}
                         {lessons.filter(l => l.classId).map(l => (
                           <LessonTopicInline key={`topic-${l.id}`} classId={l.classId} date={dateISO} period={p} />
                         ))}
