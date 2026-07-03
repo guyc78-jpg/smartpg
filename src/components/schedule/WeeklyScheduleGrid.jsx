@@ -19,7 +19,7 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
     (scheduleLessons || []).filter(l => l.dayOfWeek === day && Number(l.period) === Number(period));
 
   return (
-    <div className="overflow-x-auto no-scrollbar rounded-2xl border shadow-sm" dir="rtl">
+    <div className="overflow-x-auto no-scrollbar rounded-2xl glass-surface shadow-[0_12px_32px_-12px_rgba(10,20,45,0.25)]" dir="rtl">
       <table className="border-separate border-spacing-0 w-full min-w-[620px]">
         <thead>
           <tr>
@@ -41,7 +41,16 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
             {DAYS.map(d => (
               <th
                 key={d}
-                className={`h-11 text-sm font-bold text-primary-foreground px-2 ${d === today ? 'bg-accent' : 'bg-gradient-to-b from-primary to-primary/85'} ${d === DAYS[DAYS.length - 1] ? 'rounded-tl-2xl' : ''}`}
+                className={`h-11 text-sm font-black px-2 backdrop-blur-xl ${d === today ? 'text-primary-foreground' : 'text-primary'} ${d === DAYS[DAYS.length - 1] ? 'rounded-tl-2xl' : ''}`}
+                style={d === today
+                  ? {
+                      background: 'linear-gradient(160deg, hsl(var(--primary) / 0.92), hsl(var(--primary) / 0.75))',
+                      boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.1), 0 6px 16px -6px hsl(var(--primary) / 0.6)',
+                    }
+                  : {
+                      background: 'linear-gradient(160deg, hsl(var(--primary) / 0.38), hsl(var(--card) / 0.45))',
+                      boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,0.5), inset 1px 0 0 rgba(255,255,255,0.2), inset 0 -1px 0 hsl(var(--primary) / 0.25)',
+                    }}
               >
                 {DAY_NAMES[d]}
               </th>
@@ -51,8 +60,14 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
         <tbody>
           {PERIODS.map((p, rowIdx) => (
             <tr key={p}>
-              <th className="sticky right-0 z-10 bg-card border-b border-l border-border/60 p-1">
-                <div className={`w-8 h-8 mx-auto rounded-lg flex items-center justify-center text-sm font-black ${p === currentPeriod ? 'bg-primary text-primary-foreground shadow-md' : 'text-primary'}`}>
+              <th
+                className="sticky right-0 z-10 border-b border-l border-border/40 p-1 backdrop-blur-xl"
+                style={{
+                  background: 'linear-gradient(160deg, hsl(var(--primary) / 0.30), hsl(var(--card) / 0.55))',
+                  boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.3), inset 1.5px 0 0 rgba(255,255,255,0.35)',
+                }}
+              >
+                <div className={`w-8 h-8 mx-auto rounded-lg flex items-center justify-center text-sm font-black ${p === currentPeriod ? 'text-primary-foreground shadow-[inset_0_1.5px_0_rgba(255,255,255,0.5),0_4px_10px_-3px_hsl(var(--primary)/0.6)] bg-gradient-to-b from-primary to-primary/80' : 'text-primary'}`}>
                   {p}
                 </div>
               </th>
@@ -75,7 +90,13 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                       hover:bg-primary/10`}
                   >
                     {cellLessons.length > 0 ? (
-                      <div className="text-center space-y-0.5">
+                      <div
+                        className="text-center space-y-0.5 rounded-xl px-1 py-1 backdrop-blur-md"
+                        style={{
+                          background: 'linear-gradient(160deg, hsl(var(--primary) / 0.16), hsl(var(--card) / 0.55))',
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 1px hsl(var(--primary) / 0.15), 0 4px 10px -4px hsl(var(--primary) / 0.35)',
+                        }}
+                      >
                         {isLiveNow && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground text-[9px] font-black px-1.5 py-px leading-tight">
                             <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground animate-pulse" />
