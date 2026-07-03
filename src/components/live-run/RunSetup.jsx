@@ -6,8 +6,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getPeClassIdsForDate, getPeriodsForClassAndDate } from '@/lib/peLessons';
 import { displayRunStudentName } from './runUtils';
 
-function Field({ label, children }) {
-  return <div className="space-y-1"><label className="text-xs font-bold block text-right text-muted-foreground">{label}</label>{children}</div>;
+function FieldCard({ label, icon: Icon, children, className = '' }) {
+  return (
+    <div className={`rounded-2xl border border-border/60 glass-surface p-2.5 text-right ${className}`}>
+      <div className="flex items-center justify-between gap-1.5 mb-1.5">
+        <span className="text-[11px] font-bold text-muted-foreground">{label}</span>
+        <span className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <Icon className="w-3.5 h-3.5 text-primary" />
+        </span>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 function CardTitle({ title, icon: Icon }) {
@@ -117,7 +127,7 @@ export default function RunSetup({ data, initial, onStart }) {
       <section className="card-3d rounded-3xl p-3 space-y-2.5">
         <CardTitle title="פרטי ריצה" icon={ClipboardList} />
         <div className="grid grid-cols-2 gap-2">
-          <Field label="כיתה">
+          <FieldCard label="כיתה" icon={BookOpen}>
             {locked ? (
               <div className="h-10 rounded-xl liquid-field flex items-center justify-between px-3 text-sm font-bold" dir="rtl">
                 <span className="truncate">{cls?.name || ''}</span>
@@ -125,46 +135,37 @@ export default function RunSetup({ data, initial, onStart }) {
               </div>
             ) : (
               <Select value={classId} onValueChange={setClassId}>
-                <SelectTrigger className="h-10 rounded-xl text-sm font-bold">
-                  <span className="flex items-center gap-1.5 min-w-0"><BookOpen className="w-3.5 h-3.5 text-primary shrink-0" /><SelectValue placeholder="בחר כיתה" /></span>
-                </SelectTrigger>
+                <SelectTrigger className="h-10 rounded-xl text-sm font-bold"><SelectValue placeholder="בחר כיתה" /></SelectTrigger>
                 <SelectContent>{peClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             )}
-          </Field>
-          <Field label="תאריך">
-            <div className="relative">
-              <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-10 rounded-xl text-sm font-bold pl-8" />
-              <Calendar className="w-3.5 h-3.5 text-primary absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          </Field>
+          </FieldCard>
+          <FieldCard label="תאריך" icon={Calendar}>
+            <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-10 rounded-xl text-sm font-bold" />
+          </FieldCard>
         </div>
-        <Field label="שיעור">
+        <FieldCard label="שיעור" icon={Clock}>
           <Select value={period ? String(period) : ''} onValueChange={v => setPeriod(Number(v))}>
-            <SelectTrigger className="h-10 rounded-xl text-sm font-bold">
-              <span className="flex items-center gap-1.5 min-w-0"><Clock className="w-3.5 h-3.5 text-primary shrink-0" /><SelectValue placeholder="בחר שיעור" /></span>
-            </SelectTrigger>
+            <SelectTrigger className="h-10 rounded-xl text-sm font-bold"><SelectValue placeholder="בחר שיעור" /></SelectTrigger>
             <SelectContent>{periods.map(p => <SelectItem key={p} value={String(p)}>שיעור {p}</SelectItem>)}</SelectContent>
           </Select>
-        </Field>
-        <Field label="מבדק (לחישוב ציון אוטומטי)">
+        </FieldCard>
+        <FieldCard label="מבדק (לחישוב ציון אוטומטי)" icon={ClipboardList}>
           <Select value={testId} onValueChange={handleTestChange}>
-            <SelectTrigger className="h-10 rounded-xl text-sm font-bold">
-              <span className="flex items-center gap-1.5 min-w-0"><ClipboardList className="w-3.5 h-3.5 text-primary shrink-0" /><SelectValue placeholder="בחר מבדק" /></span>
-            </SelectTrigger>
+            <SelectTrigger className="h-10 rounded-xl text-sm font-bold"><SelectValue placeholder="בחר מבדק" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none">ללא מבדק — מדידה בלבד</SelectItem>
               {relevantTests.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
             </SelectContent>
           </Select>
-        </Field>
+        </FieldCard>
         {testId !== 'none' && (
-          <Field label="מחצית">
+          <FieldCard label="מחצית" icon={Check}>
             <div className="grid grid-cols-2 gap-2">
               <Button type="button" variant={semester === 'A' ? 'default' : 'outline'} onClick={() => setSemester('A')} className="h-9 rounded-xl font-bold text-sm">מחצית א'</Button>
               <Button type="button" variant={semester === 'B' ? 'default' : 'outline'} onClick={() => setSemester('B')} className="h-9 rounded-xl font-bold text-sm">מחצית ב'</Button>
             </div>
-          </Field>
+          </FieldCard>
         )}
         {peClasses.length === 0 && <p className="text-xs text-muted-foreground text-center">אין כיתות פעילות להצגה.</p>}
       </section>
@@ -172,18 +173,12 @@ export default function RunSetup({ data, initial, onStart }) {
       {/* Distances */}
       <section className="card-3d rounded-3xl p-3 space-y-2">
         <div className="grid grid-cols-2 gap-2">
-          <Field label="מרחק ריצה (מ')">
-            <div className="relative">
-              <Input type="number" min="1" value={distance} onChange={e => setDistance(e.target.value)} className="h-10 rounded-xl text-center font-bold" />
-              <Ruler className="w-3.5 h-3.5 text-primary absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          </Field>
-          <Field label="אורך הקפה במגרש (מ')">
-            <div className="relative">
-              <Input type="number" min="1" value={trackLength} onChange={e => setTrackLength(e.target.value)} className="h-10 rounded-xl text-center font-bold" />
-              <Pencil className="w-3.5 h-3.5 text-primary absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          </Field>
+          <FieldCard label="מרחק ריצה (מ')" icon={Ruler}>
+            <Input type="number" min="1" value={distance} onChange={e => setDistance(e.target.value)} className="h-10 rounded-xl text-center font-bold" />
+          </FieldCard>
+          <FieldCard label="אורך הקפה במגרש (מ')" icon={Pencil}>
+            <Input type="number" min="1" value={trackLength} onChange={e => setTrackLength(e.target.value)} className="h-10 rounded-xl text-center font-bold" />
+          </FieldCard>
         </div>
         <div className="rounded-xl bg-primary/10 border border-primary/15 px-3 py-2 flex items-center justify-center gap-1.5 text-sm font-black text-primary">
           <Info className="w-3.5 h-3.5" />
