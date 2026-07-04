@@ -8,7 +8,7 @@ import { displayRunStudentName } from './runUtils';
 
 function FieldCard({ label, icon: Icon, children, className = '' }) {
   return (
-    <div className={`rounded-2xl border border-border/60 glass-surface p-2.5 text-right shadow-[inset_0_1.5px_0_rgba(255,255,255,0.65),inset_0_-1px_0_rgba(0,0,0,0.04),0_3px_6px_-2px_rgba(20,30,60,0.10),0_10px_22px_-10px_rgba(20,30,60,0.28)] transition-shadow hover:shadow-[inset_0_1.5px_0_rgba(255,255,255,0.75),0_5px_10px_-3px_rgba(20,30,60,0.12),0_16px_30px_-12px_rgba(20,30,60,0.35)] ${className}`}>
+    <div className={`min-w-0 max-w-full box-border overflow-hidden rounded-2xl border border-border/60 glass-surface p-2.5 text-right shadow-[inset_0_1.5px_0_rgba(255,255,255,0.65),inset_0_-1px_0_rgba(0,0,0,0.04),0_3px_6px_-2px_rgba(20,30,60,0.10),0_10px_22px_-10px_rgba(20,30,60,0.28)] transition-shadow hover:shadow-[inset_0_1.5px_0_rgba(255,255,255,0.75),0_5px_10px_-3px_rgba(20,30,60,0.12),0_16px_30px_-12px_rgba(20,30,60,0.35)] ${className}`}>
       <div className="flex items-center justify-between gap-1.5 mb-1.5">
         <span className="text-[11px] font-bold text-muted-foreground">{label}</span>
         <span className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -141,7 +141,13 @@ export default function RunSetup({ data, initial, onStart }) {
             )}
           </FieldCard>
           <FieldCard label="תאריך" icon={Calendar}>
-            <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-10 rounded-xl text-sm font-bold" />
+            <Input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              dir="rtl"
+              className="h-10 w-full min-w-0 max-w-full box-border appearance-none rounded-xl text-sm font-bold text-right [&::-webkit-date-and-time-value]:text-right"
+            />
           </FieldCard>
         </div>
         <FieldCard label="שיעור" icon={Clock}>
