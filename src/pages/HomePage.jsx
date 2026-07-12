@@ -22,7 +22,7 @@ const classGradeOf = (c) => {
 };
 
 export default function HomePage() {
-  const { data, addClass, addStudent, editClass, deleteClass, archiveClass, deleteAllData, defaultGenderTrack } = useApp();
+  const { data, addClass, addStudent, editClass, deleteClass, archiveClass, deleteAllData, updateHomeroomContacts, defaultGenderTrack } = useApp();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [myClassesOpen, setMyClassesOpen] = useState(true);
@@ -55,6 +55,16 @@ export default function HomePage() {
   const studentCountByClass = useMemo(() => {
     const map = {};
     (data.students || []).forEach(s => { map[s.classId] = (map[s.classId] || 0) + 1; });
+    return map;
+  }, [data.students]);
+
+  const studentsByClass = useMemo(() => {
+    const map = {};
+    (data.students || []).forEach(student => {
+      if (!map[student.classId]) map[student.classId] = [];
+      map[student.classId].push(student);
+    });
+    Object.values(map).forEach(items => items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he')));
     return map;
   }, [data.students]);
 
@@ -121,10 +131,13 @@ export default function HomePage() {
               <ClassCard
                 key={cls.id}
                 cls={cls}
+                students={studentsByClass[cls.id] || []}
                 studentCount={studentCountByClass[cls.id] || 0}
+                isAdmin={isAdmin}
                 onEdit={setEditTarget}
                 onDelete={setDeleteTarget}
                 onArchive={handleArchiveClass}
+                onSaveEducators={updateHomeroomContacts}
               />
             ))}
             {visibleClasses.length === 0 && (
