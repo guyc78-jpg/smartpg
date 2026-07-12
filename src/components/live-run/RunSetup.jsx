@@ -9,7 +9,7 @@ import { toLocalISODate } from '@/lib/dateTime';
 
 function FieldCard({ label, icon: Icon, children, className = '' }) {
   return (
-    <div className={`min-w-0 max-w-full box-border overflow-hidden rounded-2xl border border-border/60 glass-surface p-2.5 text-right shadow-[inset_0_1.5px_0_rgba(255,255,255,0.65),inset_0_-1px_0_rgba(0,0,0,0.04),0_3px_6px_-2px_rgba(20,30,60,0.10),0_10px_22px_-10px_rgba(20,30,60,0.28)] transition-shadow hover:shadow-[inset_0_1.5px_0_rgba(255,255,255,0.75),0_5px_10px_-3px_rgba(20,30,60,0.12),0_16px_30px_-12px_rgba(20,30,60,0.35)] ${className}`}>
+    <div className={`min-w-0 max-w-full box-border overflow-hidden rounded-2xl border border-border glass-surface p-2.5 text-right transition-colors ${className}`}>
       <div className="flex items-center justify-between gap-1.5 mb-1.5">
         <span className="text-[11px] font-bold text-muted-foreground">{label}</span>
         <span className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -114,7 +114,7 @@ export default function RunSetup({ data, initial, onStart }) {
   return (
     <div className="w-full max-w-[520px] mx-auto px-3 pt-2 pb-44 space-y-2.5 overflow-x-hidden" dir="rtl">
       {/* Intro card */}
-      <section className="card-3d rounded-3xl p-3.5 flex items-center justify-between gap-3 !shadow-[0_0_0_1px_rgb(255,255,255,0.25),inset_0_2px_0_rgba(255,255,255,0.6),0_6px_12px_-4px_rgba(20,30,60,0.15),0_24px_48px_-16px_rgba(20,30,60,0.35)]" style={{ background: 'linear-gradient(160deg, hsl(var(--primary) / 0.10), hsl(var(--card) / 0.45))' }}>
+      <section className="card-3d rounded-3xl p-3.5 flex items-center justify-between gap-3 border-primary/20" style={{ background: 'hsl(var(--card))' }}>
         <div className="min-w-0 text-right">
           <h2 className="text-base font-black">ריצה חיה</h2>
           <p className="text-xs text-muted-foreground leading-snug">בחר כיתה, מבדק ומסלול — ומדוד סיבובים, זמנים וציונים בזמן אמת.</p>
@@ -125,7 +125,7 @@ export default function RunSetup({ data, initial, onStart }) {
       </section>
 
       {/* Run details */}
-      <section className="card-3d rounded-3xl p-3 space-y-2.5 !shadow-[0_0_0_1px_rgb(255,255,255,0.25),inset_0_2px_0_rgba(255,255,255,0.6),0_6px_12px_-4px_rgba(20,30,60,0.15),0_24px_48px_-16px_rgba(20,30,60,0.35)]">
+      <section className="card-3d rounded-3xl p-3 space-y-2.5">
         <CardTitle title="פרטי ריצה" icon={ClipboardList} />
         <div className="grid grid-cols-2 gap-2">
           <FieldCard label="כיתה" icon={BookOpen}>
@@ -178,7 +178,7 @@ export default function RunSetup({ data, initial, onStart }) {
       </section>
 
       {/* Distances */}
-      <section className="card-3d rounded-3xl p-3 space-y-2 !shadow-[0_0_0_1px_rgb(255,255,255,0.25),inset_0_2px_0_rgba(255,255,255,0.6),0_6px_12px_-4px_rgba(20,30,60,0.15),0_24px_48px_-16px_rgba(20,30,60,0.35)]">
+      <section className="card-3d rounded-3xl p-3 space-y-2">
         <div className="grid grid-cols-2 gap-2">
           <FieldCard label="מרחק ריצה (מ')" icon={Ruler}>
             <Input type="number" min="1" value={distance} onChange={e => setDistance(e.target.value)} className="h-10 rounded-xl text-center font-bold" />
@@ -194,7 +194,7 @@ export default function RunSetup({ data, initial, onStart }) {
       </section>
 
       {/* Students */}
-      <section className="card-3d rounded-3xl p-3 space-y-2 !shadow-[0_0_0_1px_rgb(255,255,255,0.25),inset_0_2px_0_rgba(255,255,255,0.6),0_6px_12px_-4px_rgba(20,30,60,0.15),0_24px_48px_-16px_rgba(20,30,60,0.35)]">
+      <section className="card-3d rounded-3xl p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <h3 className="text-base font-black">תלמידים <span className="text-xs font-bold text-muted-foreground">({selectedIds.length}/{students.length})</span></h3>

@@ -19,7 +19,7 @@ function MobileNavItem({ to, icon: Icon, label }) {
       {active && (
         <>
           <span
-            className="absolute inset-x-0.5 inset-y-1 rounded-full bg-gradient-to-b from-primary/30 to-primary/10 shadow-[inset_0_1.5px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(255,255,255,0.1),0_6px_18px_-5px_hsl(var(--primary)/0.6)] ring-1 ring-primary/30"
+            className="nav-active-indicator absolute inset-x-0.5 inset-y-1 rounded-full bg-primary/15 ring-1 ring-primary/35"
             aria-hidden="true"
           />
           <span

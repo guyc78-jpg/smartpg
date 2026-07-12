@@ -8,7 +8,7 @@ export default function HomeHeader() {
   const displayName = teacherName || user?.full_name || 'ראשי';
 
   return (
-    <header dir="rtl" className="sticky top-0 z-40 glass-nav px-4 pt-2 pb-1.5" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}>
+    <header dir="rtl" className="sticky top-0 z-40 glass-nav dark:bg-background px-4 pt-2 pb-1.5" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}>
       <div className="flex items-center justify-between gap-2">
         <div className="text-right min-w-0">
           <h1 className="text-lg font-black text-foreground truncate leading-tight">{displayName}</h1>

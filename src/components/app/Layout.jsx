@@ -44,7 +44,7 @@ export default function Layout({ children, title, backTo, subtitle, titleAction,
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background flex flex-col" dir="rtl" style={{ '--header-h': `${headerHeight}px` }}>
       <header
         ref={headerRef}
-        className="fixed inset-x-0 top-0 z-40 glass-nav"
+        className="fixed inset-x-0 top-0 z-40 glass-nav dark:bg-background"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         {/* Desktop Nav Bar */}

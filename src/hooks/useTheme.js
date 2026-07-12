@@ -24,7 +24,7 @@ function applyTheme(theme) {
   document.documentElement.classList.toggle('dark', resolved === 'dark');
   document.documentElement.style.colorScheme = resolved;
   document.querySelector('meta[name="theme-color"]')?.setAttribute(
-    'content', resolved === 'dark' ? 'hsl(222, 32%, 7%)' : 'hsl(208, 100%, 99%)'
+    'content', resolved === 'dark' ? '#0c1017' : '#fafdff'
   );
 }
 

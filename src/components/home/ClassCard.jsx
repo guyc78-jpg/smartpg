@@ -5,7 +5,7 @@ import { GENDER_TRACK_LABELS } from '@/lib/types';
 
 export default function ClassCard({ cls, studentCount, onEdit, onDelete, onArchive }) {
   return (
-    <div dir="rtl" className="rounded-2xl bg-card shadow-sm p-3 flex items-center justify-between gap-2">
+    <div dir="rtl" className="rounded-2xl bg-card border border-border/70 shadow-sm p-3 flex items-center justify-between gap-2">
       <div className="flex items-center gap-2 min-w-0 flex-1 justify-start overflow-hidden">
         <Link to={`/class/${cls.id}`} className="h-8 w-8 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary" title="נוכחות">
           <UserCheck className="w-4 h-4" />
