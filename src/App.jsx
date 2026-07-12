@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import AppLoader from '@/components/app/AppLoader';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClientInstance } from '@/lib/query-client';
@@ -44,7 +45,7 @@ const PageFallback = () => (
 );
 
 const AppShell = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
   const { loading: isLoadingData } = useApp();
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [loaderGone, setLoaderGone] = useState(false);
@@ -58,14 +59,6 @@ const AppShell = () => {
 
   if (appReady && authError) {
     if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
-    if (authError.type === 'auth_required') {
-      const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
-      if (!authRoutes.includes(window.location.pathname)) {
-        window.location.href = '/login';
-        return null;
-      }
-      // On an auth page — fall through and render it so the user can actually log in
-    }
   }
 
   return (
@@ -118,10 +111,11 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthenticatedApp />
         </Router>
         <Toaster />
+        <SonnerToaster position="top-center" richColors closeButton />
       </QueryClientProvider>
     </AuthProvider>
   );

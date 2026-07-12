@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getPeClassIdsForDate, getPeriodsForClassAndDate } from '@/lib/peLessons';
 import { displayRunStudentName } from './runUtils';
+import { toLocalISODate } from '@/lib/dateTime';
 
 function FieldCard({ label, icon: Icon, children, className = '' }) {
   return (
@@ -32,7 +33,7 @@ function CardTitle({ title, icon: Icon }) {
 }
 
 export default function RunSetup({ data, initial, onStart }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalISODate();
   const [date, setDate] = useState(initial?.date || today);
   const peClassIds = useMemo(() => getPeClassIdsForDate(data.scheduleLessons, date), [data.scheduleLessons, date]);
   const scheduledClasses = useMemo(() => data.classes.filter(c => peClassIds.includes(c.id)), [data.classes, peClassIds]);

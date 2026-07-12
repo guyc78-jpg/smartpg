@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { measurementTypeLabel } from '@/lib/runMeasurementTypes';
 import { formatLongTime, formatShortTime } from '@/lib/timeFormat';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { formatLocalDate } from '@/lib/dateTime';
 
 export default function RunHistorySection({ measurements, loading }) {
   const sorted = useMemo(
@@ -16,7 +17,7 @@ export default function RunHistorySection({ measurements, loading }) {
     () => sorted
       .filter(m => m.measurement_type?.startsWith('distance_') && m.result_seconds != null)
       .map(m => ({
-        date: new Date(m.date).toLocaleDateString('he-IL'),
+        date: formatLocalDate(m.date),
         seconds: m.result_seconds,
         type: measurementTypeLabel(m.measurement_type),
       })),
@@ -57,7 +58,7 @@ export default function RunHistorySection({ measurements, loading }) {
               <div key={m.id} className="flex items-center justify-between gap-2 rounded-lg bg-muted/30 px-2 py-1.5 text-xs">
                 <div className="min-w-0">
                   <div className="font-medium truncate">{measurementTypeLabel(m.measurement_type)}</div>
-                  <div className="text-muted-foreground">{new Date(m.date).toLocaleDateString('he-IL')}</div>
+                  <div className="text-muted-foreground">{formatLocalDate(m.date)}</div>
                 </div>
                 <div className="shrink-0 text-left">
                   {m.result_seconds != null && (

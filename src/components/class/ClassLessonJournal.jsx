@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { BookOpen, MapPin, Target, Pencil, StickyNote, Check } from 'lucide-react';
 import { useApp } from '@/store/AppProvider';
 import { Badge } from '@/components/ui/badge';
+import { formatLocalDate, parseLocalISODate } from '@/lib/dateTime';
 
 const WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
@@ -49,7 +50,7 @@ export default function ClassLessonJournal({ classId }) {
         <div key={month} className="space-y-2">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-black text-foreground">
-              {new Date(`${month}-01`).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' })}
+              {formatLocalDate(`${month}-01`, { month: 'long', year: 'numeric' })}
             </h3>
             <Badge variant="secondary" className="text-[10px]">{monthLessons.length} שיעורים</Badge>
             <div className="flex-1 h-px bg-border/60" />
@@ -57,7 +58,7 @@ export default function ClassLessonJournal({ classId }) {
 
           <div className="space-y-2">
             {monthLessons.map(lesson => {
-              const d = new Date(lesson.date);
+              const d = parseLocalISODate(lesson.date);
               const isEditing = editingId === lesson.id;
               return (
                 <div key={lesson.id} className="rounded-2xl card-3d p-3 flex gap-3 items-start">

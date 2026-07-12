@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart3, Users, Download, School, Clock, XCircle, BookOpen } from 'lucide-react';
-import { SEMESTER_LABELS, GRADE_LEVELS } from '@/lib/types';
+import { GRADE_LEVELS } from '@/lib/types';
 import { formatStudentName } from '@/lib/studentName';
 import { exportClassReportCSV } from '@/lib/exportReport';
 

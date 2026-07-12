@@ -1,15 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeftRight, Trash2, Plus } from 'lucide-react';
+import { formatLocalDate, toLocalISODate } from '@/lib/dateTime';
 
 export default function SubstitutionsSection({ substitutions, classes, onAdd, onDelete }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
+    date: toLocalISODate(),
     period: 1,
     originalClassId: '',
     substituteClassId: '',
@@ -26,7 +26,7 @@ export default function SubstitutionsSection({ substitutions, classes, onAdd, on
   const handleSubmit = async () => {
     if (!form.date || !form.originalClassId || !form.substituteClassId) return;
     await onAdd(form);
-    setForm({ date: new Date().toISOString().slice(0, 10), period: 1, originalClassId: '', substituteClassId: '', notes: '' });
+    setForm({ date: toLocalISODate(), period: 1, originalClassId: '', substituteClassId: '', notes: '' });
     setOpen(false);
   };
 
@@ -73,7 +73,7 @@ export default function SubstitutionsSection({ substitutions, classes, onAdd, on
                 {classById[sub.originalClassId]?.name || '?'} ← {classById[sub.substituteClassId]?.name || '?'}
               </div>
               <div className="text-muted-foreground">
-                {new Date(sub.date).toLocaleDateString('he-IL')} • שעה {sub.period}
+                {formatLocalDate(sub.date)} • שעה {sub.period}
               </div>
             </div>
             <button onClick={() => onDelete(sub.id)} className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0">

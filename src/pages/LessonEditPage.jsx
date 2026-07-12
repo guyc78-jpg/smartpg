@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { DAY_LABELS } from '@/lib/scheduleImport';
 import { formatPeriodStart } from '@/lib/periodTimes';
+import { parseLocalISODate, toLocalISODate } from '@/lib/dateTime';
 
 const EMPTY_FORM = { topic: '', objective: '', equipment: '', notes: '', postLessonNotes: '' };
 
@@ -21,7 +22,7 @@ export default function LessonEditPage() {
   const params = new URLSearchParams(window.location.search);
   const classId = params.get('classId') || '';
   const period = Number(params.get('period') || 1);
-  const date = params.get('date') || new Date().toISOString().slice(0, 10);
+  const date = params.get('date') || toLocalISODate();
 
   const [existingId, setExistingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -54,7 +55,7 @@ export default function LessonEditPage() {
   }, [classId, date, period]);
 
   const cls = data.classes.find(c => c.id === classId);
-  const dayOfWeek = new Date(date).getDay();
+  const dayOfWeek = parseLocalISODate(date).getDay();
   const manageUrl = `/lesson-manage?classId=${classId}&period=${period}&date=${date}`;
 
   const updateForm = (field, value) => setForm(prev => ({ ...prev, [field]: value }));

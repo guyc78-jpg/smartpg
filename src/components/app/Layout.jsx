@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, ClipboardList, FileText, ArrowRight, Moon, Sun, Settings, CalendarDays, Activity } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import BottomNav from '@/components/app/BottomNav';
 import HeaderMoreMenu from '@/components/app/HeaderMoreMenu';

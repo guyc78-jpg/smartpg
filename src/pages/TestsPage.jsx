@@ -5,7 +5,6 @@ import Layout from '@/components/app/Layout';
 import { Badge } from '@/components/ui/badge';
 import { useMemo, useState } from 'react';
 import { SEMESTER_LABELS, TEST_STATUS_LABELS } from '@/lib/types';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatStudentName } from '@/lib/studentName';
