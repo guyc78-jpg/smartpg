@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { exportTestsToExcel, exportTestsToWord, rowsToTests } from '@/lib/testImportExport';
-import { parseTestDocx } from '@/functions/parseTestDocx';
 import TestImportDialog from '@/components/tests/TestImportDialog.jsx';
 import CopyTestsDialog from '@/components/tests/CopyTestsDialog.jsx';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
@@ -43,7 +42,7 @@ export default function TestImportExport({ tests, allTests, onImport, onDeleteAl
 
       // Word files (e.g. גיליונות אות הכושר) are parsed by a dedicated backend parser
       if (/\.docx?$/i.test(file.name)) {
-        const { data } = await parseTestDocx({ file_url });
+        const { data } = await base44.functions.invoke('parseTestDocx', { file_url });
         if (data.error) throw new Error(data.error);
         const rows = (data.rows || []).map(r => ({ ...r, gender: data.gender || '' }));
         const glMatch = (data.grade_level || '').match(/יב|יא|[זחטי]/);

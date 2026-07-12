@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk';
 import mammoth from 'npm:mammoth@1.8.0';
 import { Buffer } from 'node:buffer';
 

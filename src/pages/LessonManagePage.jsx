@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { DAY_LABELS } from '@/lib/scheduleImport';
 import { formatPeriodStart } from '@/lib/periodTimes';
+import { parseLocalISODate, toLocalISODate } from '@/lib/dateTime';
 
 export default function LessonManagePage() {
   const { data, loadAll } = useApp();
@@ -17,7 +18,7 @@ export default function LessonManagePage() {
   const params = new URLSearchParams(window.location.search);
   const classId = params.get('classId') || '';
   const period = Number(params.get('period') || 1);
-  const date = params.get('date') || new Date().toISOString().slice(0, 10);
+  const date = params.get('date') || toLocalISODate();
 
   const [existingId, setExistingId] = useState(null);
   const [lesson, setLesson] = useState(null);
@@ -42,7 +43,7 @@ export default function LessonManagePage() {
   }, [classId, date, period]);
 
   const cls = data.classes.find(c => c.id === classId);
-  const dayOfWeek = new Date(date).getDay();
+  const dayOfWeek = parseLocalISODate(date).getDay();
   const editUrl = `/lesson-edit?classId=${classId}&period=${period}&date=${date}`;
 
   const handleFinish = async () => {

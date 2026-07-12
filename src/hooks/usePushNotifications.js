@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
 import { base44 } from '@/api/base44Client';
-import { getVapidPublicKey } from '@/functions/getVapidPublicKey';
-import { sendPushNotification } from '@/functions/sendPushNotification';
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -39,7 +37,7 @@ export function usePushNotifications() {
 
       let sub = await reg.pushManager.getSubscription();
       if (!sub) {
-        const { data } = await getVapidPublicKey({});
+        const { data } = await base44.functions.invoke('getVapidPublicKey', {});
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(data.publicKey),
@@ -84,7 +82,7 @@ export function usePushNotifications() {
     const reg = await navigator.serviceWorker.getRegistration('/sw.js');
     const sub = await reg?.pushManager.getSubscription();
     if (!sub) throw new Error('not_subscribed');
-    const { data } = await sendPushNotification({
+    const { data } = await base44.functions.invoke('sendPushNotification', {
       title: 'התראת בדיקה 🔔',
       body: 'ההתראות פועלות! תקבלו עדכונים גם כשהאתר סגור.',
       url: '/',

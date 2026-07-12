@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { DEFAULT_DATA, DEFAULT_TESTS, GRADE_LEVELS } from '@/lib/types';
 import { useAuth } from '@/lib/AuthContext';
 import { normalizeClassName, scheduleDedupeKey, PE_SUBJECT_NAME } from '@/lib/scheduleImport';
+import { applyRemoteBellTimes, resetBellTimes, saveBellTimes } from '@/lib/periodTimes';
 
 function jsonToConversionTable(json) {
   if (!Array.isArray(json)) return [];
@@ -120,7 +121,10 @@ export function AppProvider({ children }) {
         completionPenaltyFactor: settingsRaw.completion_penalty_factor ?? 0,
         minCompletedGrade: settingsRaw.min_completed_grade ?? 56,
         gradeColorThresholds: settingsRaw.grade_color_thresholds ?? { redBelow: 55, greenAt: 100 },
+        bellSchedule: settingsRaw.bell_schedule || null,
       } : DEFAULT_DATA.settings;
+
+      if (settingsRaw?.bell_schedule) applyRemoteBellTimes(settingsRaw.bell_schedule);
 
       if (settingsRaw?.default_gender_track) setDefaultGenderTrack(settingsRaw.default_gender_track);
 
@@ -198,6 +202,7 @@ export function AppProvider({ children }) {
     const entitiesToWatch = [
       'SchoolClass', 'Student', 'TestResult', 'BehaviorGrade',
       'ClassTestStatus', 'LessonTopic', 'TeacherSchedule', 'Substitution',
+      'TeacherSettings',
     ];
     const unsubs = entitiesToWatch.map(name => {
       try {
@@ -521,6 +526,18 @@ export function AppProvider({ children }) {
     setDefaultGenderTrack(track);
   }, []);
 
+  const updateBellSchedule = useCallback(async (bellSchedule) => {
+    const existing = await base44.entities.TeacherSettings.list();
+    if (existing.length > 0) {
+      await base44.entities.TeacherSettings.update(existing[0].id, { bell_schedule: bellSchedule });
+    } else {
+      await base44.entities.TeacherSettings.create({ bell_schedule: bellSchedule });
+    }
+    if (bellSchedule) saveBellTimes(bellSchedule);
+    else resetBellTimes();
+    setData(d => ({ ...d, settings: { ...d.settings, bellSchedule } }));
+  }, []);
+
   const updateBagrutSettings = useCallback(async (s) => {
     setData(d => ({ ...d, bagrutSettings: { ...d.bagrutSettings, ...s } }));
   }, []);
@@ -692,7 +709,7 @@ export function AppProvider({ children }) {
     addStudent, deleteStudent, editStudent, importStudents,
     addTest, updateTest, deleteTest,
     setTestResult, setBehaviorGrade, setClassTestStatus,
-    setGradeOverride, updateSettings, updateDefaultGenderTrack,
+    setGradeOverride, updateSettings, updateDefaultGenderTrack, updateBellSchedule,
     updateBagrutSettings, setBagrutResult, setBagrutTestIncluded,
     deleteAllData, seedClasses, closeSemester, loadAll, importSchedule,
     addSubstitution, deleteSubstitution, saveLessonTopic,

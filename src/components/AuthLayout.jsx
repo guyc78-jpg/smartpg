@@ -1,8 +1,19 @@
 import React from "react";
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
+  const { dark, toggle } = useTheme();
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="relative min-h-screen flex items-center justify-center bg-background px-4">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={dark ? 'מעבר למצב בהיר' : 'מעבר למצב כהה'}
+        className="absolute left-4 top-[calc(1rem+env(safe-area-inset-top,0px))] h-10 w-10 rounded-full liquid-chip flex items-center justify-center text-muted-foreground"
+      >
+        {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      </button>
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">

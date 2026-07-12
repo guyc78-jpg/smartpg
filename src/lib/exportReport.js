@@ -1,4 +1,5 @@
 import { formatStudentName } from '@/lib/studentName';
+import { toLocalISODate } from '@/lib/dateTime';
 
 function sanitizeCsvCell(value) {
   const str = String(value ?? '');
@@ -23,7 +24,7 @@ export function exportClassReportCSV(className, studentGrades) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `דוח_${className || 'כיתה'}_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `דוח_${className || 'כיתה'}_${toLocalISODate()}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

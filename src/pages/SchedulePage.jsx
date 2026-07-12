@@ -11,11 +11,12 @@ import DeleteScheduleDialog from '@/components/schedule/DeleteScheduleDialog';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import { Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { toLocalISODate } from '@/lib/dateTime';
 
 export default function SchedulePage() {
   const { data, loadAll, importSchedule, deleteClass } = useApp();
   const [tab, setTab] = useState('grid');
-  const [dateIso, setDateIso] = useState(new Date().toISOString().slice(0, 10));
+  const [dateIso, setDateIso] = useState(() => toLocalISODate());
   const [assignSlot, setAssignSlot] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
