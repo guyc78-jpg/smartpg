@@ -12,6 +12,7 @@ import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
 import ImportStudentsDialog from '@/components/students/ImportStudentsDialog';
 import StudentCard from '@/components/students/StudentCard';
+import WhatsAppMessageDialog from '@/components/whatsapp/WhatsAppMessageDialog';
 import { SEMESTER_LABELS, GENDER_TRACK_LABELS } from '@/lib/types';
 import { formatStudentName } from '@/lib/studentName';
 
@@ -27,8 +28,14 @@ export default function ClassPage() {
   const [deleteStudentTarget, setDeleteStudentTarget] = useState(null);
   const [viewMode, setViewMode] = useState('A');
   const [tab, setTab] = useState('students');
+  const [whatsappStudent, setWhatsAppStudent] = useState(null);
 
   const cls = data.classes.find(c => c.id === classId);
+  const educatorContacts = useMemo(() => (Array.isArray(cls?.homeroomContacts) ? cls.homeroomContacts : []).map((contact, index) => ({
+    id: contact.id || `educator_${classId}_${index}`,
+    name: contact.name || '',
+    phone: contact.phone || '',
+  })), [cls?.homeroomContacts, classId]);
   const isGrade12 = cls?.gradeLevel === 'יב';
 
   const classTests = useMemo(() => {
@@ -214,6 +221,10 @@ export default function ClassPage() {
                 isLow={isLow}
                 highlighted={highlightId === student.id}
                 onEdit={() => openEdit(student)}
+                onWhatsApp={() => {
+                  if (!educatorContacts.length) return toast.info('לא הוגדר מחנך/ת לכיתה זו');
+                  setWhatsAppStudent(student);
+                }}
                 onDelete={() => setDeleteStudentTarget({ id: student.id, name: formatStudentName(student) })}
               />
             );
@@ -251,6 +262,15 @@ export default function ClassPage() {
           title={`מחיקת ${deleteStudentTarget?.name}`}
           description="מחיקת התלמיד תסיר אותו מרשימת התלמידים, אך לא תמחק רשומות ציונים או מבדקים קיימות. האם למחוק בכל זאת?"
           onConfirm={() => { deleteStudent(deleteStudentTarget.id); setDeleteStudentTarget(null); toast.success('התלמיד נמחק'); }}
+        />
+        <WhatsAppMessageDialog
+          open={!!whatsappStudent}
+          onOpenChange={(nextOpen) => { if (!nextOpen) setWhatsAppStudent(null); }}
+          cls={cls}
+          contacts={educatorContacts}
+          students={students}
+          initialStudentId={whatsappStudent?.id}
+          initialMessageType="missing_tests"
         />
       </div>
     </Layout>
