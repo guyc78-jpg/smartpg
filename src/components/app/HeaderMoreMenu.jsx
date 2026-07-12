@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Bell, Compass, LogOut, Moon, Settings, Sun, UserCheck } from 'lucide-react';
+import { MoreHorizontal, Bell, BookOpenCheck, LogOut, Moon, Settings, Sun, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -45,8 +45,8 @@ export default function HeaderMoreMenu({ items = [] }) {
         <DropdownMenuItem onClick={() => navigate('/substitute-fills')} className={itemClass}>
           <UserCheck className="w-4 h-4 shrink-0" /> מילויי מקום
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate('/wizards')} className={itemClass}>
-          <Compass className="w-4 h-4 shrink-0" /> סיורי מערכת
+        <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('smartpg:open-onboarding'))} className={itemClass}>
+          <BookOpenCheck className="w-4 h-4 shrink-0" /> מדריך למשתמש
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate('/settings')} className={itemClass}>
           <Settings className="w-4 h-4 shrink-0" /> הגדרות

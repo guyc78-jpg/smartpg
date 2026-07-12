@@ -12,6 +12,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { AppProvider, useApp } from '@/store/AppProvider';
 import { LiveRunProvider } from '@/contexts/LiveRunContext';
 import FloatingRunTimer from '@/components/live-run/FloatingRunTimer';
+import NewUserGuide from '@/components/onboarding/NewUserGuide';
 
 const Login = lazy(() => import('@/pages/Login'));
 const Register = lazy(() => import('@/pages/Register'));
@@ -31,7 +32,6 @@ const LiveRunPage = lazy(() => import('./pages/LiveRunPage'));
 const LessonManagePage = lazy(() => import('./pages/LessonManagePage'));
 const LessonEditPage = lazy(() => import('./pages/LessonEditPage'));
 const SubstituteFillsPage = lazy(() => import('./pages/SubstituteFillsPage'));
-const WizardsPage = lazy(() => import('./pages/WizardsPage'));
 const MissingGradesPage = lazy(() => import('./pages/MissingGradesPage'));
 
 const PageFallback = () => (
@@ -85,7 +85,6 @@ const AppShell = () => {
           <Route path="/lesson-edit" element={<LessonEditPage />} />
           <Route path="/live-run" element={<LiveRunPage />} />
           <Route path="/substitute-fills" element={<SubstituteFillsPage />} />
-          <Route path="/wizards" element={<WizardsPage />} />
           <Route path="/missing-grades" element={<MissingGradesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<AppSettingsPage />} />
@@ -94,6 +93,7 @@ const AppShell = () => {
       </Routes>
       </Suspense>
       <FloatingRunTimer />
+      <NewUserGuide enabled={appReady} />
       </LiveRunProvider>
     </ErrorBoundary>
     )}
