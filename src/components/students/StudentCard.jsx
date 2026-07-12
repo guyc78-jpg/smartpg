@@ -2,13 +2,13 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit2, Trash2, ShieldOff, HeartPulse } from 'lucide-react';
+import { Edit2, Trash2, ShieldOff, HeartPulse, MessageCircle } from 'lucide-react';
 import StudentGradeBreakdown from '@/components/grades/StudentGradeBreakdown';
 import { formatStudentName } from '@/lib/studentName';
 
 const GENDER_LABELS = { boys: 'בן', girls: 'בת', other: 'אחר' };
 
-export default function StudentCard({ student, classId, displayGrade, annual, viewMode, progress, isLow, highlighted, onEdit, onDelete }) {
+export default function StudentCard({ student, classId, displayGrade, annual, viewMode, progress, isLow, highlighted, onEdit, onDelete, onWhatsApp }) {
   return (
     <Card
       id={`student-${student.id}`}
@@ -52,6 +52,9 @@ export default function StudentCard({ student, classId, displayGrade, annual, vi
         </div>
 
         <div className="flex flex-col gap-1 shrink-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400" aria-label="שליחת WhatsApp למחנך/ת" title="WhatsApp למחנך/ת" onClick={onWhatsApp}>
+            <MessageCircle className="w-4 h-4" />
+          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="עריכת תלמיד" onClick={onEdit}>
             <Edit2 className="w-3.5 h-3.5" />
           </Button>
