@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom';
 import { Trash2, Edit2, UserCheck, Archive } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { GENDER_TRACK_LABELS } from '@/lib/types';
+import EducatorContactButton from '@/components/home/EducatorContactButton';
 
-export default function ClassCard({ cls, studentCount, onEdit, onDelete, onArchive }) {
+export default function ClassCard({ cls, students, studentCount, isAdmin, onEdit, onDelete, onArchive, onSaveEducators }) {
   return (
     <div dir="rtl" className="rounded-2xl bg-card border border-border/70 shadow-sm p-3 flex items-center justify-between gap-2">
       <div className="flex items-center gap-2 min-w-0 flex-1 justify-start overflow-hidden">
@@ -20,6 +21,7 @@ export default function ClassCard({ cls, studentCount, onEdit, onDelete, onArchi
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
+        <EducatorContactButton cls={cls} students={students} isAdmin={isAdmin} onSaveContacts={contacts => onSaveEducators(cls.id, contacts)} />
         <button onClick={() => onEdit(cls)} className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary">
           <Edit2 className="w-4 h-4" />
         </button>

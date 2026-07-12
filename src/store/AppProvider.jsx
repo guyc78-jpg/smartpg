@@ -291,6 +291,21 @@ export function AppProvider({ children }) {
     }));
   }, []);
 
+  const updateHomeroomContacts = useCallback(async (classId, contacts) => {
+    const user = await base44.auth.me();
+    if (user?.role !== 'admin') throw new Error('רק מנהל יכול לערוך את פרטי המחנכים');
+    const normalized = (contacts || []).map((contact, index) => ({
+      id: contact.id || `educator_${index}`,
+      name: String(contact.name || '').trim(),
+      phone: String(contact.phone || '').trim(),
+    }));
+    await base44.entities.SchoolClass.update(classId, { homeroom_contacts: normalized });
+    setData(d => ({
+      ...d,
+      classes: d.classes.map(cls => cls.id === classId ? { ...cls, homeroomContacts: normalized } : cls),
+    }));
+  }, []);
+
   const archiveClass = useCallback(async (id) => {
     await base44.entities.SchoolClass.update(id, { status: 'archived' });
     setData(d => ({ ...d, classes: d.classes.map(c => c.id === id ? { ...c, status: 'archived' } : c) }));
@@ -705,7 +720,7 @@ export function AppProvider({ children }) {
 
   const value = {
     data, loading, defaultGenderTrack,
-    addClass, deleteClass, editClass, archiveClass, duplicateClass,
+    addClass, deleteClass, editClass, archiveClass, duplicateClass, updateHomeroomContacts,
     addStudent, deleteStudent, editStudent, importStudents,
     addTest, updateTest, deleteTest,
     setTestResult, setBehaviorGrade, setClassTestStatus,
