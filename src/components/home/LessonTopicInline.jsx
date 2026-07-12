@@ -2,19 +2,23 @@ import { useState } from 'react';
 import { BookOpen, Plus } from 'lucide-react';
 import { useApp } from '@/store/AppProvider';
 
-export default function LessonTopicInline({ classId, date, period }) {
+export default function LessonTopicInline({ classId, classIds, date, period }) {
   const { data, saveLessonTopic } = useApp();
-  const existing = (data.lessonTopics || []).find(
-    l => l.classId === classId && l.date === date && Number(l.period) === Number(period) && !l.isTemplate
+  const targetClassIds = classIds?.length ? classIds : [classId].filter(Boolean);
+  const existingTopics = (data.lessonTopics || []).filter(
+    l => targetClassIds.includes(l.classId) && l.date === date && Number(l.period) === Number(period) && !l.isTemplate
   );
+  const existing = existingTopics[0];
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState('');
 
   const startEdit = () => { setValue(existing?.topic || ''); setEditing(true); };
   const save = async () => {
     setEditing(false);
-    if ((existing?.topic || '') === value.trim()) return;
-    await saveLessonTopic(classId, date, period, value);
+    const nextTopic = value.trim();
+    const unchanged = targetClassIds.every(id => existingTopics.find(topic => topic.classId === id)?.topic === nextTopic);
+    if (unchanged) return;
+    await Promise.all(targetClassIds.map(id => saveLessonTopic(id, date, period, nextTopic)));
   };
 
   if (editing) {
