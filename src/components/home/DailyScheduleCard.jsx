@@ -90,6 +90,7 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
             <div className="space-y-1.5">
               {periods.map(p => {
                 const lessons = dayLessons.filter(l => Number(l.period) === p);
+                const lessonClassIds = [...new Set(lessons.map(l => l.classId).filter(Boolean))];
                 const hasClass = lessons.some(l => l.classId);
                 const label = [...new Set(lessons.map(l => classById[l.classId]?.name || l.subject || l.className).filter(Boolean))].join(', ');
                 const isCurrent = p === currentPeriod;
@@ -119,9 +120,9 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
                     </button>
                     {expanded && (
                       <div className="px-3 pb-2.5 pt-0.5 space-y-1 text-right">
-                        {lessons.filter(l => l.classId).map(l => (
-                          <LessonTopicInline key={`topic-${l.id}`} classId={l.classId} date={dateISO} period={p} />
-                        ))}
+                        {lessonClassIds.length > 0 && (
+                          <LessonTopicInline classIds={lessonClassIds} date={dateISO} period={p} />
+                        )}
                         {lessons.some(l => l.classId) && (
                           <Link
                             to={`/class/${lessons.find(l => l.classId).classId}`}
