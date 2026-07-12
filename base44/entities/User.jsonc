@@ -7,6 +7,11 @@
         "admin",
         "user"
       ]
+    },
+    "onboarding_completed": {
+      "type": "boolean",
+      "description": "Whether the user completed or skipped the first-time app guide",
+      "default": false
     }
   },
   "required": [
