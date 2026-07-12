@@ -19,16 +19,12 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
     (scheduleLessons || []).filter(l => l.dayOfWeek === day && Number(l.period) === Number(period));
 
   return (
-    <div className="overflow-x-auto no-scrollbar rounded-2xl glass-surface shadow-[0_12px_32px_-12px_rgba(10,20,45,0.25)]" dir="rtl">
+    <div className="schedule-grid overflow-x-auto no-scrollbar rounded-2xl" dir="rtl">
       <table className="border-separate border-spacing-0 w-full min-w-[620px]">
         <thead>
           <tr>
             <th
-              className="sticky right-0 z-20 w-12 h-11 p-0 text-primary rounded-tr-2xl overflow-hidden backdrop-blur-xl"
-              style={{
-                background: 'linear-gradient(160deg, hsl(var(--primary) / 0.22), hsl(var(--card) / 0.55))',
-                boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,0.6), inset -1px 0 0 rgba(255,255,255,0.35), inset 0 -1px 0 hsl(var(--primary) / 0.2), 0 4px 12px -4px hsl(var(--primary) / 0.35)',
-              }}
+              className="schedule-corner sticky right-0 z-20 w-12 h-11 p-0 rounded-tr-2xl overflow-hidden border-b border-l border-border"
             >
               <div className="relative w-full h-full">
                 <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
@@ -41,16 +37,7 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
             {DAYS.map(d => (
               <th
                 key={d}
-                className={`h-11 text-sm font-black px-2 backdrop-blur-xl text-primary-foreground ${d === DAYS[DAYS.length - 1] ? 'rounded-tl-2xl' : ''}`}
-                style={d === today
-                  ? {
-                      background: 'linear-gradient(160deg, hsl(var(--primary) / 0.92), hsl(var(--primary) / 0.75))',
-                      boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.1), 0 6px 16px -6px hsl(var(--primary) / 0.6)',
-                    }
-                  : {
-                      background: 'linear-gradient(160deg, hsl(var(--primary) / 0.60), hsl(var(--primary) / 0.38))',
-                      boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,0.45), inset 1px 0 0 rgba(255,255,255,0.18), inset 0 -1px 0 hsl(var(--primary) / 0.35)',
-                    }}
+                className={`schedule-day-head h-11 text-sm font-black px-2 border-b border-l border-border ${d === today ? 'is-today' : ''} ${d === DAYS[DAYS.length - 1] ? 'rounded-tl-2xl' : ''}`}
               >
                 {DAY_NAMES[d]}
               </th>
@@ -61,20 +48,16 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
           {PERIODS.map((p, rowIdx) => (
             <tr key={p}>
               <th
-                className="sticky right-0 z-10 border-b border-l border-border/40 p-1 backdrop-blur-xl"
-style={{
-                  background: 'linear-gradient(160deg, hsl(var(--primary) / 0.55), hsl(var(--primary) / 0.32))',
-                  boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.25), inset 1.5px 0 0 rgba(255,255,255,0.3)',
-                }}
+                className="schedule-period-head sticky right-0 z-10 border-b border-l border-border p-1"
               >
-                <div className={`w-8 h-8 mx-auto rounded-lg flex items-center justify-center text-sm font-black ${p === currentPeriod ? 'text-primary-foreground shadow-[inset_0_1.5px_0_rgba(255,255,255,0.5),0_4px_10px_-3px_hsl(var(--primary)/0.6)] bg-gradient-to-b from-primary to-primary/80' : 'text-primary-foreground'}`}>
+                <div className={`w-8 h-8 mx-auto rounded-lg flex items-center justify-center text-sm font-black ${p === currentPeriod ? 'text-primary-foreground bg-primary ring-1 ring-primary/50' : ''}`}>
                   {p}
                 </div>
               </th>
               {DAYS.map(d => {
                 const dayHasPeriod = periodsForDay(d).includes(p);
                 if (!dayHasPeriod) {
-                  return <td key={d} className="h-14 min-w-[92px] border-b border-l border-border/50 bg-muted/60" />;
+                  return <td key={d} className="schedule-cell is-unavailable h-14 min-w-[92px] border-b border-l border-border" />;
                 }
                 const cellLessons = lessonsAt(d, p);
                 const isTodayCol = d === today;
@@ -83,22 +66,14 @@ style={{
                   <td
                     key={d}
                     onClick={() => onCellClick(d, p, cellLessons[0] || null)}
-                    className={`h-14 min-w-[92px] border-b border-l border-border/50 p-1 cursor-pointer transition-colors align-middle
-                      ${isTodayCol ? 'bg-primary/5 border-l-primary/40' : rowIdx % 2 === 1 ? 'bg-muted/30' : 'bg-card/60'}
-                      ${isTodayCol && p === currentPeriod ? 'bg-primary/15 shadow-inner' : ''}
-                      hover:bg-primary/10`}
+                    className={`schedule-cell h-14 min-w-[92px] border-b border-l border-border p-1 cursor-pointer transition-colors align-middle
+                      ${isTodayCol ? 'is-today' : rowIdx % 2 === 1 ? 'is-alternate' : ''}
+                      ${isTodayCol && p === currentPeriod ? 'is-current' : ''}
+                      hover:brightness-110`}
                   >
                     {cellLessons.length > 0 ? (
-                      <div
-                        className="text-center space-y-0.5 rounded-xl px-1 py-1 backdrop-blur-md"
-                        style={{
-                          background: 'linear-gradient(160deg, hsl(var(--primary) / 0.16), hsl(var(--card) / 0.55))',
-                          boxShadow: isLiveNow
-                            ? 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 2px hsl(var(--primary)), 0 4px 12px -4px hsl(var(--primary) / 0.55)'
-                            : 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 1px hsl(var(--primary) / 0.15), 0 4px 10px -4px hsl(var(--primary) / 0.35)',
-                        }}
-                      >
-                        <p className="text-xs font-bold text-primary truncate leading-tight">
+                      <div className={`schedule-lesson text-center space-y-0.5 rounded-xl px-1 py-1 ${isLiveNow ? 'is-live' : ''}`}>
+                        <p className="text-xs font-bold truncate leading-tight">
                           {[...new Set(cellLessons.map(l => l.subject || 'חינוך גופני'))].join(', ')}
                         </p>
                         {(() => {
@@ -107,7 +82,7 @@ style={{
                             .filter(Boolean)
                             .join(', ');
                           return names ? (
-                            <p className="text-[10px] text-primary/70 truncate leading-tight">{names}</p>
+                            <p className="text-[10px] text-muted-foreground truncate leading-tight">{names}</p>
                           ) : null;
                         })()}
                       </div>
