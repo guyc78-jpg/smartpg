@@ -1,5 +1,5 @@
 {
-  "name": "Migrated from Lovable",
+  "name": "יומן חנ״ג חכם",
   "site": {
     "installCommand": "npm install",
     "buildCommand": "npm run build",
