@@ -5,6 +5,12 @@ import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { exportTestsToExcel, exportTestsToWord, rowsToTests } from '@/lib/testImportExport';
+import {
+  enforceRowCap,
+  MAX_TEST_IMPORT_ROWS,
+  uploadPrivateFileForExtraction,
+  validateImportFile,
+} from '@/lib/fileImportSecurity';
 import TestImportDialog from '@/components/tests/TestImportDialog.jsx';
 import CopyTestsDialog from '@/components/tests/CopyTestsDialog.jsx';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
@@ -38,20 +44,24 @@ export default function TestImportExport({ tests, allTests, onImport, onDeleteAl
     if (!file) return;
     setParsing(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { extension } = validateImportFile(file, {
+        allowedExtensions: ['.xlsx', '.xls', '.csv', '.docx', '.pdf'],
+      });
+      const fileUrl = await uploadPrivateFileForExtraction(base44, file);
 
       // Word files (e.g. גיליונות אות הכושר) are parsed by a dedicated backend parser
-      if (/\.docx?$/i.test(file.name)) {
-        const { data } = await base44.functions.invoke('parseTestDocx', { file_url });
+      if (extension === '.docx') {
+        const { data } = await base44.functions.invoke('parseTestDocx', { file_url: fileUrl });
         if (data.error) throw new Error(data.error);
-        const rows = (data.rows || []).map(r => ({ ...r, gender: data.gender || '' }));
+        const rows = enforceRowCap(data.rows || [], MAX_TEST_IMPORT_ROWS, 'שורות')
+          .map(r => ({ ...r, gender: data.gender || '' }));
         const glMatch = (data.grade_level || '').match(/יב|יא|[זחטי]/);
         openPreview(rowsToTests(rows), glMatch ? glMatch[0] : '');
         return;
       }
 
       const res = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
+        file_url: fileUrl,
         json_schema: {
           type: 'object',
           description: 'קובץ המכיל מבדקי חינוך גופני עם טבלאות המרה מתוצאה לציון. כל מבדק מזוהה לפי שם המבדק (למשל "ריצת 1000 מטר", "כפיפות בטן", "שכיבות סמיכה"). שים לב: "מינימום", "מקסימום" ו"ציון" הם כותרות עמודות של טבלת ההמרה — הם לעולם אינם שמות מבדקים. יש לחלץ שורה אחת עבור כל שורת טבלת המרה, ולשייך אותה לשם המבדק שאליו הטבלה שייכת.',
@@ -76,7 +86,11 @@ export default function TestImportExport({ tests, allTests, onImport, onDeleteAl
         },
       });
       if (res.status !== 'success') throw new Error(res.details || 'extract failed');
-      const rows = Array.isArray(res.output) ? res.output : res.output?.rows || [];
+      const rows = enforceRowCap(
+        Array.isArray(res.output) ? res.output : res.output?.rows || [],
+        MAX_TEST_IMPORT_ROWS,
+        'שורות',
+      );
       openPreview(rowsToTests(rows), '');
     } catch (err) {
       console.error('Test import failed:', err);
@@ -141,7 +155,7 @@ export default function TestImportExport({ tests, allTests, onImport, onDeleteAl
           {deletingAll ? 'מוחק…' : 'מחק הכל'}
         </button>
       )}
-      <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.doc,.docx,.pdf" className="hidden" onChange={handleFile} />
+      <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.docx,.pdf" className="hidden" onChange={handleFile} />
 
       <ConfirmDeleteDialog
         open={deleteAllOpen}

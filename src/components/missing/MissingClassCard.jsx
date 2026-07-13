@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronUp, MessageCircle, PenLine } from 'lucide-react';
+import { ChevronDown, ChevronUp, MessageCircle, PenLine, Settings2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatStudentName } from '@/lib/studentName';
+import EducatorManagerDialog from '@/components/whatsapp/EducatorManagerDialog';
 import WhatsAppMessageDialog from '@/components/whatsapp/WhatsAppMessageDialog';
 
-export default function MissingClassCard({ cls, testGroups, totalMissing }) {
+export default function MissingClassCard({ cls, testGroups, totalMissing, isAdmin = false, onSaveContacts }) {
   const [open, setOpen] = useState(false);
   const [messageDraft, setMessageDraft] = useState(null);
+  const [managerOpen, setManagerOpen] = useState(false);
   const contacts = useMemo(() => (Array.isArray(cls.homeroomContacts) ? cls.homeroomContacts : []).map((contact, index) => ({
     id: contact.id || `educator_${cls.id}_${index}`,
     name: contact.name || '',
@@ -29,9 +32,21 @@ export default function MissingClassCard({ cls, testGroups, totalMissing }) {
     ...testGroups.map(group => `• ${group.test.name}: ${group.students.length} תלמידים`),
   ].join('\n'), [cls.name, testGroups, totalMissing]);
 
+  const requestMessage = draft => {
+    if (contacts.length > 0) {
+      setMessageDraft(draft);
+      return;
+    }
+    if (isAdmin) {
+      setManagerOpen(true);
+      return;
+    }
+    toast.info('לא הוגדרו פרטי מחנכ/ת לכיתה זו');
+  };
+
   const openStudentMessage = student => {
     const missing = missingByStudent.get(student.id);
-    setMessageDraft({
+    requestMessage({
       student,
       students: [student],
       messageType: 'missing_tests',
@@ -40,7 +55,7 @@ export default function MissingClassCard({ cls, testGroups, totalMissing }) {
     });
   };
 
-  const openClassSummary = () => setMessageDraft({
+  const openClassSummary = () => requestMessage({
     student: null,
     students: [],
     messageType: 'general',
@@ -66,13 +81,23 @@ export default function MissingClassCard({ cls, testGroups, totalMissing }) {
             onClick={openClassSummary}
             aria-label={`שליחת סיכום חוסרים של ${cls.name} למחנכ/ת`}
             title="שליחת סיכום חוסרים למחנכ/ת"
-            className="h-9 w-9 shrink-0 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+            className="h-11 w-11 shrink-0 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <MessageCircle className="h-4 w-4" />
           </button>
         </div>
         {open && (
           <div className="px-4 pb-3 space-y-3">
+            {contacts.length === 0 && (
+              <div className="rounded-xl border border-dashed border-border bg-muted/35 p-3 text-xs text-muted-foreground flex items-center justify-between gap-2">
+                <span>לא הוגדרו פרטי מחנכ/ת לכיתה זו.</span>
+                {isAdmin && (
+                  <button type="button" onClick={() => setManagerOpen(true)} className="min-h-11 shrink-0 inline-flex items-center gap-1.5 rounded-xl px-3 font-bold text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <Settings2 className="h-4 w-4" aria-hidden="true" /> ניהול
+                  </button>
+                )}
+              </div>
+            )}
             {testGroups.map(group => (
               <div key={group.test.id} className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
@@ -85,7 +110,7 @@ export default function MissingClassCard({ cls, testGroups, totalMissing }) {
                 <div className="flex flex-wrap gap-1.5 justify-start">
                   {group.students.map(student => (
                     <div key={student.id} className="inline-flex items-center overflow-hidden rounded-lg bg-muted transition-colors hover:bg-secondary">
-                      <Link to={`/class/${cls.id}/student/${student.id}`} className="px-2 py-1 text-[11px] font-semibold">
+                      <Link to={`/class/${cls.id}/student/${student.id}`} className="min-h-11 px-2 py-1 text-[11px] font-semibold inline-flex items-center">
                         {formatStudentName(student)}
                       </Link>
                       <button
@@ -93,7 +118,7 @@ export default function MissingClassCard({ cls, testGroups, totalMissing }) {
                         onClick={() => openStudentMessage(student)}
                         aria-label={`שליחת הודעה למחנכ/ת על החוסרים של ${formatStudentName(student)}`}
                         title="שליחת חוסרים למחנכ/ת"
-                        className="h-7 w-7 border-r border-border/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                        className="h-11 w-11 border-r border-border/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       >
                         <MessageCircle className="h-3.5 w-3.5" />
                       </button>
@@ -116,7 +141,19 @@ export default function MissingClassCard({ cls, testGroups, totalMissing }) {
         initialMessageType={messageDraft?.messageType || 'general'}
         initialNote={messageDraft?.note || ''}
         missingTestNames={messageDraft?.missingTestNames || []}
+        canManage={isAdmin}
+        onManage={() => { setMessageDraft(null); setManagerOpen(true); }}
       />
+      {isAdmin && (
+        <EducatorManagerDialog
+          open={managerOpen}
+          onOpenChange={setManagerOpen}
+          className={cls.name}
+          contacts={contacts}
+          onSave={onSaveContacts}
+          onStartMessage={() => { setManagerOpen(false); openClassSummary(); }}
+        />
+      )}
     </>
   );
 }

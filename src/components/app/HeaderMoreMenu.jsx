@@ -8,11 +8,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Bell, BookOpenCheck, LogOut, Moon, Settings, Sun, Timer, UserCheck } from 'lucide-react';
-import { toast } from 'sonner';
+import { MoreHorizontal, BookOpenCheck, LogOut, Moon, Settings, Sun, Timer, UserCheck } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 
-const itemClass = 'flex items-center justify-start gap-2.5 text-sm font-medium cursor-pointer rounded-lg px-2.5 py-2 text-right';
+const itemClass = 'flex min-h-11 items-center justify-start gap-2.5 text-sm font-medium cursor-pointer rounded-lg px-2.5 py-2 text-right';
 
 export default function HeaderMoreMenu({ items = [] }) {
   const { dark, toggle } = useTheme();
@@ -24,10 +23,11 @@ export default function HeaderMoreMenu({ items = [] }) {
     <DropdownMenu dir="rtl">
       <DropdownMenuTrigger asChild>
         <button
+          type="button"
           aria-label="עוד פעולות"
-          className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full liquid-chip text-muted-foreground"
+          className="h-11 w-11 shrink-0 flex items-center justify-center rounded-full liquid-chip text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <MoreHorizontal className="w-4 h-4" />
+          <MoreHorizontal className="w-4 h-4" aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="bottom" dir="rtl" className="w-56 rounded-2xl glass-surface shadow-xl p-1.5 text-right">
@@ -37,7 +37,7 @@ export default function HeaderMoreMenu({ items = [] }) {
             onClick={item.onClick}
             className={`${itemClass} ${item.destructive ? 'text-destructive focus:text-destructive' : ''}`}
           >
-            {item.icon && <item.icon className="w-4 h-4 shrink-0" />}
+            {item.icon && <item.icon className="w-4 h-4 shrink-0" aria-hidden="true" />}
             {item.label}
           </DropdownMenuItem>
         ))}
@@ -53,9 +53,6 @@ export default function HeaderMoreMenu({ items = [] }) {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate('/settings')} className={itemClass}>
           <Settings className="w-4 h-4 shrink-0" /> הגדרות
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => toast('אין התראות חדשות')} className={itemClass}>
-          <Bell className="w-4 h-4 shrink-0" /> התראות
         </DropdownMenuItem>
         <DropdownMenuItem onClick={toggle} className={itemClass}>
           {dark ? <Sun className="w-4 h-4 shrink-0" /> : <Moon className="w-4 h-4 shrink-0" />}

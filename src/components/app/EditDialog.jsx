@@ -28,14 +28,15 @@ export function Field({ label, children, id }) {
 
 export default function EditDialog({ open, onOpenChange, title, children, onSave, canSave = true, saveLabel = 'שמור', onDelete }) {
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (open) { setSaving(false); setError(''); }
+    if (open) { setSaving(false); setDeleting(false); setError(''); }
   }, [open]);
 
   const handleSave = async () => {
-    if (!canSave || saving) return;
+    if (!canSave || saving || deleting) return;
     setSaving(true);
     setError('');
     try {
@@ -48,8 +49,24 @@ export default function EditDialog({ open, onOpenChange, title, children, onSave
     }
   };
 
+  const handleDelete = async () => {
+    if (!onDelete || saving || deleting) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await onDelete();
+      onOpenChange(false);
+    } catch (e) {
+      setError(e?.response?.data?.detail || e?.message || 'המחיקה נכשלה. בדקו את החיבור ונסו שוב.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const busy = saving || deleting;
+
   return (
-    <Dialog open={open} onOpenChange={v => { if (!saving) onOpenChange(v); }}>
+    <Dialog open={open} onOpenChange={v => { if (!busy) onOpenChange(v); }}>
       <DialogContent className="max-w-[420px] rounded-2xl p-0 overflow-hidden bg-background border border-border" dir="rtl">
         <DialogHeader className="px-5 pt-5 pb-0 text-right">
           <DialogTitle className="text-lg font-bold text-foreground text-right">{title}</DialogTitle>
@@ -65,15 +82,15 @@ export default function EditDialog({ open, onOpenChange, title, children, onSave
           )}
 
           <div className="flex gap-2 pt-1">
-            <Button onClick={handleSave} disabled={!canSave || saving} className="flex-1 h-11 rounded-xl font-bold text-sm">
+            <Button type="button" onClick={handleSave} disabled={!canSave || busy} className="flex-1 h-11 rounded-xl font-bold text-sm">
               {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> שומר...</> : saveLabel}
             </Button>
             {onDelete && (
-              <Button variant="outline" disabled={saving} onClick={onDelete} className="h-11 rounded-xl px-4 text-destructive hover:text-destructive" aria-label="מחיקה">
-                <Trash2 className="w-4 h-4" />
+              <Button type="button" variant="outline" disabled={busy} onClick={handleDelete} className="h-11 rounded-xl px-4 text-destructive hover:text-destructive" aria-label="מחיקה" aria-busy={deleting}>
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               </Button>
             )}
-            <Button variant="outline" disabled={saving} onClick={() => onOpenChange(false)} className="h-11 rounded-xl px-5 font-semibold text-foreground">ביטול</Button>
+            <Button type="button" variant="outline" disabled={busy} onClick={() => onOpenChange(false)} className="h-11 rounded-xl px-5 font-semibold text-foreground">ביטול</Button>
           </div>
         </div>
       </DialogContent>

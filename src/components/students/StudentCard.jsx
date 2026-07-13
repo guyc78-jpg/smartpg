@@ -52,14 +52,14 @@ export default function StudentCard({ student, classId, displayGrade, annual, vi
         </div>
 
         <div className="flex flex-col gap-1 shrink-0">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400" aria-label="שליחת WhatsApp למחנך/ת" title="WhatsApp למחנך/ת" onClick={onWhatsApp}>
-            <MessageCircle className="w-4 h-4" />
+          <Button variant="ghost" size="icon" className="h-11 w-11 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400" aria-label="שליחת WhatsApp למחנך/ת" title="WhatsApp למחנך/ת" onClick={onWhatsApp}>
+            <MessageCircle className="w-4 h-4" aria-hidden="true" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="עריכת תלמיד" onClick={onEdit}>
-            <Edit2 className="w-3.5 h-3.5" />
+          <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="עריכת תלמיד" onClick={onEdit}>
+            <Edit2 className="w-3.5 h-3.5" aria-hidden="true" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="מחיקת תלמיד" onClick={onDelete}>
-            <Trash2 className="w-3.5 h-3.5 text-destructive/70" />
+          <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="מחיקת תלמיד" onClick={onDelete}>
+            <Trash2 className="w-3.5 h-3.5 text-destructive/70" aria-hidden="true" />
           </Button>
         </div>
       </div>

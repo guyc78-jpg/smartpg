@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk';
 import webpush from 'npm:web-push@3.6.7';
+import { normalizeAllowedPushEndpoint } from './pushEndpointSecurity.js';
 
 const MAX_TITLE_LENGTH = 100;
 const MAX_BODY_LENGTH = 300;
@@ -23,11 +24,13 @@ Deno.serve(async (req) => {
     const { title, body, url, endpoint } = await req.json();
     const normalizedTitle = String(title || '').trim().slice(0, MAX_TITLE_LENGTH);
     const normalizedBody = String(body || '').trim().slice(0, MAX_BODY_LENGTH);
-    const normalizedEndpoint = String(endpoint || '').trim();
-    if (!normalizedTitle) return Response.json({ error: 'title is required' }, { status: 400 });
-    if (!normalizedEndpoint || normalizedEndpoint.length > 2048) {
-      return Response.json({ error: 'A valid endpoint is required' }, { status: 400 });
+    let normalizedEndpoint;
+    try {
+      normalizedEndpoint = normalizeAllowedPushEndpoint(endpoint);
+    } catch {
+      return Response.json({ error: 'A valid push endpoint is required' }, { status: 400 });
     }
+    if (!normalizedTitle) return Response.json({ error: 'title is required' }, { status: 400 });
 
     const publicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     const privateKey = Deno.env.get('VAPID_PRIVATE_KEY');
@@ -48,7 +51,7 @@ Deno.serve(async (req) => {
     const payload = JSON.stringify({ title: normalizedTitle, body: normalizedBody, url: safePath(url) });
     try {
       await webpush.sendNotification(
-        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        { endpoint: normalizedEndpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         payload,
       );
     } catch (error: any) {

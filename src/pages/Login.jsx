@@ -10,7 +10,11 @@ export default function Login() {
   };
 
   return (
-    <div dir="rtl" className="relative min-h-screen flex items-center justify-center app-loader-bg px-4">
+    <main
+      id="route-main-content"
+      dir="rtl"
+      className="relative min-h-screen flex items-center justify-center app-loader-bg px-4"
+    >
       <button
         type="button"
         onClick={toggle}
@@ -85,6 +89,6 @@ export default function Login() {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

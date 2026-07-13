@@ -16,8 +16,8 @@ export function isValidWhatsAppPhone(phone) {
 }
 
 export function getWhatsAppUrl(phone, message = '') {
+  if (!isValidWhatsAppPhone(phone)) return null;
   const normalized = normalizeWhatsAppPhone(phone);
-  if (!isValidWhatsAppPhone(normalized)) return null;
   return `https://wa.me/${normalized}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
 }
 

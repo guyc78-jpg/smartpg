@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useApp, generateId } from '@/store/AppProvider';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ export default function ManageTestsPage() {
   const [selectedGenderTrack, setSelectedGenderTrack] = useState(defaultGenderTrack);
   const [selectedType, setSelectedType] = useState('all');
   const [deleteTestTarget, setDeleteTestTarget] = useState(null);
+  const activeClasses = useMemo(() => data.classes.filter(c => (c.status || 'active') === 'active'), [data.classes]);
 
   useEffect(() => { setSelectedGenderTrack(defaultGenderTrack); }, [defaultGenderTrack]);
 
@@ -139,7 +140,7 @@ export default function ManageTestsPage() {
                       <Field label="שם מבדק"><Input value={test.name} onChange={e => updateField(test, 'name', e.target.value)} className="h-8 text-sm" /></Field>
                       <Field label="סוג מבדק"><select value={test.testType || 'other'} onChange={e => updateField(test, 'testType', e.target.value)} className={selectClass}>{Object.entries(TEST_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
                       <Field label="שכבה"><select value={test.gradeLevel || 'ז'} onChange={e => updateField(test, 'gradeLevel', e.target.value)} className={selectClass}>{GRADE_LEVELS.map(gl => <option key={gl} value={gl}>{gl}׳</option>)}</select></Field>
-                      <Field label="כיתה"><select value={test.classId || ''} onChange={e => updateField(test, 'classId', e.target.value)} className={selectClass}><option value="">כל הכיתות בשכבה</option>{data.classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
+                      <Field label="כיתה"><select value={test.classId || ''} onChange={e => updateField(test, 'classId', e.target.value)} className={selectClass}><option value="">כל הכיתות בשכבה</option>{test.classId && !activeClasses.some(c => c.id === test.classId) && <option value={test.classId} disabled>{className || 'כיתה בארכיון'} (ארכיון)</option>}{activeClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
                       <Field label="מגדר"><select value={test.genderTrack || 'boys'} onChange={e => updateField(test, 'genderTrack', e.target.value)} className={selectClass}>{Object.entries(GENDER_TRACK_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
                       <Field label="מחצית"><select value={test.semester || ''} onChange={e => updateField(test, 'semester', e.target.value)} className={selectClass}><option value="">כל המחציות</option>{Object.entries(SEMESTER_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
                       <Field label="תאריך"><Input type="date" value={test.testDate || ''} onChange={e => updateField(test, 'testDate', e.target.value)} className="h-8 text-sm" /></Field>

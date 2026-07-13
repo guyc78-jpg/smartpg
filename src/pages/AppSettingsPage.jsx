@@ -29,9 +29,17 @@ export default function AppSettingsPage() {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    const gradeValues = [penaltyScore, minCompletedGrade, redBelow, greenAt];
+    if (gradeValues.some(value => !Number.isFinite(value) || value < 0 || value > 100)) {
+      toast.error('כל ערכי הציונים חייבים להיות בין 0 ל־100');
+      return;
+    }
     setSaving(true);
     try {
       await updateSettings({
+        teacherName: teacherName.trim(),
+        schoolName: schoolName.trim(),
+        defaultSemester,
         penaltyScore, autoConvertMissing, minCompletedGrade,
         gradeColorThresholds: { redBelow, greenAt },
       });
@@ -56,12 +64,12 @@ export default function AppSettingsPage() {
             <h3 className="font-semibold text-sm">פרטי מורה</h3>
             <div className="space-y-2">
               <div className="space-y-1">
-                <Label className="text-xs">שם המורה</Label>
-                <Input value={teacherName} onChange={e => setTeacherName(e.target.value)} placeholder="שם מלא" className="h-8 text-sm" />
+                <Label htmlFor="settings-teacher-name" className="text-xs">שם המורה</Label>
+                <Input id="settings-teacher-name" value={teacherName} onChange={e => setTeacherName(e.target.value)} placeholder="שם מלא" className="h-8 text-sm" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">שם המוסד</Label>
-                <Input value={schoolName} onChange={e => setSchoolName(e.target.value)} placeholder="שם בית הספר" className="h-8 text-sm" />
+                <Label htmlFor="settings-school-name" className="text-xs">שם המוסד</Label>
+                <Input id="settings-school-name" value={schoolName} onChange={e => setSchoolName(e.target.value)} placeholder="שם בית הספר" className="h-8 text-sm" />
               </div>
             </div>
           </CardContent>
@@ -73,9 +81,9 @@ export default function AppSettingsPage() {
             <h3 className="font-semibold text-sm">ברירות מחדל</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">מחצית ברירת מחדל</Label>
+                <Label htmlFor="settings-default-semester" className="text-xs">מחצית ברירת מחדל</Label>
                 <Select value={defaultSemester} onValueChange={v => setDefaultSemester(v)}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="settings-default-semester" className="h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="A">מחצית א׳</SelectItem>
                     <SelectItem value="B">מחצית ב׳</SelectItem>
@@ -83,9 +91,9 @@ export default function AppSettingsPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">מסלול ברירת מחדל</Label>
+                <Label htmlFor="settings-gender-track" className="text-xs">מסלול ברירת מחדל</Label>
                 <Select value={genderTrack} onValueChange={v => setGenderTrack(v)}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="settings-gender-track" className="h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="boys">בנים</SelectItem>
                     <SelectItem value="girls">בנות</SelectItem>
@@ -105,44 +113,44 @@ export default function AppSettingsPage() {
             <h3 className="font-semibold text-sm">חישוב ציונים</h3>
 
             <div className="space-y-1">
-              <Label className="text-xs">ציון עונשין לאי-ביצוע</Label>
+              <Label htmlFor="settings-penalty-score" className="text-xs">ציון עונשין לאי-ביצוע</Label>
               <div className="flex items-center gap-3">
-                <Input type="number" min={0} max={100} value={penaltyScore} onChange={e => setPenaltyScore(Number(e.target.value))} className="h-8 text-sm w-20" />
-                <span className="text-xs text-muted-foreground">ציון שמוקצה לתלמיד שלא ביצע מבדק (ברירת מחדל: 15)</span>
+                <Input id="settings-penalty-score" aria-describedby="settings-penalty-score-help" type="number" min={0} max={100} value={penaltyScore} onChange={e => setPenaltyScore(Number(e.target.value))} className="h-8 text-sm w-20" />
+                <span id="settings-penalty-score-help" className="text-xs text-muted-foreground">ציון שמוקצה לתלמיד שלא ביצע מבדק (ברירת מחדל: 15)</span>
               </div>
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">ציון מינימום לביצוע מבדק</Label>
+              <Label htmlFor="settings-min-completed-grade" className="text-xs">ציון מינימום לביצוע מבדק</Label>
               <div className="flex items-center gap-3">
-                <Input type="number" min={0} max={100} value={minCompletedGrade} onChange={e => setMinCompletedGrade(Number(e.target.value))} className="h-8 text-sm w-20" />
-                <span className="text-xs text-muted-foreground">ציון רצפה לביצוע (ברירת מחדל: 56)</span>
+                <Input id="settings-min-completed-grade" aria-describedby="settings-min-completed-grade-help" type="number" min={0} max={100} value={minCompletedGrade} onChange={e => setMinCompletedGrade(Number(e.target.value))} className="h-8 text-sm w-20" />
+                <span id="settings-min-completed-grade-help" className="text-xs text-muted-foreground">ציון רצפה לביצוע (ברירת מחדל: 56)</span>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <Switch checked={autoConvertMissing} onCheckedChange={setAutoConvertMissing} />
+              <Switch id="settings-auto-convert-missing" aria-describedby="settings-auto-convert-missing-help" checked={autoConvertMissing} onCheckedChange={setAutoConvertMissing} />
               <div>
-                <Label className="text-xs">המרה אוטומטית של חסרים</Label>
-                <p className="text-[10px] text-muted-foreground">חסרים יחושבו אוטומטית כ"לא ביצע"</p>
+                <Label htmlFor="settings-auto-convert-missing" className="text-xs">המרה אוטומטית של חסרים</Label>
+                <p id="settings-auto-convert-missing-help" className="text-[10px] text-muted-foreground">חסרים יחושבו אוטומטית כ"לא ביצע"</p>
               </div>
             </div>
 
             <Separator />
 
             <div className="space-y-2">
-              <Label className="text-xs">סף ציון אדום</Label>
+              <Label htmlFor="settings-red-below" className="text-xs">סף ציון אדום</Label>
               <div className="flex items-center gap-3">
-                <Input type="number" min={0} max={100} value={redBelow} onChange={e => setRedBelow(Number(e.target.value))} className="h-8 text-sm w-20" />
-                <span className="text-xs text-muted-foreground">ציונים מתחת יסומנו באדום</span>
+                <Input id="settings-red-below" aria-describedby="settings-red-below-help" type="number" min={0} max={100} value={redBelow} onChange={e => setRedBelow(Number(e.target.value))} className="h-8 text-sm w-20" />
+                <span id="settings-red-below-help" className="text-xs text-muted-foreground">ציונים מתחת יסומנו באדום</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Save */}
-        <Button onClick={handleSave} disabled={saving} className="w-full h-11 rounded-xl btn-3d font-semibold text-sm">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Save className="w-4 h-4 ml-2" />}
+        <Button onClick={handleSave} disabled={saving} aria-busy={saving} className="w-full h-11 rounded-xl btn-3d font-semibold text-sm">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin ml-2" aria-hidden="true" /> : <Save className="w-4 h-4 ml-2" aria-hidden="true" />}
           שמור הגדרות
         </Button>
       </div>

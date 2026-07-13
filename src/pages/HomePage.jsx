@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ChevronDown, Users } from 'lucide-react';
+import { Archive, ChevronDown, RotateCcw, Users } from 'lucide-react';
 import { useApp } from '@/store/AppProvider';
 import { useAuth } from '@/lib/AuthContext';
 import BottomNav from '@/components/app/BottomNav';
@@ -23,10 +23,11 @@ const classGradeOf = (c) => {
 };
 
 export default function HomePage() {
-  const { data, addClass, addStudent, editClass, deleteClass, archiveClass, deleteAllData, updateHomeroomContacts, defaultGenderTrack } = useApp();
+  const { data, addClass, addStudent, editClass, deleteClass, archiveClass, restoreClass, deleteAllData, updateHomeroomContacts, defaultGenderTrack } = useApp();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [myClassesOpen, setMyClassesOpen] = useState(true);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const [gradeFilter, setGradeFilter] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -46,6 +47,13 @@ export default function HomePage() {
       .filter(c => (c.status || 'active') === 'active')
       .sort((a, b) => gradeIdx(a) - gradeIdx(b) || numOf(a) - numOf(b) || (a.name || '').localeCompare(b.name || '', 'he'));
   }, [data.classes]);
+  const archivedClasses = useMemo(() => (data.classes || [])
+    .filter(c => c.status === 'archived')
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he', { numeric: true })), [data.classes]);
+  const activeStudentCount = useMemo(() => {
+    const activeClassIds = new Set(activeClasses.map(cls => cls.id));
+    return (data.students || []).filter(student => activeClassIds.has(student.classId)).length;
+  }, [activeClasses, data.students]);
   const classById = useMemo(() => Object.fromEntries(data.classes.map(c => [c.id, c])), [data.classes]);
 
   const visibleClasses = useMemo(() => {
@@ -82,9 +90,29 @@ export default function HomePage() {
     toast.success('הכיתה עודכנה');
   };
 
+  const handleRestoreClass = async (cls) => {
+    try {
+      await restoreClass(cls.id);
+      toast.success(`כיתה ${cls.name} שוחזרה`);
+    } catch (error) {
+      console.error('Failed to restore class', error);
+      toast.error('שחזור הכיתה נכשל');
+    }
+  };
+
   const handleArchiveClass = async (cls) => {
-    await archiveClass(cls.id);
-    toast.success('הכיתה הועברה לארכיון');
+    try {
+      await archiveClass(cls.id);
+      toast.success('הכיתה הועברה לארכיון', {
+        action: {
+          label: 'בטל',
+          onClick: () => handleRestoreClass(cls),
+        },
+      });
+    } catch (error) {
+      console.error('Failed to archive class', error);
+      toast.error('העברת הכיתה לארכיון נכשלה');
+    }
   };
 
   const handleDeleteClass = async () => {
@@ -104,7 +132,7 @@ export default function HomePage() {
       <HomeHeader />
 
       <main className="flex-1 px-4 pt-2 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-3">
-        <HomeStatsBar classCount={activeClasses.length} studentCount={data.students.length} />
+        <HomeStatsBar classCount={activeClasses.length} studentCount={activeStudentCount} />
         <DailyScheduleCard scheduleLessons={data.scheduleLessons || []} classById={classById} />
         <RiskAlertsCard />
 
@@ -151,6 +179,43 @@ export default function HomePage() {
               </p>
             )}
           </div>
+        )}
+
+        {archivedClasses.length > 0 && (
+          <section className="rounded-2xl border border-border/60 bg-card/55 overflow-hidden" aria-labelledby="archive-title">
+            <button
+              type="button"
+              onClick={() => setArchiveOpen(value => !value)}
+              aria-expanded={archiveOpen}
+              aria-controls="archived-classes-list"
+              className="min-h-11 w-full flex items-center gap-2 px-3 py-2 text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            >
+              <Archive className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <span id="archive-title" className="font-bold text-sm">ארכיון כיתות</span>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-black text-muted-foreground">{archivedClasses.length}</span>
+              <ChevronDown className={`mr-auto h-4 w-4 text-muted-foreground transition-transform ${archiveOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+            {archiveOpen && (
+              <div id="archived-classes-list" className="border-t border-border/50 p-2 space-y-1.5">
+                {archivedClasses.map(cls => (
+                  <div key={cls.id} className="min-h-12 flex items-center gap-2 rounded-xl bg-background/60 px-3 py-1.5">
+                    <div className="min-w-0 flex-1 text-right">
+                      <p className="truncate text-sm font-bold">{cls.name}</p>
+                      <p className="text-xs text-muted-foreground">{studentCountByClass[cls.id] || 0} תלמידים</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRestoreClass(cls)}
+                      className="min-h-11 shrink-0 inline-flex items-center gap-1.5 rounded-xl px-3 text-xs font-bold text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={`שחזור כיתה ${cls.name}`}
+                    >
+                      <RotateCcw className="h-4 w-4" aria-hidden="true" /> שחזר
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         )}
       </main>
 

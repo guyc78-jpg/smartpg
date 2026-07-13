@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { useMemo, useState } from 'react';
 import { SEMESTER_LABELS, TEST_STATUS_LABELS } from '@/lib/types';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { formatStudentName } from '@/lib/studentName';
+import { toast } from 'sonner';
 
 const resultStatuses = ['completed', 'not_participated', 'not_completed', 'exempt'];
 
@@ -18,6 +19,7 @@ export default function TestsPage() {
   const [selectedTestIdx, setSelectedTestIdx] = useState(0);
   const [listOpen, setListOpen] = useState(false);
   const [draftScores, setDraftScores] = useState({});
+  const [savingKeys, setSavingKeys] = useState({});
 
   const cls = data.classes.find(c => c.id === classId);
   const students = useMemo(
@@ -56,22 +58,49 @@ export default function TestsPage() {
     await setClassTestStatus(classId, testId, semester, status);
   };
 
-  const handleRawScore = async (studentId, testId, value) => {
-    if (value === '') {
-      await setTestResult(studentId, testId, semester, null, 'pending');
-      await updateConductedStatus(studentId, testId, 'pending');
-      return;
+  const runResultMutation = async (studentId, testId, action) => {
+    const key = `${studentId}:${testId}:${semester}`;
+    if (savingKeys[key]) return false;
+    setSavingKeys(current => ({ ...current, [key]: true }));
+    try {
+      await action();
+      return true;
+    } catch (error) {
+      console.error('Failed to save test result', error);
+      toast.error('שמירת תוצאת המבדק נכשלה. הערך נשאר לעריכה ואפשר לנסות שוב.');
+      return false;
+    } finally {
+      setSavingKeys(current => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
     }
-    const numericValue = Number(value);
-    if (!Number.isFinite(numericValue) || numericValue < 0) return;
-    await setTestResult(studentId, testId, semester, numericValue, 'completed');
-    await updateConductedStatus(studentId, testId, 'completed');
+  };
+
+  const handleRawScore = async (studentId, testId, value) => {
+    if (value !== '') {
+      const numericValue = Number(value);
+      if (!Number.isFinite(numericValue) || numericValue < 0) return false;
+    }
+    return runResultMutation(studentId, testId, async () => {
+      if (value === '') {
+        await setTestResult(studentId, testId, semester, null, 'pending');
+        await updateConductedStatus(studentId, testId, 'pending');
+        return;
+      }
+      const numericValue = Number(value);
+      await setTestResult(studentId, testId, semester, numericValue, 'completed');
+      await updateConductedStatus(studentId, testId, 'completed');
+    });
   };
 
   const handleStatus = async (studentId, testId, status, rawScore) => {
     if (status === 'completed' && (rawScore === null || rawScore === undefined)) return;
-    await setTestResult(studentId, testId, semester, status === 'completed' ? rawScore : null, status);
-    await updateConductedStatus(studentId, testId, status);
+    await runResultMutation(studentId, testId, async () => {
+      await setTestResult(studentId, testId, semester, status === 'completed' ? rawScore : null, status);
+      await updateConductedStatus(studentId, testId, status);
+    });
   };
 
   return (
@@ -79,7 +108,7 @@ export default function TestsPage() {
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
         <div className="flex gap-2">
           {['A', 'B'].map(s => (
-            <button key={s} type="button" onClick={() => { setSemester(s); setSelectedTestIdx(0); }} className={`flex-1 h-10 text-sm font-semibold rounded-full liquid-chip ${semester === s ? 'liquid-chip-active' : ''}`}>
+            <button key={s} type="button" aria-pressed={semester === s} onClick={() => { setSemester(s); setSelectedTestIdx(0); }} className={`flex-1 h-10 text-sm font-semibold rounded-full liquid-chip ${semester === s ? 'liquid-chip-active' : ''}`}>
               {SEMESTER_LABELS[s]}
             </button>
           ))}
@@ -90,7 +119,7 @@ export default function TestsPage() {
         ) : (
           <>
             <div className="relative">
-              <button onClick={() => setListOpen(o => !o)} className="w-full flex items-center justify-between btn-3d bg-card rounded-xl px-4 py-2 active:scale-[0.98] transition-all">
+              <button type="button" aria-expanded={listOpen} aria-controls="test-picker-options" onClick={() => setListOpen(o => !o)} className="w-full flex items-center justify-between btn-3d bg-card rounded-xl px-4 py-2 active:scale-[0.98] transition-all">
                 <div className="text-right">
                   <div className="font-bold text-sm">{currentTest?.name}</div>
                   <div className="text-[11px] text-muted-foreground">{currentTest?.unit || 'תוצאה'} • {currentIndex + 1} / {classTests.length}</div>
@@ -99,10 +128,10 @@ export default function TestsPage() {
               </button>
 
               {listOpen && (
-                <div className="absolute z-30 top-full mt-1 inset-x-0 bg-popover border border-border rounded-xl shadow-lg overflow-hidden">
+                <div id="test-picker-options" role="group" aria-label="בחירת מבדק" className="absolute z-30 top-full mt-1 inset-x-0 bg-popover border border-border rounded-xl shadow-lg overflow-hidden">
                   <div className="max-h-56 overflow-y-auto py-1">
                     {classTests.map((test, idx) => (
-                      <button key={test.id} onClick={() => { setSelectedTestIdx(idx); setListOpen(false); }} className={`w-full flex items-center justify-between px-4 py-2 text-right transition-colors ${idx === currentIndex ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted/50'}`}>
+                      <button key={test.id} type="button" aria-pressed={idx === currentIndex} onClick={() => { setSelectedTestIdx(idx); setListOpen(false); }} className={`w-full flex items-center justify-between px-4 py-2 text-right transition-colors ${idx === currentIndex ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted/50'}`}>
                         <span className="text-sm truncate">{test.name}</span>
                         <span className="text-[11px] text-muted-foreground shrink-0 mr-2">{getTestProgress(test.id)}/{students.length}</span>
                       </button>
@@ -131,6 +160,8 @@ export default function TestsPage() {
                 const result = data.results.find(r => r.studentId === student.id && r.testId === currentTest?.id && r.semester === semester);
                 const rawScore = result?.rawScore ?? null;
                 const status = student.peExempt ? 'exempt' : (result?.status || 'pending');
+                const resultKey = `${student.id}:${currentTest.id}:${semester}`;
+                const isSaving = Boolean(savingKeys[resultKey]);
                 const detailedGrade = status === 'completed' && rawScore !== null ? convertRawToGradeDetailed(rawScore, currentTest?.conversionTable) : null;
                 const finalGrade = status === 'completed' && detailedGrade?.grade !== null && detailedGrade?.grade !== undefined
                   ? Math.max(detailedGrade.grade, data.settings.minCompletedGrade ?? 56)
@@ -163,7 +194,8 @@ export default function TestsPage() {
                             <button
                               key={option}
                               type="button"
-                              disabled={(student.peExempt && option !== 'exempt') || (option === 'completed' && rawScore === null)}
+                              aria-pressed={status === option}
+                              disabled={isSaving || (student.peExempt && option !== 'exempt') || (option === 'completed' && rawScore === null)}
                               onClick={() => handleStatus(student.id, currentTest.id, option, rawScore)}
                               className={`h-7 px-2.5 text-[10px] font-medium rounded-full shrink-0 liquid-chip ${status === option ? 'liquid-chip-active' : ''}`}
                             >
@@ -171,22 +203,27 @@ export default function TestsPage() {
                             </button>
                           ))}
                         </div>
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min="0"
-                          value={draftScores[`${student.id}:${currentTest.id}:${semester}`] ?? rawScore ?? ''}
-                          disabled={student.peExempt || ['not_completed', 'not_participated', 'exempt'].includes(status)}
-                          onChange={e => setDraftScores(scores => ({ ...scores, [`${student.id}:${currentTest.id}:${semester}`]: e.target.value }))}
-                          onBlur={async e => {
-                            const key = `${student.id}:${currentTest.id}:${semester}`;
-                            await handleRawScore(student.id, currentTest.id, e.target.value);
-                            setDraftScores(scores => { const next = { ...scores }; delete next[key]; return next; });
-                          }}
-                          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                          className="w-full sm:w-24 h-8 text-center text-sm"
-                          placeholder={currentTest?.unit || 'תוצאה'}
-                        />
+                        <div className="relative w-full sm:w-24">
+                          <Input
+                            id={`test-score-${student.id}`}
+                            aria-label={`תוצאה עבור ${formatStudentName(student)} במבדק ${currentTest?.name || ''}`}
+                            aria-busy={isSaving}
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            value={draftScores[resultKey] ?? rawScore ?? ''}
+                            disabled={isSaving || student.peExempt || ['not_completed', 'not_participated', 'exempt'].includes(status)}
+                            onChange={e => setDraftScores(scores => ({ ...scores, [resultKey]: e.target.value }))}
+                            onBlur={async e => {
+                              const saved = await handleRawScore(student.id, currentTest.id, e.target.value);
+                              if (saved) setDraftScores(scores => { const next = { ...scores }; delete next[resultKey]; return next; });
+                            }}
+                            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                            className="w-full h-8 text-center text-sm"
+                            placeholder={currentTest?.unit || 'תוצאה'}
+                          />
+                          {isSaving && <Loader2 className="pointer-events-none absolute left-2 top-2 h-4 w-4 animate-spin text-primary" aria-hidden="true" />}
+                        </div>
                       </div>
 
                       {needsTable && <p className="text-[11px] text-amber-700 dark:text-amber-200">התוצאה נשמרה, אך הציון דורש הגדרת טבלת המרה.</p>}

@@ -10,6 +10,10 @@ export default function AppLoader({ exiting = false, onExited }) {
   return (
     <div
       dir="rtl"
+      role="status"
+      aria-live="polite"
+      aria-busy={!exiting}
+      aria-label="טוען את יומן חנ״ג חכם"
       className={`fixed inset-0 z-[100] flex items-center justify-center app-loader-bg transition-all duration-500 ease-out ${exiting ? 'opacity-0 scale-[1.04] pointer-events-none' : 'opacity-100'}`}
     >
       <div className="flex flex-col items-center gap-6">

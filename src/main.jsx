@@ -1,11 +1,19 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from '@/App.jsx'
 import '@/index.css'
-import { installGlobalErrorMonitoring } from '@/lib/observability'
+import { resetTokenVault } from '@/lib/resetTokenVault'
 
-installGlobalErrorMonitoring()
+async function bootstrap() {
+  // Capture and remove password-reset credentials before App/Auth modules are
+  // evaluated, so logging, monitoring and network clients never see the token.
+  resetTokenVault.captureFromBrowser()
+  const { installGlobalErrorMonitoring } = await import('@/lib/observability')
+  installGlobalErrorMonitoring()
+  const { default: App } = await import('@/App.jsx')
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <App />
-)
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <App />
+  )
+}
+
+bootstrap()

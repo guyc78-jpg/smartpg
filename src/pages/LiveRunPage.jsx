@@ -14,7 +14,7 @@ import EditParticipants from '@/components/live-run/EditParticipants';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { displayRunStudentName, secondsFromMs } from '@/components/live-run/runUtils';
 import { convertRawToGrade } from '@/lib/gradeCalc';
-import { isGradeableRunParticipant } from '@/components/live-run/runSetupUtils';
+import { countRunParticipants, isEligibleRunStudent, isGradeableRunStudent, planRunAttempt } from '@/components/live-run/runSetupUtils';
 
 export default function LiveRunPage() {
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ export default function LiveRunPage() {
     const byId = new Map(data.students.map(s => [s.id, s]));
     return session.selectedIds
       .map(id => byId.get(id) || session.studentsById?.[id])
-      .filter(Boolean);
+      .filter(isEligibleRunStudent);
   }, [data.students, session]);
 
   const currentClass = data.classes.find(c => c.id === session?.setup?.classId);
@@ -44,13 +44,8 @@ export default function LiveRunPage() {
   };
 
   const counts = useMemo(() => {
-    const values = Object.values(session?.participants || {});
-    return {
-      running: values.filter(p => p.status === 'running').length,
-      finished: values.filter(p => p.status === 'finished').length,
-      participating: values.filter(p => p.status === 'running' || p.status === 'finished').length,
-    };
-  }, [session]);
+    return countRunParticipants(selectedStudents, session?.participants);
+  }, [selectedStudents, session?.participants]);
 
   const handleLap = (studentId) => {
     const p = session?.participants?.[studentId];
@@ -61,7 +56,9 @@ export default function LiveRunPage() {
 
   const params = new URLSearchParams(window.location.search);
   const initial = { classId: params.get('classId') || '', period: params.get('period') || '', date: params.get('date') || '', lock: params.get('lock') === '1' };
-  const lockedClass = initial.lock && initial.classId ? data.classes.find(c => c.id === initial.classId) : null;
+  const lockedClass = initial.lock && initial.classId
+    ? data.classes.find(c => c.id === initial.classId && (c.status || 'active') === 'active')
+    : null;
 
   const resetRun = () => {
     if (window.confirm('איפוס הריצה ימחק את כל הזמנים הזמניים. להמשיך?')) run.resetRun();
@@ -104,7 +101,7 @@ export default function LiveRunPage() {
       // --- Test results (batched) ---
       if (testId) {
         const sem = semester || 'A';
-        const gradeableStudents = selectedStudents.filter(student => isGradeableRunParticipant(session.participants[student.id]));
+        const gradeableStudents = selectedStudents.filter(student => isGradeableRunStudent(student, session.participants[student.id]));
         const gradeableStudentIds = gradeableStudents.map(student => student.id);
         const classStudentIds = data.students.filter(student => student.classId === classId && !student.peExempt).map(student => student.id);
         const existingResults = classStudentIds.length > 0
@@ -120,11 +117,10 @@ export default function LiveRunPage() {
         for (const student of gradeableStudents) {
           const p = session.participants[student.id];
           const match = resultByStudent[student.id];
-          const sameRun = match?.live_run_id === session.id;
           const raw = secondsFromMs(p.finishTimeMs);
           const previousAttempts = existingAttempts.filter(attempt => attempt.student_id === student.id);
-          const previousAttemptNumber = Math.max(0, ...previousAttempts.map(attempt => Number(attempt.attempt_number) || 0));
-          const nextAttemptNumber = sameRun ? (match.attempt_count ?? previousAttemptNumber) : previousAttemptNumber + 1;
+          const attemptPlan = planRunAttempt(match, previousAttempts, session.id);
+          const nextAttemptNumber = attemptPlan.attemptNumber;
           const payload = {
             student_id: student.id, test_id: testId, semester: sem, raw_score: raw, status: 'completed',
             run_time_seconds: raw, laps_completed: p.laps ?? null, live_run_id: session.id,
@@ -132,7 +128,7 @@ export default function LiveRunPage() {
           };
           if (match) resUpdate.push({ id: match.id, ...payload });
           else resCreate.push(payload);
-          if (!sameRun) {
+          if (attemptPlan.shouldCreate) {
             attemptCreate.push({
               student_id: student.id,
               test_id: testId,
@@ -187,7 +183,7 @@ export default function LiveRunPage() {
     return (
       <Layout title="עריכת משתתפים" subtitle={currentClass?.name || ''}>
         <EditParticipants
-          classStudents={data.students.filter(s => s.classId === session.setup.classId)}
+          classStudents={data.students.filter(s => s.classId === session.setup.classId && isEligibleRunStudent(s))}
           snapshot={session.studentsById}
           selectedIds={session.selectedIds}
           onConfirm={run.updateParticipants}

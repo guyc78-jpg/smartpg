@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Flag, Loader2, Pause, Play, RotateCcw, Save, Timer, Trash2 } from 'lucide-react';
+import { AlertCircle, Flag, Loader2, Pause, Play, RefreshCw, RotateCcw, Save, Timer, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { base44 } from '@/api/base44Client';
 import { useApp } from '@/store/AppProvider';
 import { toLocalISODate, formatLocalDate } from '@/lib/dateTime';
 import { formatRunTime } from '@/components/live-run/runUtils';
+import { getCurrentPeriod, periodsForDay } from '@/lib/periodTimes';
 
 function useStopwatchClock() {
   const [running, setRunning] = useState(false);
@@ -55,35 +56,49 @@ export default function StopwatchPage() {
   const { data } = useApp();
   const clock = useStopwatchClock();
   const [classId, setClassId] = useState('');
+  const [period, setPeriod] = useState(() => {
+    const current = getCurrentPeriod();
+    return current ? String(current) : 'none';
+  });
   const [label, setLabel] = useState('');
   const [notes, setNotes] = useState('');
   const [laps, setLaps] = useState([]);
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [historyError, setHistoryError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const historyRequestRef = useRef(0);
 
   const classes = useMemo(
     () => data.classes.filter(item => (item.status || 'active') === 'active').sort((a, b) => a.name.localeCompare(b.name, 'he')),
     [data.classes]
   );
+  const availablePeriods = useMemo(() => periodsForDay(new Date().getDay()), []);
 
   const loadHistory = useCallback(async () => {
+    const requestId = ++historyRequestRef.current;
     setLoadingHistory(true);
+    setHistory([]);
+    setHistoryError(null);
     try {
       const rows = classId
         ? await base44.entities.PeStopwatchLog.filter({ class_id: classId }, '-created_date', 25)
         : await base44.entities.PeStopwatchLog.list('-created_date', 25);
-      setHistory(rows || []);
+      if (requestId === historyRequestRef.current) setHistory(rows || []);
     } catch (error) {
       console.error('Failed to load stopwatch history', error);
-      toast.error('לא ניתן לטעון את היסטוריית הסטופר');
+      if (requestId === historyRequestRef.current) {
+        setHistoryError(error);
+        toast.error('לא ניתן לטעון את היסטוריית הסטופר');
+      }
     } finally {
-      setLoadingHistory(false);
+      if (requestId === historyRequestRef.current) setLoadingHistory(false);
     }
   }, [classId]);
 
   useEffect(() => {
     loadHistory();
+    return () => { historyRequestRef.current += 1; };
   }, [loadHistory]);
 
   const addLap = () => {
@@ -105,7 +120,7 @@ export default function StopwatchPage() {
       await base44.entities.PeStopwatchLog.create({
         class_id: classId,
         date: toLocalISODate(),
-        period: 1,
+        ...(period !== 'none' ? { period: Number(period) } : {}),
         label: label.trim() || 'מדידת סטופר',
         laps,
         total_time_ms: Math.round(clock.elapsedMs),
@@ -171,13 +186,25 @@ export default function StopwatchPage() {
 
         <section className="glass-surface rounded-2xl p-4 space-y-3" aria-labelledby="save-stopwatch-title">
           <h2 id="save-stopwatch-title" className="font-bold">שמירת מדידה</h2>
-          <label className="block space-y-1 text-sm font-semibold">
-            <span>כיתה</span>
-            <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger className="h-11" aria-label="בחירת כיתה"><SelectValue placeholder="בחר כיתה" /></SelectTrigger>
-              <SelectContent>{classes.map(cls => <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>)}</SelectContent>
-            </Select>
-          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block space-y-1 text-sm font-semibold">
+              <span>כיתה</span>
+              <Select value={classId} onValueChange={setClassId}>
+                <SelectTrigger className="h-11" aria-label="בחירת כיתה"><SelectValue placeholder="בחר כיתה" /></SelectTrigger>
+                <SelectContent>{classes.map(cls => <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </label>
+            <label className="block space-y-1 text-sm font-semibold">
+              <span>שעת מערכת</span>
+              <Select value={period} onValueChange={setPeriod}>
+                <SelectTrigger className="h-11" aria-label="בחירת שעת מערכת"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">ללא שיוך לשעה</SelectItem>
+                  {availablePeriods.map(item => <SelectItem key={item} value={String(item)}>שיעור {item}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </label>
+          </div>
           <label className="block space-y-1 text-sm font-semibold">
             <span>שם המדידה</span>
             <Input value={label} onChange={event => setLabel(event.target.value)} maxLength={100} placeholder="למשל: ספרינט קבוצתי" className="h-11" />
@@ -195,6 +222,15 @@ export default function StopwatchPage() {
           <h2 id="stopwatch-history-title" className="px-1 font-bold">מדידות אחרונות</h2>
           {loadingHistory ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          ) : historyError ? (
+            <div role="alert" className="glass-surface flex flex-col items-center gap-2 rounded-2xl p-6 text-center">
+              <AlertCircle className="h-6 w-6 text-destructive" aria-hidden="true" />
+              <p className="text-sm font-semibold">לא ניתן לטעון את המדידות עבור הכיתה שנבחרה.</p>
+              <Button type="button" variant="outline" size="sm" onClick={loadHistory} className="gap-2 rounded-xl">
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                נסו שוב
+              </Button>
+            </div>
           ) : history.length === 0 ? (
             <div className="glass-surface rounded-2xl p-8 text-center text-sm text-muted-foreground">עדיין לא נשמרו מדידות.</div>
           ) : history.map(item => {
@@ -203,7 +239,7 @@ export default function StopwatchPage() {
               <article key={item.id} className="glass-surface rounded-2xl p-3 flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate font-bold">{item.label || 'מדידת סטופר'}</h3>
-                  <p className="text-xs text-muted-foreground">{className} · {formatLocalDate(item.date)} · {(item.laps || []).length} הקפות</p>
+                  <p className="text-xs text-muted-foreground">{className} · {formatLocalDate(item.date)}{item.period ? ` · שיעור ${item.period}` : ''} · {(item.laps || []).length} הקפות</p>
                 </div>
                 <strong className="font-mono tabular-nums" dir="ltr">{formatRunTime(item.total_time_ms)}</strong>
                 <Button type="button" variant="ghost" size="icon" onClick={() => deleteHistoryItem(item.id)} aria-label={`מחק מדידה ${item.label || ''}`} className="text-destructive"><Trash2 /></Button>

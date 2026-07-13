@@ -70,13 +70,21 @@ export default function NewUserGuide({ enabled = true }) {
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
   const progress = useMemo(() => ((step + 1) / STEPS.length) * 100, [step]);
+  const completionKey = user?.id || user?.email
+    ? `smartpg:onboarding-completed:${user?.id || user?.email}`
+    : null;
 
   useEffect(() => {
-    if (enabled && user && user.onboarding_completed !== true) {
-      setStep(0);
-      setOpen(true);
+    if (!enabled || !user || user.onboarding_completed === true) return;
+    const completedLocally = completionKey && localStorage.getItem(completionKey) === 'true';
+    if (completedLocally) {
+      updateCurrentUser({ onboarding_completed: true });
+      base44.auth.updateMe({ onboarding_completed: true }).catch(() => {});
+      return;
     }
-  }, [enabled, user]);
+    setStep(0);
+    setOpen(true);
+  }, [completionKey, enabled, updateCurrentUser, user]);
 
   useEffect(() => {
     const openGuide = () => {
@@ -90,13 +98,14 @@ export default function NewUserGuide({ enabled = true }) {
   const finish = async () => {
     if (saving) return;
     setSaving(true);
+    setOpen(false);
+    updateCurrentUser({ onboarding_completed: true });
+    if (completionKey) localStorage.setItem(completionKey, 'true');
     try {
       await base44.auth.updateMe({ onboarding_completed: true });
-      updateCurrentUser({ onboarding_completed: true });
-      setOpen(false);
     } catch (error) {
       console.error('Failed to save onboarding status:', error);
-      toast.error('לא הצלחנו לשמור את סיום המדריך. נסו שוב.');
+      toast.info('המדריך נסגר. הסיום יסתנכרן אוטומטית בחיבור הבא.');
     } finally {
       setSaving(false);
     }
@@ -145,7 +154,15 @@ export default function NewUserGuide({ enabled = true }) {
         <div className="shrink-0 border-t border-border/60 bg-background/90 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl">
           <div className="mb-4 flex items-center gap-3">
             <span className="text-[11px] font-bold text-muted-foreground">{step + 1} מתוך {STEPS.length}</span>
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+              role="progressbar"
+              aria-label="התקדמות במדריך"
+              aria-valuemin={1}
+              aria-valuemax={STEPS.length}
+              aria-valuenow={step + 1}
+              aria-valuetext={`${step + 1} מתוך ${STEPS.length}`}
+            >
               <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${progress}%` }} />
             </div>
           </div>

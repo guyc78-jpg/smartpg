@@ -60,33 +60,31 @@
     "bell_schedule": {
       "type": "object",
       "description": "Custom bell schedule: { weekday: {period: [start, end]}, friday: {...} }"
+    },
+    "teacher_name": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "school_name": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "default_semester": {
+      "type": "string",
+      "enum": ["A", "B"],
+      "default": "A"
+    },
+    "defaults_seeded": {
+      "type": "boolean",
+      "default": false,
+      "description": "Prevents deleted default tests from being recreated"
     }
   },
   "required": [],
   "rls": {
-    "create": {
-      "$or": [
-        { "user_condition": { "id": "{{user.id}}" } },
-        { "user_condition": { "role": "admin" } }
-      ]
-    },
-    "read": {
-      "$or": [
-        { "created_by": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } }
-      ]
-    },
-    "update": {
-      "$or": [
-        { "created_by": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } }
-      ]
-    },
-    "delete": {
-      "$or": [
-        { "created_by": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } }
-      ]
-    }
+    "create": { "user_condition": { "id": "{{user.id}}" } },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
   }
 }

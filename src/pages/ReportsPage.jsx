@@ -24,7 +24,7 @@ export default function ReportsPage() {
       const m = (c.name || '').match(/\d+/);
       return m ? Number(m[0]) : 0;
     };
-    return [...data.classes].sort((a, b) =>
+    return data.classes.filter(c => (c.status || 'active') === 'active').sort((a, b) =>
       gradeIdx(a) - gradeIdx(b) || numOf(a) - numOf(b) || (a.name || '').localeCompare(b.name || '', 'he')
     );
   }, [data.classes]);

@@ -5,7 +5,10 @@ import { useTheme } from '@/hooks/useTheme';
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
   const { dark, toggle } = useTheme();
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-background px-4">
+    <main
+      id="route-main-content"
+      className="relative min-h-screen flex items-center justify-center bg-background px-4"
+    >
       <button
         type="button"
         onClick={toggle}
@@ -29,6 +32,6 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
           <p className="text-center text-sm text-muted-foreground mt-6">{footer}</p>
         )}
       </div>
-    </div>
+    </main>
   );
 }

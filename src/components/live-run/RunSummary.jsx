@@ -84,25 +84,26 @@ export default function RunSummary({ session, students, className, test, passThr
           {sorted.map(student => {
             const participant = participants[student.id];
             const seconds = participant.finishTimeMs ? secondsFromMs(participant.finishTimeMs) : '';
+            const studentName = displayRunStudentName(student);
             return (
               <div key={student.id} className="grid grid-cols-[minmax(0,1fr)_110px_80px] gap-2 items-center w-full max-w-full">
-                <span className="text-sm font-bold truncate text-right">{displayRunStudentName(student)}</span>
-                <select value={participant.status} onChange={e => onEdit(student.id, { status: e.target.value, finishTimeMs: e.target.value === 'finished' ? participant.finishTimeMs || session.elapsedBeforePause : null })} className="h-9 rounded-md border border-input bg-background px-2 text-xs">
+                <span className="text-sm font-bold truncate text-right">{studentName}</span>
+                <select aria-label={`סטטוס עבור ${studentName}`} value={participant.status} onChange={e => onEdit(student.id, { status: e.target.value, finishTimeMs: e.target.value === 'finished' ? participant.finishTimeMs || session.elapsedBeforePause : null })} className="h-9 rounded-md border border-input bg-background px-2 text-xs">
                   {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
-                <Input type="number" min="0" step="0.01" value={seconds} disabled={participant.status !== 'finished'} onChange={e => onEdit(student.id, { finishTimeMs: msFromSeconds(e.target.value) })} className="h-9 text-center text-xs" placeholder="שניות" />
+                <Input aria-label={`זמן בשניות עבור ${studentName}`} type="number" min="0" step="0.01" value={seconds} disabled={participant.status !== 'finished'} onChange={e => onEdit(student.id, { finishTimeMs: msFromSeconds(e.target.value) })} className="h-9 text-center text-xs" placeholder="שניות" />
               </div>
             );
           })}
         </div>
       </details>
 
-      {invalidRows.length > 0 && <div className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">יש תלמיד שסומן “סיים” בלי זמן תקין. ערוך זמן או שנה סטטוס לפני שמירה.</div>}
+      {invalidRows.length > 0 && <div role="alert" aria-live="assertive" className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">יש תלמיד שסומן “סיים” בלי זמן תקין. ערוך זמן או שנה סטטוס לפני שמירה.</div>}
 
       <div className="fixed bottom-[calc(68px+env(safe-area-inset-bottom,0px))] md:bottom-0 inset-x-0 bg-background/95 backdrop-blur border-t p-3 z-30">
         <div className="w-full max-w-[520px] mx-auto space-y-2">
-          <Button disabled={invalidRows.length > 0 || saving} onClick={onSave} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
-            <Save className="w-5 h-5" /> {saving ? 'שומר…' : test ? 'שמור ציונים במבדק' : 'שמור תוצאות'}
+          <Button disabled={invalidRows.length > 0 || saving} aria-busy={saving} onClick={onSave} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
+            <Save className="w-5 h-5" aria-hidden="true" /> {saving ? 'שומר…' : test ? 'שמור ציונים במבדק' : 'שמור תוצאות'}
           </Button>
           <Button variant="outline" onClick={onBack} className="w-full h-11 rounded-xl"><ArrowRight className="w-4 h-4" /> חזור להגדרות</Button>
         </div>

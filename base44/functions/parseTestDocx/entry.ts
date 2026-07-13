@@ -1,6 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk';
 import mammoth from 'npm:mammoth@1.8.0';
 import { Buffer } from 'node:buffer';
+import {
+  DOCX_LIMITS,
+  DocxSafetyError,
+  assertDocxRowLimit,
+  preflightDocxZip,
+  validateDocxExtractionResult,
+} from './docxSafety.js';
 
 const MAX_DOCX_BYTES = 10 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 15000;
@@ -81,6 +88,7 @@ async function fetchApprovedDocx(fileUrl: unknown) {
   if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
     throw new RequestError('File is not a valid DOCX document', 415);
   }
+  preflightDocxZip(bytes);
   return bytes.buffer;
 }
 
@@ -100,6 +108,9 @@ Deno.serve(async (req) => {
     const arrayBuffer = await fetchApprovedDocx(file_url);
 
     const { value: html } = await mammoth.convertToHtml({ buffer: Buffer.from(arrayBuffer) });
+    if (html.length > DOCX_LIMITS.maxHtmlChars) {
+      throw new DocxSafetyError('Extracted document content exceeds the safe size limit');
+    }
 
     // Convert HTML tables to readable text: rows separated by newlines, cells by |
     const text = html
@@ -215,6 +226,8 @@ ${text.slice(0, 30000)}`,
       });
     }
 
+    validateDocxExtractionResult(result);
+
     const formatVal = (num, isTime) => {
       if (!isTime) return num;
       const m = Math.floor(num / 60);
@@ -256,9 +269,10 @@ ${text.slice(0, 30000)}`,
       }
     }
 
+    assertDocxRowLimit(rows);
     return Response.json({ grade_level: result.grade_level || '', gender: result.gender || '', rows });
   } catch (error) {
-    if (error instanceof RequestError) {
+    if (error instanceof RequestError || error instanceof DocxSafetyError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
     return Response.json({ error: 'Document parsing failed' }, { status: 500 });

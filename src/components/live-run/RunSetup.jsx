@@ -7,7 +7,7 @@ import { getPeClassIdsForDate, getPeriodsForClassAndDate } from '@/lib/peLessons
 import { displayRunStudentName } from './runUtils';
 import { toLocalISODate } from '@/lib/dateTime';
 import { isTestEligibleForClass } from '@/lib/gradeCalc';
-import { inferRunDistance, isLiveRunCompatibleTest } from './runSetupUtils';
+import { inferRunDistance, isEligibleRunStudent, isLiveRunCompatibleTest } from './runSetupUtils';
 
 function FieldCard({ label, icon: Icon, children, className = '' }) {
   return (
@@ -38,10 +38,10 @@ export default function RunSetup({ data, initial, onStart }) {
   const today = toLocalISODate();
   const [date, setDate] = useState(initial?.date || today);
   const peClassIds = useMemo(() => getPeClassIdsForDate(data.scheduleLessons, date), [data.scheduleLessons, date]);
-  const scheduledClasses = useMemo(() => data.classes.filter(c => peClassIds.includes(c.id)), [data.classes, peClassIds]);
   const allActiveClasses = useMemo(() => data.classes.filter(c => (c.status || 'active') === 'active'), [data.classes]);
+  const scheduledClasses = useMemo(() => allActiveClasses.filter(c => peClassIds.includes(c.id)), [allActiveClasses, peClassIds]);
   const peClasses = scheduledClasses.length > 0 ? scheduledClasses : allActiveClasses;
-  const locked = Boolean(initial?.lock && initial?.classId);
+  const locked = Boolean(initial?.lock && initial?.classId && allActiveClasses.some(c => c.id === initial.classId));
   const [classId, setClassId] = useState(initial?.classId || '');
   const scheduledPeriods = useMemo(() => getPeriodsForClassAndDate(data.scheduleLessons, date, classId), [data.scheduleLessons, date, classId]);
   const periods = useMemo(() => scheduledPeriods.length > 0 ? scheduledPeriods : [1, 2, 3, 4, 5, 6, 7, 8], [scheduledPeriods]);
@@ -68,16 +68,20 @@ export default function RunSetup({ data, initial, onStart }) {
       .sort((a, b) => displayRunStudentName(a).localeCompare(displayRunStudentName(b), 'he')),
     [data.students, classId]
   );
-  const studentIdsKey = useMemo(() => students.map(student => student.id).join('|'), [students]);
+  const eligibleStudents = useMemo(() => students.filter(isEligibleRunStudent), [students]);
+  const studentIdsKey = useMemo(() => eligibleStudents.map(student => student.id).join('|'), [eligibleStudents]);
 
   const [selectedIds, setSelectedIds] = useState([]);
   useEffect(() => {
     setSelectedIds(studentIdsKey ? studentIdsKey.split('|') : []);
   }, [classId, studentIdsKey]);
 
-  const allSelected = students.length > 0 && selectedIds.length === students.length;
-  const toggleStudent = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  const toggleAll = () => setSelectedIds(allSelected ? [] : students.map(s => s.id));
+  const allSelected = eligibleStudents.length > 0 && selectedIds.length === eligibleStudents.length;
+  const toggleStudent = (student) => {
+    if (!isEligibleRunStudent(student)) return;
+    setSelectedIds(prev => prev.includes(student.id) ? prev.filter(x => x !== student.id) : [...prev, student.id]);
+  };
+  const toggleAll = () => setSelectedIds(allSelected ? [] : eligibleStudents.map(s => s.id));
 
   const relevantTests = useMemo(() => {
     if (!cls) return [];
@@ -102,7 +106,7 @@ export default function RunSetup({ data, initial, onStart }) {
     ? Math.max(0.5, Math.round((Number(distance) / Number(trackLength)) * 2) / 2)
     : 0;
 
-  const selectedStudents = students.filter(s => selectedIds.includes(s.id));
+  const selectedStudents = eligibleStudents.filter(s => selectedIds.includes(s.id));
   const selectedTest = testId !== 'none' ? data.tests.find(t => t.id === testId) : null;
   const selectedTestHasConversion = !selectedTest || (Array.isArray(selectedTest.conversionTable) && selectedTest.conversionTable.length > 0);
   const canStart = Boolean(cls && period && selectedStudents.length > 0 && totalLaps > 0 && selectedTestHasConversion);
@@ -215,8 +219,8 @@ export default function RunSetup({ data, initial, onStart }) {
       <section className="card-3d rounded-3xl p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <h3 className="text-base font-black">תלמידים <span className="text-xs font-bold text-muted-foreground">({selectedIds.length}/{students.length})</span></h3>
-            {students.length > 0 && (
+            <h3 className="text-base font-black">תלמידים <span className="text-xs font-bold text-muted-foreground">({selectedIds.length}/{eligibleStudents.length})</span></h3>
+            {eligibleStudents.length > 0 && (
               <button type="button" onClick={toggleAll} className="text-xs font-semibold text-primary hover:underline shrink-0">
                 {allSelected ? 'נקה הכל' : 'בחר הכל'}
               </button>
@@ -229,15 +233,21 @@ export default function RunSetup({ data, initial, onStart }) {
         <div className="rounded-2xl overflow-hidden border border-border/50">
           {students.map(student => {
             const checked = selectedIds.includes(student.id);
+            const eligible = isEligibleRunStudent(student);
             return (
               <button
                 type="button"
                 key={student.id}
-                onClick={() => toggleStudent(student.id)}
-                className="w-full h-10 flex items-center justify-between gap-2 px-3 border-b border-border/40 last:border-0 text-right hover:bg-muted/40 transition-colors"
+                onClick={() => toggleStudent(student)}
+                disabled={!eligible}
+                aria-describedby={!eligible ? `run-exempt-${student.id}` : undefined}
+                className={`w-full min-h-11 flex items-center justify-between gap-2 px-3 border-b border-border/40 last:border-0 text-right transition-colors ${eligible ? 'hover:bg-muted/40' : 'cursor-not-allowed bg-muted/25 opacity-65'}`}
               >
-                <span className={`text-sm font-semibold truncate ${checked ? 'text-foreground' : 'text-muted-foreground'}`}>
-                  {displayRunStudentName(student)}
+                <span className="min-w-0 text-right">
+                  <span className={`block text-sm font-semibold truncate ${checked ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    {displayRunStudentName(student)}
+                  </span>
+                  {!eligible && <span id={`run-exempt-${student.id}`} className="block text-[10px] font-semibold text-destructive">פטור רפואי · לא ניתן לבחור</span>}
                 </span>
                 <span className={`w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 border-2 transition-colors ${checked ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/40 bg-transparent'}`}>
                   {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}

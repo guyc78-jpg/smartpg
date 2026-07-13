@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Plus, UserPlus } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw, UserPlus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useApp } from '@/store/AppProvider';
 import Layout from '@/components/app/Layout';
@@ -28,24 +28,39 @@ export default function SubstituteFillsPage() {
   });
   const [tab, setTab] = useState('month');
   const [classFilter, setClassFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(searchParams.get('add') === '1');
   const dialogInitial = useMemo(() => ({
     date: searchParams.get('date') || todayIso,
     period: searchParams.get('period') || '',
   }), [searchParams, todayIso]);
 
-  const load = async () => {
-    const rows = await base44.entities.SubstituteFill.list('-date', 1000);
-    setFills((rows || []).map(r => ({
-      id: r.id, date: r.date, period: r.period, classId: r.class_id || '',
-      className: r.class_name, subject: r.subject || '', location: r.location || '', notes: r.notes || '', status: r.status || 'not_reported',
-    })));
-  };
-  useEffect(() => {
-    load();
-    const unsubscribe = base44.entities.SubstituteFill.subscribe(() => load());
-    return () => unsubscribe?.();
+  const load = useCallback(async ({ showLoading = true } = {}) => {
+    if (showLoading) setLoading(true);
+    try {
+      const rows = await base44.entities.SubstituteFill.list('-date', 1000);
+      setFills((rows || []).map(r => ({
+        id: r.id, date: r.date, period: r.period, classId: r.class_id || '',
+        className: r.class_name, subject: r.subject || '', location: r.location || '', notes: r.notes || '', status: r.status || 'not_reported',
+      })));
+      setLoadError(null);
+      return true;
+    } catch (error) {
+      console.error('Failed to load substitute fills', error);
+      setLoadError(error);
+      return false;
+    } finally {
+      if (showLoading) setLoading(false);
+    }
   }, []);
+  useEffect(() => {
+    void load();
+    const unsubscribe = base44.entities.SubstituteFill.subscribe(() => {
+      void load({ showLoading: false });
+    });
+    return () => unsubscribe?.();
+  }, [load]);
 
   const activeClasses = useMemo(() => data.classes.filter(c => (c.status || 'active') === 'active'), [data.classes]);
   const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
@@ -81,10 +96,16 @@ export default function SubstituteFillsPage() {
       status: payload.status,
     };
     if (payload.period) record.period = payload.period;
-    await base44.entities.SubstituteFill.create(record);
-    toast.success('מילוי המקום נוסף');
-    setDialogOpen(false);
-    load();
+    try {
+      await base44.entities.SubstituteFill.create(record);
+      toast.success('מילוי המקום נוסף');
+      setDialogOpen(false);
+      await load({ showLoading: false });
+    } catch (error) {
+      console.error('Failed to create substitute fill', error);
+      toast.error('הוספת מילוי המקום נכשלה. אפשר לנסות שוב.');
+      throw error;
+    }
   };
 
   const handleCycleStatus = async (fill) => {
@@ -95,7 +116,7 @@ export default function SubstituteFillsPage() {
     } catch (error) {
       setFills(fs => fs.map(f => f.id === fill.id ? fill : f));
       toast.error('עדכון הסטטוס נכשל');
-      throw error;
+      console.error('Failed to update substitute fill status', error);
     }
   };
 
@@ -107,7 +128,7 @@ export default function SubstituteFillsPage() {
     } catch (error) {
       setFills(fs => [...fs, fill]);
       toast.error('מחיקת מילוי המקום נכשלה');
-      throw error;
+      console.error('Failed to delete substitute fill', error);
     }
   };
 
@@ -135,14 +156,14 @@ export default function SubstituteFillsPage() {
         <div className="rounded-2xl border bg-card p-3 space-y-2">
           <div className="flex gap-1.5">
             {TABS.map(t => (
-              <button key={t.key} onClick={() => setTab(t.key)} className={`flex-1 h-9 rounded-lg text-xs font-bold transition-colors ${tab === t.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>
+              <button key={t.key} type="button" aria-pressed={tab === t.key} onClick={() => setTab(t.key)} className={`flex-1 h-9 rounded-lg text-xs font-bold transition-colors ${tab === t.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>
                 {t.label}
               </button>
             ))}
           </div>
           <div className="flex items-center gap-2">
             <Select value={classFilter} onValueChange={setClassFilter}>
-              <SelectTrigger className="h-10 flex-1"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 flex-1" aria-label="סינון לפי כיתה"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">כל הכיתות</SelectItem>
                 {classNames.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
@@ -152,7 +173,24 @@ export default function SubstituteFillsPage() {
           </div>
         </div>
 
-        {visibleFills.length === 0 ? (
+        {loading ? (
+          <div className="rounded-2xl border bg-card py-12 flex items-center justify-center gap-2" role="status" aria-live="polite">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" aria-hidden="true" />
+            <span className="text-sm font-bold text-muted-foreground">טוען מילויי מקום</span>
+          </div>
+        ) : loadError ? (
+          <div className="rounded-2xl border bg-card py-10 px-5 flex flex-col items-center gap-3 text-center" role="alert">
+            <AlertCircle className="w-8 h-8 text-destructive" aria-hidden="true" />
+            <div>
+              <p className="text-sm font-bold">לא הצלחנו לטעון את מילויי המקום</p>
+              <p className="mt-1 text-xs text-muted-foreground">בדקו את החיבור ונסו שוב.</p>
+            </div>
+            <Button variant="outline" onClick={() => load()} className="rounded-xl gap-2 text-sm font-bold">
+              <RefreshCw className="w-4 h-4" aria-hidden="true" />
+              נסו שוב
+            </Button>
+          </div>
+        ) : visibleFills.length === 0 ? (
           <div className="rounded-2xl border bg-card py-10 flex flex-col items-center gap-3">
             <UserPlus className="w-8 h-8 text-muted-foreground/40" />
             <p className="text-sm font-bold text-muted-foreground">אין מילויי מקום בטווח שבחרת</p>
