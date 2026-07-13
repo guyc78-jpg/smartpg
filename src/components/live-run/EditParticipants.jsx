@@ -2,17 +2,18 @@ import { useMemo, useState } from 'react';
 import { Check, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { displayRunStudentName } from './runUtils';
+import { isEligibleRunStudent } from './runSetupUtils';
 
 export default function EditParticipants({ classStudents, snapshot, selectedIds, onConfirm, onCancel }) {
   const students = useMemo(() => {
-    const byId = new Map(classStudents.map(s => [s.id, s]));
+    const byId = new Map(classStudents.filter(isEligibleRunStudent).map(s => [s.id, s]));
     for (const id of selectedIds) {
-      if (!byId.has(id) && snapshot?.[id]) byId.set(id, snapshot[id]);
+      if (!byId.has(id) && isEligibleRunStudent(snapshot?.[id])) byId.set(id, snapshot[id]);
     }
     return [...byId.values()].sort((a, b) => displayRunStudentName(a).localeCompare(displayRunStudentName(b), 'he'));
   }, [classStudents, snapshot, selectedIds]);
 
-  const [ids, setIds] = useState(selectedIds);
+  const [ids, setIds] = useState(() => selectedIds.filter(id => students.some(student => student.id === id)));
   const allSelected = students.length > 0 && ids.length === students.length;
   const toggle = (id) => setIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 

@@ -5,6 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
+import {
+  enforceRowCap,
+  MAX_STUDENT_IMPORT_ROWS,
+  uploadPrivateFileForExtraction,
+  validateImportFile,
+} from '@/lib/fileImportSecurity';
 
 const FIELD_LABELS = {
   lastName: 'שם משפחה',
@@ -29,9 +35,7 @@ const IMPORT_SCHEMA = {
   },
 };
 
-const PRIVATE_FILE_URL_TTL_SECONDS = 300;
-
-function parseCsv(text) {
+function parseCsv(text, maxRows = MAX_STUDENT_IMPORT_ROWS) {
   const rows = [];
   let row = [];
   let value = '';
@@ -51,6 +55,9 @@ function parseCsv(text) {
       if (char === '\r' && next === '\n') i += 1;
       row.push(value.trim());
       if (row.some(Boolean)) rows.push(row);
+      if (rows.length > maxRows + 1) {
+        enforceRowCap(rows.slice(1), maxRows, 'שורות תלמידים');
+      }
       row = [];
       value = '';
     } else {
@@ -59,6 +66,9 @@ function parseCsv(text) {
   }
   row.push(value.trim());
   if (row.some(Boolean)) rows.push(row);
+  if (rows.length > maxRows + 1) {
+    enforceRowCap(rows.slice(1), maxRows, 'שורות תלמידים');
+  }
   const headers = rows[0] || [];
   return rows.slice(1).map(values => Object.fromEntries(headers.map((header, index) => [header || `עמודה ${index + 1}`, values[index] || ''])));
 }
@@ -141,21 +151,21 @@ export default function ImportStudentsDialog({ open, onOpenChange, onImport, cla
     setLoading(true);
 
     try {
-      const isCsv = selectedFile.name.toLowerCase().endsWith('.csv');
+      const { extension } = validateImportFile(selectedFile, {
+        allowedExtensions: ['.csv', '.xlsx', '.xls'],
+      });
+      const isCsv = extension === '.csv';
       let importedRows = [];
       if (isCsv) importedRows = parseCsv(await selectedFile.text());
       else {
-        const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: selectedFile });
-        const { signed_url } = await base44.integrations.Core.CreateFileSignedUrl({
-          file_uri,
-          expires_in: PRIVATE_FILE_URL_TTL_SECONDS,
-        });
+        const signedUrl = await uploadPrivateFileForExtraction(base44, selectedFile);
         const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-          file_url: signed_url,
+          file_url: signedUrl,
           json_schema: IMPORT_SCHEMA,
         });
         importedRows = Array.isArray(extracted.output) ? extracted.output : extracted.output?.rows || [];
       }
+      enforceRowCap(importedRows, MAX_STUDENT_IMPORT_ROWS, 'שורות תלמידים');
       if (!importedRows.length) {
         setError('לא נמצאו שורות בקובץ. ודא שהקובץ כולל כותרות ונתוני תלמידים.');
         return;

@@ -6,21 +6,12 @@
       "type": "string",
       "description": "Push service endpoint URL",
       "format": "uri",
+      "pattern": "^https://[^\\s]+$",
       "maxLength": 2048,
       "rls": {
         "create": { "user_condition": { "id": "{{user.id}}" } },
-        "read": {
-          "$or": [
-            { "created_by": "{{user.email}}" },
-            { "user_condition": { "role": "admin" } }
-          ]
-        },
-        "update": {
-          "$or": [
-            { "created_by": "{{user.email}}" },
-            { "user_condition": { "role": "admin" } }
-          ]
-        }
+        "read": { "created_by": "{{user.email}}" },
+        "update": { "created_by": "{{user.email}}" }
       }
     },
     "p256dh": {
@@ -29,18 +20,8 @@
       "maxLength": 512,
       "rls": {
         "create": { "user_condition": { "id": "{{user.id}}" } },
-        "read": {
-          "$or": [
-            { "created_by": "{{user.email}}" },
-            { "user_condition": { "role": "admin" } }
-          ]
-        },
-        "update": {
-          "$or": [
-            { "created_by": "{{user.email}}" },
-            { "user_condition": { "role": "admin" } }
-          ]
-        }
+        "read": { "created_by": "{{user.email}}" },
+        "update": { "created_by": "{{user.email}}" }
       }
     },
     "auth": {
@@ -49,18 +30,8 @@
       "maxLength": 512,
       "rls": {
         "create": { "user_condition": { "id": "{{user.id}}" } },
-        "read": {
-          "$or": [
-            { "created_by": "{{user.email}}" },
-            { "user_condition": { "role": "admin" } }
-          ]
-        },
-        "update": {
-          "$or": [
-            { "created_by": "{{user.email}}" },
-            { "user_condition": { "role": "admin" } }
-          ]
-        }
+        "read": { "created_by": "{{user.email}}" },
+        "update": { "created_by": "{{user.email}}" }
       }
     },
     "device_label": {
@@ -75,29 +46,9 @@
     "auth"
   ],
   "rls": {
-    "create": {
-      "$or": [
-        { "user_condition": { "id": "{{user.id}}" } },
-        { "user_condition": { "role": "admin" } }
-      ]
-    },
-    "read": {
-      "$or": [
-        { "created_by": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } }
-      ]
-    },
-    "update": {
-      "$or": [
-        { "created_by": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } }
-      ]
-    },
-    "delete": {
-      "$or": [
-        { "created_by": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } }
-      ]
-    }
+    "create": { "user_condition": { "id": "{{user.id}}" } },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
   }
 }

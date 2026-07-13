@@ -91,6 +91,9 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
               {periods.map(p => {
                 const lessons = dayLessons.filter(l => Number(l.period) === p);
                 const lessonClassIds = [...new Set(lessons.map(l => l.classId).filter(Boolean))];
+                const lessonClasses = lessonClassIds
+                  .map(classId => classById[classId])
+                  .filter(Boolean);
                 const hasClass = lessons.some(l => l.classId);
                 const label = [...new Set(lessons.map(l => classById[l.classId]?.name || l.subject || l.className).filter(Boolean))].join(', ');
                 const isCurrent = p === currentPeriod;
@@ -123,13 +126,18 @@ export default function DailyScheduleCard({ scheduleLessons, classById }) {
                         {lessonClassIds.length > 0 && (
                           <LessonTopicInline classIds={lessonClassIds} date={dateISO} period={p} />
                         )}
-                        {lessons.some(l => l.classId) && (
-                          <Link
-                            to={`/class/${lessons.find(l => l.classId).classId}`}
-                            className="inline-block text-xs font-bold text-primary hover:underline"
-                          >
-                            מעבר לכיתה ←
-                          </Link>
+                        {lessonClasses.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5" aria-label={`כיתות בשיעור ${p}`}>
+                            {lessonClasses.map(lessonClass => (
+                              <Link
+                                key={lessonClass.id}
+                                to={`/class/${lessonClass.id}`}
+                                className="min-h-11 inline-flex items-center rounded-xl bg-primary/10 px-3 text-xs font-bold text-primary hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              >
+                                {lessonClass.name} ←
+                              </Link>
+                            ))}
+                          </div>
                         )}
                         {!hasClass && (
                           <button

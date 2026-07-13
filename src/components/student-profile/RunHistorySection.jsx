@@ -1,13 +1,15 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { measurementTypeLabel } from '@/lib/runMeasurementTypes';
 import { formatLongTime, formatShortTime } from '@/lib/timeFormat';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { formatLocalDate } from '@/lib/dateTime';
 
-export default function RunHistorySection({ measurements, loading }) {
+const RunHistoryChart = lazy(() => import('./RunHistoryChart'));
+
+export default function RunHistorySection({ measurements, loading, error, onRetry }) {
   const sorted = useMemo(
     () => [...measurements].sort((a, b) => (a.date || '').localeCompare(b.date || '')),
     [measurements]
@@ -34,23 +36,32 @@ export default function RunHistorySection({ measurements, loading }) {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+        <div className="flex justify-center py-4" role="status" aria-live="polite">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" aria-hidden="true" />
+          <span className="sr-only">טוען היסטוריית ריצות</span>
+        </div>
+      ) : error ? (
+        <div role="alert" className="flex flex-col items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-center">
+          <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
+          <p className="text-xs font-semibold">לא ניתן לטעון את היסטוריית הריצות.</p>
+          <Button type="button" variant="outline" size="sm" onClick={onRetry} className="gap-1.5 rounded-xl">
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+            נסו שוב
+          </Button>
+        </div>
       ) : sorted.length === 0 ? (
         <p className="text-center text-xs text-muted-foreground py-4">אין מדידות ריצה רשומות</p>
       ) : (
         <>
           {chartData.length > 1 && (
-            <div className="h-40" dir="ltr">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                  <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" domain={['dataMin', 'dataMax']} />
-                  <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                  <Line type="monotone" dataKey="seconds" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <Suspense fallback={(
+              <div className="h-40 flex items-center justify-center" role="status" aria-live="polite">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" aria-hidden="true" />
+                <span className="sr-only">טוען גרף התקדמות</span>
+              </div>
+            )}>
+              <RunHistoryChart data={chartData} />
+            </Suspense>
           )}
 
           <div className="space-y-1 max-h-60 overflow-y-auto">

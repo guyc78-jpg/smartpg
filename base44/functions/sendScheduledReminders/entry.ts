@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk';
 import webpush from 'npm:web-push@3.6.7';
+import { normalizeAllowedPushEndpoint } from './pushEndpointSecurity.js';
 
 const DEFAULT_WEEKDAY = {
   1: ['08:15', '09:05'], 2: ['09:05', '09:50'], 3: ['10:15', '11:00'], 4: ['11:00', '11:45'],
@@ -49,7 +50,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Push notifications are unavailable' }, { status: 503 });
     }
 
-    const db = base44.asServiceRole.entities;
+    // Entity RLS deliberately limits this automation to the account that
+    // created it. A service-role client would still be an admin identity and
+    // must never be treated as a cross-tenant bypass.
+    const db = base44.entities;
+    const callerOwner = ownerKey(caller.email);
     const parts = new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit', hour12: false, weekday: 'short',
@@ -59,7 +64,8 @@ Deno.serve(async (req) => {
     const nowMinutes = Number(get('hour')) * 60 + Number(get('minute'));
     const day = WEEKDAY_MAP[get('weekday')];
 
-    const subscriptions = await listAll(db.PushSubscription);
+    const subscriptions = (await listAll(db.PushSubscription))
+      .filter((subscription) => ownerKey(subscription.created_by) === callerOwner);
     const subscriptionsByOwner = new Map<string, any[]>();
     for (const subscription of subscriptions) {
       const owner = ownerKey(subscription.created_by);
@@ -76,9 +82,15 @@ Deno.serve(async (req) => {
     const sendToOwner = async (owner: string, title: unknown, body: unknown, url: string) => {
       let sent = 0;
       for (const subscription of subscriptionsByOwner.get(owner) || []) {
+        let endpoint;
+        try {
+          endpoint = normalizeAllowedPushEndpoint(subscription.endpoint);
+        } catch {
+          continue;
+        }
         try {
           await webpush.sendNotification(
-            { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
+            { endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
             JSON.stringify({ title: String(title).slice(0, 100), body: String(body).slice(0, 300), url }),
           );
           sent += 1;
@@ -148,7 +160,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ lessonReminders, testReminders });
+    return Response.json({ lessonReminders, testReminders, scope: 'automation_owner_only' });
   } catch {
     return Response.json({ error: 'Scheduled reminder processing failed' }, { status: 500 });
   }

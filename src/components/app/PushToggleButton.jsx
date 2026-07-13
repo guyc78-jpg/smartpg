@@ -37,16 +37,16 @@ export default function PushToggleButton({ className }) {
 
   if (loading) {
     return (
-      <span className={className} title="התראות">
-        <Loader2 className="w-4 h-4 animate-spin" />
+      <span className={className} title="התראות" role="status" aria-label="מעדכן את מצב ההתראות">
+        <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
       </span>
     );
   }
 
   if (!enabled) {
     return (
-      <button onClick={handleEnable} className={className} title="הפעלת התראות">
-        <BellOff className="w-4 h-4" />
+      <button type="button" onClick={handleEnable} className={className} title="הפעלת התראות" aria-label="הפעלת התראות">
+        <BellOff className="w-4 h-4" aria-hidden="true" />
       </button>
     );
   }
@@ -54,8 +54,8 @@ export default function PushToggleButton({ className }) {
   return (
     <DropdownMenu dir="rtl">
       <DropdownMenuTrigger asChild>
-        <button className={`${className} text-primary`} title="התראות פעילות">
-          <BellRing className="w-4 h-4" />
+        <button type="button" className={`${className} text-primary`} title="התראות פעילות" aria-label="ניהול התראות פעילות">
+          <BellRing className="w-4 h-4" aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="bottom" dir="rtl" className="w-52 rounded-2xl glass-surface shadow-xl p-1.5 text-right">

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '@/store/AppProvider';
+import { useAuth } from '@/lib/AuthContext';
 import Layout from '@/components/app/Layout';
 import MissingClassCard from '@/components/missing/MissingClassCard';
 import { CheckCircle2 } from 'lucide-react';
@@ -14,7 +15,9 @@ function hasValidResult(results, studentId, testId, semester) {
 }
 
 export default function MissingGradesPage() {
-  const { data } = useApp();
+  const { data, updateHomeroomContacts } = useApp();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [semester, setSemester] = useState(() => localStorage.getItem('defaultSemester') || 'A');
 
   const classCards = useMemo(() => {
@@ -74,7 +77,14 @@ export default function MissingGradesPage() {
         ) : (
           <div className="space-y-2">
             {classCards.map(card => (
-              <MissingClassCard key={card.cls.id} cls={card.cls} testGroups={card.testGroups} totalMissing={card.totalMissing} />
+              <MissingClassCard
+                key={card.cls.id}
+                cls={card.cls}
+                testGroups={card.testGroups}
+                totalMissing={card.totalMissing}
+                isAdmin={isAdmin}
+                onSaveContacts={contacts => updateHomeroomContacts(card.cls.id, contacts)}
+              />
             ))}
           </div>
         )}

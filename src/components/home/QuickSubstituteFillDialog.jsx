@@ -81,21 +81,28 @@ export default function QuickSubstituteFillDialog({ open, onOpenChange, classes,
   const canSave = Boolean(finalClassName || subject.trim());
 
   const handleSave = async () => {
+    if (saving) return;
     setSaving(true);
-    await base44.entities.SubstituteFill.create({
-      date,
-      period: period ? Number(period) : null,
-      class_id: selectedClass ? selectedClass.id : '',
-      class_name: finalClassName || subject.trim(),
-      subject: subject.trim(),
-      location: location.trim(),
-      status: paid ? 'paid' : reported ? 'reported' : 'not_reported',
-      notes: notes.trim(),
-    });
-    toast.success('מילוי המקום נוסף');
-    setSaving(false);
-    onOpenChange(false);
-    onSaved?.();
+    try {
+      await base44.entities.SubstituteFill.create({
+        date,
+        period: period ? Number(period) : null,
+        class_id: selectedClass ? selectedClass.id : '',
+        class_name: finalClassName || subject.trim(),
+        subject: subject.trim(),
+        location: location.trim(),
+        status: paid ? 'paid' : reported ? 'reported' : 'not_reported',
+        notes: notes.trim(),
+      });
+      await onSaved?.();
+      toast.success('מילוי המקום נוסף');
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to save substitute fill', error);
+      toast.error('שמירת מילוי המקום נכשלה. בדוק את החיבור ונסה שוב.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

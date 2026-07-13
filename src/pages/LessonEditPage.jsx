@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Loader2, Save } from 'lucide-react';
+import { AlertCircle, Loader2, RefreshCw, Save } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useApp } from '@/store/AppProvider';
 import Layout from '@/components/app/Layout';
@@ -12,79 +12,124 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { DAY_LABELS } from '@/lib/scheduleImport';
 import { formatPeriodStart } from '@/lib/periodTimes';
-import { parseLocalISODate, toLocalISODate } from '@/lib/dateTime';
+import { parseLocalISODate } from '@/lib/dateTime';
+import { lessonRouteErrorMessage, validateLessonRoute } from '@/lib/lessonRoute';
 
 const EMPTY_FORM = { topic: '', objective: '', equipment: '', notes: '', postLessonNotes: '' };
 
 export default function LessonEditPage() {
   const { data, loadAll } = useApp();
   const navigate = useNavigate();
-  const params = new URLSearchParams(window.location.search);
-  const classId = params.get('classId') || '';
-  const period = Number(params.get('period') || 1);
-  const date = params.get('date') || toLocalISODate();
+  const [searchParams] = useSearchParams();
+  const route = useMemo(() => validateLessonRoute(searchParams, data.classes), [searchParams, data.classes]);
+  const { classId, period, date } = route;
 
   const [existingId, setExistingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
       setLoading(true);
-      const rows = await base44.entities.LessonTopic.filter({ class_id: classId, date, period });
-      if (!active) return;
-      const existing = rows?.[0];
-      if (existing) {
-        setExistingId(existing.id);
-        setForm({
-          topic: existing.topic || '',
-          objective: existing.objective || '',
-          equipment: existing.equipment || '',
-          notes: existing.notes || '',
-          postLessonNotes: existing.post_lesson_notes || '',
-        });
-      } else {
-        setExistingId(null);
-        setForm(EMPTY_FORM);
+      setLoadError(null);
+      if (!route.valid) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+      try {
+        const rows = await base44.entities.LessonTopic.filter({ class_id: classId, date, period });
+        if (!active) return;
+        const existing = rows?.[0];
+        if (existing) {
+          setExistingId(existing.id);
+          setForm({
+            topic: existing.topic || '',
+            objective: existing.objective || '',
+            equipment: existing.equipment || '',
+            notes: existing.notes || '',
+            postLessonNotes: existing.post_lesson_notes || '',
+          });
+        } else {
+          setExistingId(null);
+          setForm(EMPTY_FORM);
+        }
+      } catch (error) {
+        console.error('Failed to load lesson for editing', error);
+        if (active) setLoadError(error);
+      } finally {
+        if (active) setLoading(false);
+      }
     })();
     return () => { active = false; };
-  }, [classId, date, period]);
+  }, [classId, date, period, reloadKey, route.valid]);
 
-  const cls = data.classes.find(c => c.id === classId);
-  const dayOfWeek = parseLocalISODate(date).getDay();
-  const manageUrl = `/lesson-manage?classId=${classId}&period=${period}&date=${date}`;
+  const cls = route.cls;
+  const dayOfWeek = route.valid ? parseLocalISODate(date).getDay() : new Date().getDay();
+  const lessonQuery = new URLSearchParams({ classId, period: String(period), date }).toString();
+  const manageUrl = `/lesson-manage?${lessonQuery}`;
 
   const updateForm = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
   const handleSave = async () => {
+    if (!route.valid) return toast.error(lessonRouteErrorMessage(route.error));
     setSaving(true);
-    const payload = {
-      class_id: classId,
-      date,
-      period,
-      topic: form.topic.trim(),
-      objective: form.objective.trim(),
-      equipment: form.equipment.trim(),
-      notes: form.notes.trim(),
-      post_lesson_notes: form.postLessonNotes.trim(),
-    };
-    if (existingId) await base44.entities.LessonTopic.update(existingId, payload);
-    else await base44.entities.LessonTopic.create(payload);
-    await loadAll();
-    setSaving(false);
-    toast.success('השיעור נשמר');
-    navigate(manageUrl);
+    try {
+      const payload = {
+        class_id: classId,
+        date,
+        period,
+        topic: form.topic.trim(),
+        objective: form.objective.trim(),
+        equipment: form.equipment.trim(),
+        notes: form.notes.trim(),
+        post_lesson_notes: form.postLessonNotes.trim(),
+      };
+      if (existingId) await base44.entities.LessonTopic.update(existingId, payload);
+      else await base44.entities.LessonTopic.create(payload);
+      await loadAll();
+      toast.success('השיעור נשמר');
+      navigate(manageUrl);
+    } catch (error) {
+      console.error('Failed to save lesson', error);
+      toast.error('שמירת השיעור נכשלה. אפשר לנסות שוב.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Layout title="עריכת שיעור" backTo={manageUrl}>
       <div className="max-w-lg mx-auto p-4 space-y-3" dir="rtl">
-        {loading ? (
-          <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        {!route.valid ? (
+          <Card className="card-3d rounded-2xl p-6 flex flex-col items-center gap-3 text-center" role="alert">
+            <AlertCircle className="w-7 h-7 text-destructive" aria-hidden="true" />
+            <div>
+              <p className="font-bold">לא ניתן לערוך את השיעור</p>
+              <p className="mt-1 text-sm text-muted-foreground">{lessonRouteErrorMessage(route.error)}</p>
+            </div>
+            <Button variant="outline" onClick={() => navigate('/')} className="rounded-xl">חזרה למסך הראשי</Button>
+          </Card>
+        ) : loading ? (
+          <div className="flex items-center justify-center py-16" role="status" aria-live="polite">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" aria-hidden="true" />
+            <span className="sr-only">טוען את פרטי השיעור</span>
+          </div>
+        ) : loadError ? (
+          <Card className="card-3d rounded-2xl p-6 flex flex-col items-center gap-3 text-center" role="alert">
+            <AlertCircle className="w-7 h-7 text-destructive" aria-hidden="true" />
+            <div>
+              <p className="font-bold">לא הצלחנו לטעון את השיעור לעריכה</p>
+              <p className="mt-1 text-sm text-muted-foreground">בדקו את החיבור ונסו שוב.</p>
+            </div>
+            <Button variant="outline" onClick={() => setReloadKey(key => key + 1)} className="rounded-xl gap-2">
+              <RefreshCw className="w-4 h-4" aria-hidden="true" />
+              נסו שוב
+            </Button>
+          </Card>
         ) : (
           <>
             <Card className="card-3d rounded-2xl p-4 space-y-2">
@@ -136,8 +181,8 @@ export default function LessonEditPage() {
             </Card>
 
             <div className="flex gap-2">
-              <Button onClick={handleSave} disabled={saving} className="flex-1 h-11 rounded-xl font-semibold gap-2">
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <Button onClick={handleSave} disabled={saving} aria-busy={saving} className="flex-1 h-11 rounded-xl font-semibold gap-2">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Save className="w-4 h-4" aria-hidden="true" />}
                 שמור שיעור
               </Button>
               <Button variant="outline" onClick={() => navigate(manageUrl)} className="h-11 rounded-xl px-5">ביטול</Button>

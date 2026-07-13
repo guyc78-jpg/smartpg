@@ -5,6 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
 import { guessScheduleMapping, parseScheduleCsv, parseTeacherReportCsv, extractPeLessons, DAY_LABELS } from '@/lib/scheduleImport';
+import {
+  enforceRowCap,
+  MAX_SCHEDULE_IMPORT_ROWS,
+  uploadPrivateFileForExtraction,
+  validateImportFile,
+} from '@/lib/fileImportSecurity';
 
 const MAPPING_FIELDS = { day: 'יום בשבוע', period: 'שעה/שיעור', className: 'כיתה', subject: 'מקצוע' };
 
@@ -45,20 +51,31 @@ export default function ImportScheduleDialog({ open, onOpenChange, onImport }) {
     setLoading(true);
 
     try {
-      const isCsv = selectedFile.name.toLowerCase().endsWith('.csv');
+      const { extension } = validateImportFile(selectedFile, {
+        allowedExtensions: ['.csv', '.xlsx', '.xls'],
+      });
+      const isCsv = extension === '.csv';
       let importedRows = [];
       if (isCsv) {
         const text = await selectedFile.text();
         const report = parseTeacherReportCsv(text);
         if (report && report.matched > 0) {
+          if (report.scanned > MAX_SCHEDULE_IMPORT_ROWS) {
+            throw new Error(`הקובץ מכיל יותר מדי שיעורים. המגבלה היא ${MAX_SCHEDULE_IMPORT_ROWS}.`);
+          }
+          enforceRowCap(report.lessons, MAX_SCHEDULE_IMPORT_ROWS, 'שיעורים');
           setDirectPreview(report);
           return;
         }
-        importedRows = parseScheduleCsv(text);
+        importedRows = enforceRowCap(parseScheduleCsv(text), MAX_SCHEDULE_IMPORT_ROWS, 'שורות');
       } else {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
-        const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({ file_url, json_schema: IMPORT_SCHEMA });
-        importedRows = Array.isArray(extracted.output) ? extracted.output : extracted.output?.rows || [];
+        const signedUrl = await uploadPrivateFileForExtraction(base44, selectedFile);
+        const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({ file_url: signedUrl, json_schema: IMPORT_SCHEMA });
+        importedRows = enforceRowCap(
+          Array.isArray(extracted.output) ? extracted.output : extracted.output?.rows || [],
+          MAX_SCHEDULE_IMPORT_ROWS,
+          'שורות',
+        );
       }
 
       if (!importedRows.length) {

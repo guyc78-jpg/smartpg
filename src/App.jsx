@@ -2,8 +2,6 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import AppLoader from '@/components/app/AppLoader';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClientInstance } from '@/lib/query-client';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -14,6 +12,7 @@ import { LiveRunProvider } from '@/contexts/LiveRunContext';
 import FloatingRunTimer from '@/components/live-run/FloatingRunTimer';
 import NewUserGuide from '@/components/onboarding/NewUserGuide';
 import RouteTelemetry from '@/components/app/RouteTelemetry';
+import ScrollToTop from '@/components/ScrollToTop';
 
 const Login = lazy(() => import('@/pages/Login'));
 const Register = lazy(() => import('@/pages/Register'));
@@ -35,14 +34,16 @@ const LessonEditPage = lazy(() => import('./pages/LessonEditPage'));
 const SubstituteFillsPage = lazy(() => import('./pages/SubstituteFillsPage'));
 const MissingGradesPage = lazy(() => import('./pages/MissingGradesPage'));
 const StopwatchPage = lazy(() => import('./pages/StopwatchPage'));
+const PageNotFound = lazy(() => import('./lib/PageNotFound'));
 
 const PageFallback = () => (
-  <div className="min-h-screen flex items-center justify-center" dir="rtl">
-    <div className="flex gap-1.5">
+  <div className="min-h-screen flex items-center justify-center" dir="rtl" role="status" aria-live="polite">
+    <div className="flex gap-1.5" aria-hidden="true">
       <span className="w-2 h-2 rounded-full bg-primary animate-loading-dot" />
       <span className="w-2 h-2 rounded-full bg-primary animate-loading-dot" style={{ animationDelay: '0.15s' }} />
       <span className="w-2 h-2 rounded-full bg-primary animate-loading-dot" style={{ animationDelay: '0.3s' }} />
     </div>
+    <span className="sr-only">טוען את העמוד</span>
   </div>
 );
 
@@ -111,7 +112,7 @@ const AppShell = () => {
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<AppSettingsPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<PageNotFound />} />
       </Routes>
       </Suspense>
       <FloatingRunTimer />
@@ -132,14 +133,13 @@ const AuthenticatedApp = () => (
 function App() {
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <RouteTelemetry />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-        <SonnerToaster position="top-center" richColors closeButton />
-      </QueryClientProvider>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <ScrollToTop />
+        <RouteTelemetry />
+        <AuthenticatedApp />
+      </Router>
+      <Toaster />
+      <SonnerToaster position="top-center" richColors closeButton />
     </AuthProvider>
   );
 }
