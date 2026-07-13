@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { PERIODS, periodsForDay, getCurrentPeriod } from '@/lib/periodTimes';
 import { getScheduleGridDimensions } from '@/lib/scheduleGridLayout';
-import { groupScheduleLessonsForDisplay } from '@/lib/scheduleDisplay';
+import { getAdaptiveClassLabels, groupScheduleLessonsForDisplay } from '@/lib/scheduleDisplay';
 
 const DAYS = [0, 1, 2, 3, 4, 5];
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
@@ -106,16 +106,33 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                             const shouldSpanFullRow = canUseFullWidthRows || isBalancedLastLesson;
                             const lessonSubject = lesson.subject || 'חינוך גופני';
                             const lessonClass = lesson.displayClassName || classById[lesson.classId]?.name || lesson.className || '';
+                            const classNames = lesson.classLabels || [lessonClass];
+                            const { labels: allClassLabels, visibleLabels, overflowCount } = getAdaptiveClassLabels(classNames);
+                            const hasMultipleClasses = lesson.isGrouped && allClassLabels.length > 1;
                             return (
                               <button
                                 type="button"
                                 key={lesson.id}
                                 onClick={event => { event.stopPropagation(); onCellClick(d, p, lesson); }}
-                                title={[lessonSubject, lessonClass].filter(Boolean).join(' · ')}
+                                title={[lessonSubject, allClassLabels.join(', ')].filter(Boolean).join(' · ')}
+                                aria-label={[lessonSubject, allClassLabels.join(', ')].filter(Boolean).join(', ')}
                                 className={`schedule-lesson flex min-h-11 h-full min-w-0 w-full flex-col items-center justify-center overflow-hidden rounded-xl px-0.5 py-1 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${shouldSpanFullRow ? 'col-span-2' : ''} ${isLiveNow ? 'is-live' : ''}`}
                               >
                                 <p className="w-full min-w-0 truncate text-[11px] font-bold leading-tight">{lessonSubject}</p>
-                                {lessonClass && (
+                                {hasMultipleClasses ? (
+                                  <span className="mt-0.5 grid w-full grid-cols-2 gap-0.5 px-0.5" aria-hidden="true">
+                                    {visibleLabels.map(label => (
+                                      <span key={label} className="min-w-0 truncate rounded-md border border-primary/15 bg-background/55 px-0.5 py-px text-[8px] font-black leading-[12px] text-foreground shadow-[inset_0_1px_0_hsl(var(--background)/0.7)] dark:border-white/10 dark:bg-white/[0.06]">
+                                        {label}
+                                      </span>
+                                    ))}
+                                    {overflowCount > 0 && (
+                                      <span className="min-w-0 rounded-md border border-primary/25 bg-primary/10 px-0.5 py-px text-[8px] font-black leading-[12px] text-primary">
+                                        +{overflowCount}
+                                      </span>
+                                    )}
+                                  </span>
+                                ) : lessonClass && (
                                   <p className="w-full min-w-0 truncate text-[9px] text-muted-foreground leading-tight">{lessonClass}</p>
                                 )}
                               </button>

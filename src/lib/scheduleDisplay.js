@@ -11,6 +11,20 @@ function normalizeClassPrefix(value) {
   return `${compact}${letters.length > 1 ? '״' : '׳'}`;
 }
 
+export function formatClassLabel(className) {
+  const name = normalizeClassName(className);
+  const match = name.match(HEBREW_CLASS_RE);
+  if (!match) return name;
+  return `${normalizeClassPrefix(match[1])}${Number(match[2])}`;
+}
+
+export function getAdaptiveClassLabels(classNames) {
+  const labels = [...new Set((classNames || []).map(formatClassLabel).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'he', { numeric: true, sensitivity: 'base' }));
+  const visibleLabels = labels.length > 4 ? labels.slice(0, 3) : labels;
+  return { labels, visibleLabels, overflowCount: labels.length - visibleLabels.length };
+}
+
 export function formatCombinedClassNames(classNames) {
   const names = [...new Set((classNames || []).map(normalizeClassName).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'he', { numeric: true, sensitivity: 'base' }));
@@ -47,10 +61,12 @@ export function groupScheduleLessonsForDisplay(lessons, classById = {}) {
   const combined = [...groups.values()].map(groupedLessons => {
     const first = groupedLessons[0];
     const classNames = groupedLessons.map(lesson => classById[lesson.classId]?.name || lesson.className || '');
+    const { labels: classLabels } = getAdaptiveClassLabels(classNames);
     return {
       ...first,
       id: groupedLessons.length > 1 ? `group:${groupedLessons.map(item => item.id).sort().join('|')}` : first.id,
       displayClassName: formatCombinedClassNames(classNames),
+      classLabels,
       groupedLessons,
       isGrouped: groupedLessons.length > 1,
     };
