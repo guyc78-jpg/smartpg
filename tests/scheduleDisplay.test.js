@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatClassLabel, formatCombinedClassNames, getAdaptiveClassLabels, groupScheduleLessonsForDisplay } from '../src/lib/scheduleDisplay.js';
+import { formatClassLabel, formatCombinedClassNames, formatCompactClassSummary, getAdaptiveClassLabels, groupScheduleLessonsForDisplay } from '../src/lib/scheduleDisplay.js';
 
 test('combined Hebrew class names are compressed into one readable label', () => {
   assert.equal(formatCombinedClassNames(["ח' 3", "ח' 1", "ח' 2"]), 'ח׳1,2,3');
@@ -17,6 +17,12 @@ test('adaptive labels show every class up to four and collapse larger groups', (
   const largeGroup = getAdaptiveClassLabels(["ז' 1", "ז' 2", "ז' 3", "ז' 4", "ז' 5", "ז' 6"]);
   assert.deepEqual(largeGroup.visibleLabels, ['ז׳1', 'ז׳2', 'ז׳3']);
   assert.equal(largeGroup.overflowCount, 3);
+});
+
+test('compact class summaries stay on one line without growing schedule cards', () => {
+  assert.equal(formatCompactClassSummary(["ח' 1", "ח' 6"]), 'ח׳1 · ח׳6');
+  assert.equal(formatCompactClassSummary(["ז' 3", "ז' 5", "ז' 6", "ז' 7"]), 'ז׳3,5,6,7');
+  assert.equal(formatCompactClassSummary(["ז' 1", "ז' 2", "ז' 3", "ז' 4", "ז' 5"]), 'ז׳1,2,3 +2');
 });
 
 test('same-subject class lessons share one display card and retain source records', () => {
