@@ -102,7 +102,7 @@ export default function RunSummary({ session, students, className, test, passThr
       <div className="fixed bottom-[calc(68px+env(safe-area-inset-bottom,0px))] md:bottom-0 inset-x-0 bg-background/95 backdrop-blur border-t p-3 z-30">
         <div className="w-full max-w-[520px] mx-auto space-y-2">
           <Button disabled={invalidRows.length > 0 || saving} onClick={onSave} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
-            <Save className="w-5 h-5" /> {saving ? 'שומר…' : test ? 'שמור להזנת המבדק' : 'שמור תוצאות'}
+            <Save className="w-5 h-5" /> {saving ? 'שומר…' : test ? 'שמור ציונים במבדק' : 'שמור תוצאות'}
           </Button>
           <Button variant="outline" onClick={onBack} className="w-full h-11 rounded-xl"><ArrowRight className="w-4 h-4" /> חזור להגדרות</Button>
         </div>
