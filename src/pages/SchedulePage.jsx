@@ -41,10 +41,11 @@ export default function SchedulePage() {
 
   const handleCellClick = (day, period, lesson) => setAssignSlot({ day, period, lesson });
 
-  const handleAssignSave = async (classId) => {
+  const handleAssignSave = async (classId, selectedLesson) => {
     const cls = classById[classId];
     if (assignSlot.lesson) {
-      await base44.entities.TeacherSchedule.update(assignSlot.lesson.id, { class_id: classId, class_name: cls?.name || '' });
+      const lessonToUpdate = selectedLesson || assignSlot.lesson;
+      await base44.entities.TeacherSchedule.update(lessonToUpdate.id, { class_id: classId, class_name: cls?.name || '' });
     } else {
       await base44.entities.TeacherSchedule.create({
         day_of_week: assignSlot.day,
@@ -60,8 +61,8 @@ export default function SchedulePage() {
     toast.success('המערכת עודכנה');
   };
 
-  const handleAssignDelete = async () => {
-    const deletedLesson = assignSlot.lesson;
+  const handleAssignDelete = async (selectedLesson) => {
+    const deletedLesson = selectedLesson || assignSlot.lesson;
     await base44.entities.TeacherSchedule.delete(deletedLesson.id);
     setAssignSlot(null);
     await loadAll();

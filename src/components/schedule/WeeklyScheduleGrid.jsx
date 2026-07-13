@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { PERIODS, periodsForDay, getCurrentPeriod } from '@/lib/periodTimes';
 import { getScheduleGridDimensions } from '@/lib/scheduleGridLayout';
+import { groupScheduleLessonsForDisplay } from '@/lib/scheduleDisplay';
 
 const DAYS = [0, 1, 2, 3, 4, 5];
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
@@ -48,9 +49,9 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
         <tbody>
           {PERIODS.map((p, rowIdx) => {
             const lessonsByDay = Object.fromEntries(DAYS.map(day => {
-              const lessons = lessonsAt(day, p).sort((a, b) => {
-                const aClass = classById[a.classId]?.name || a.className || '';
-                const bClass = classById[b.classId]?.name || b.className || '';
+              const lessons = groupScheduleLessonsForDisplay(lessonsAt(day, p), classById).sort((a, b) => {
+                const aClass = a.displayClassName || classById[a.classId]?.name || a.className || '';
+                const bClass = b.displayClassName || classById[b.classId]?.name || b.className || '';
                 return aClass.localeCompare(bClass, 'he', { numeric: true, sensitivity: 'base' })
                   || (a.subject || '').localeCompare(b.subject || '', 'he');
               });
@@ -104,7 +105,7 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                               && lessonIndex === cellLessons.length - 1;
                             const shouldSpanFullRow = canUseFullWidthRows || isBalancedLastLesson;
                             const lessonSubject = lesson.subject || 'חינוך גופני';
-                            const lessonClass = classById[lesson.classId]?.name || lesson.className || '';
+                            const lessonClass = lesson.displayClassName || classById[lesson.classId]?.name || lesson.className || '';
                             return (
                               <button
                                 type="button"

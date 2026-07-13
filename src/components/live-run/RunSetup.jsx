@@ -7,7 +7,7 @@ import { getPeClassIdsForDate, getPeriodsForClassAndDate } from '@/lib/peLessons
 import { displayRunStudentName } from './runUtils';
 import { toLocalISODate } from '@/lib/dateTime';
 import { isTestEligibleForClass } from '@/lib/gradeCalc';
-import { inferRunDistance } from './runSetupUtils';
+import { inferRunDistance, isLiveRunCompatibleTest } from './runSetupUtils';
 
 function FieldCard({ label, icon: Icon, children, className = '' }) {
   return (
@@ -81,7 +81,9 @@ export default function RunSetup({ data, initial, onStart }) {
 
   const relevantTests = useMemo(() => {
     if (!cls) return [];
-    return data.tests.filter(test => test.testType === 'running' && isTestEligibleForClass(test, cls));
+    return data.tests
+      .filter(test => isLiveRunCompatibleTest(test) && isTestEligibleForClass(test, cls))
+      .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'he', { numeric: true }));
   }, [data.tests, cls]);
 
   useEffect(() => {
@@ -101,11 +103,14 @@ export default function RunSetup({ data, initial, onStart }) {
     : 0;
 
   const selectedStudents = students.filter(s => selectedIds.includes(s.id));
+  const selectedTest = testId !== 'none' ? data.tests.find(t => t.id === testId) : null;
+  const selectedTestHasConversion = !selectedTest || (Array.isArray(selectedTest.conversionTable) && selectedTest.conversionTable.length > 0);
+  const canStart = Boolean(cls && period && selectedStudents.length > 0 && totalLaps > 0 && selectedTestHasConversion);
 
   const handleStart = () => {
-    if (!cls || !period || selectedStudents.length === 0 || totalLaps <= 0) return;
+    if (!canStart) return;
     localStorage.setItem('pe_track_length', String(trackLength));
-    const test = testId !== 'none' ? data.tests.find(t => t.id === testId) : null;
+    const test = selectedTest;
     const measurementType = { 1500: 'distance_1500', 2000: 'distance_2000', 60: 'sprint_60', 80: 'sprint_80', 100: 'sprint_100' }[Number(distance)] || 'free';
     onStart({
       classId: cls.id, date, period: Number(period), measurementType,
@@ -169,6 +174,15 @@ export default function RunSetup({ data, initial, onStart }) {
               {relevantTests.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
             </SelectContent>
           </Select>
+          {relevantTests.length === 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">לא נמצאו מבדקי ריצה המתאימים לכיתה. עדיין ניתן לבצע מדידה בלבד.</p>
+          )}
+          {selectedTest && selectedTestHasConversion && (
+            <p className="mt-2 text-xs text-primary">הזמנים של תלמידים שיסיימו יומרו לציונים ויישמרו במבדק.</p>
+          )}
+          {selectedTest && !selectedTestHasConversion && (
+            <p className="mt-2 text-xs text-destructive">למבדק אין טבלת המרה לציון. יש להוסיף טבלה או לבחור מדידה בלבד.</p>
+          )}
         </FieldCard>
         {testId !== 'none' && (
           <FieldCard label="מחצית" icon={Check}>
@@ -237,7 +251,7 @@ export default function RunSetup({ data, initial, onStart }) {
       </section>
 
       <div className="fixed inset-x-0 z-20 px-3 max-w-[520px] mx-auto" style={{ bottom: 'calc(var(--safe-area-bottom) + 5rem)' }}>
-        <Button onClick={handleStart} disabled={!cls || !period || selectedStudents.length === 0 || totalLaps <= 0} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
+        <Button onClick={handleStart} disabled={!canStart} className="w-full h-14 rounded-2xl text-lg font-black btn-3d">
           <Play className="w-5 h-5" /> התחל ריצה חיה
         </Button>
       </div>

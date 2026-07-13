@@ -14,6 +14,7 @@ import EditParticipants from '@/components/live-run/EditParticipants';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { displayRunStudentName, secondsFromMs } from '@/components/live-run/runUtils';
 import { convertRawToGrade } from '@/lib/gradeCalc';
+import { isGradeableRunParticipant } from '@/components/live-run/runSetupUtils';
 
 export default function LiveRunPage() {
   const navigate = useNavigate();
@@ -74,7 +75,7 @@ export default function LiveRunPage() {
     try {
       const { classId, date, period, measurementType, trackLength, testId, semester } = session.setup;
       const periodNum = period !== '' && period != null && Number.isFinite(Number(period)) ? Number(period) : null;
-      const studentIds = selectedStudents.map(s => s.id);
+      let savedGradeCount = 0;
 
       // --- Run measurements (batched) ---
       const existing = await base44.entities.RunMeasurement.filter({ class_id: classId, date, measurement_type: measurementType, notes: session.id });
@@ -103,34 +104,35 @@ export default function LiveRunPage() {
       // --- Test results (batched) ---
       if (testId) {
         const sem = semester || 'A';
+        const gradeableStudents = selectedStudents.filter(student => isGradeableRunParticipant(session.participants[student.id]));
+        const gradeableStudentIds = gradeableStudents.map(student => student.id);
         const classStudentIds = data.students.filter(student => student.classId === classId && !student.peExempt).map(student => student.id);
         const existingResults = classStudentIds.length > 0
           ? await base44.entities.TestResult.filter({ test_id: testId, semester: sem, student_id: { $in: classStudentIds } })
           : [];
         const resultByStudent = Object.fromEntries(existingResults.map(r => [r.student_id, r]));
-        const existingAttempts = studentIds.length > 0
-          ? await base44.entities.TestAttempt.filter({ test_id: testId, semester: sem, student_id: { $in: studentIds } })
+        const existingAttempts = gradeableStudentIds.length > 0
+          ? await base44.entities.TestAttempt.filter({ test_id: testId, semester: sem, student_id: { $in: gradeableStudentIds } })
           : [];
         const resCreate = [];
         const resUpdate = [];
         const attemptCreate = [];
-        for (const student of selectedStudents) {
+        for (const student of gradeableStudents) {
           const p = session.participants[student.id];
           const match = resultByStudent[student.id];
           const sameRun = match?.live_run_id === session.id;
-          const status = p.status === 'finished' ? 'completed' : p.status === 'not_completed' ? 'not_completed' : 'not_participated';
-          const raw = p.status === 'finished' && p.finishTimeMs != null ? secondsFromMs(p.finishTimeMs) : null;
+          const raw = secondsFromMs(p.finishTimeMs);
           const previousAttempts = existingAttempts.filter(attempt => attempt.student_id === student.id);
           const previousAttemptNumber = Math.max(0, ...previousAttempts.map(attempt => Number(attempt.attempt_number) || 0));
           const nextAttemptNumber = sameRun ? (match.attempt_count ?? previousAttemptNumber) : previousAttemptNumber + 1;
           const payload = {
-            student_id: student.id, test_id: testId, semester: sem, raw_score: raw, status,
+            student_id: student.id, test_id: testId, semester: sem, raw_score: raw, status: 'completed',
             run_time_seconds: raw, laps_completed: p.laps ?? null, live_run_id: session.id,
-            attempt_count: p.status === 'finished' ? nextAttemptNumber : (resultByStudent[student.id]?.attempt_count ?? 1),
+            attempt_count: nextAttemptNumber,
           };
           if (match) resUpdate.push({ id: match.id, ...payload });
           else resCreate.push(payload);
-          if (p.status === 'finished' && raw !== null && !sameRun) {
+          if (!sameRun) {
             attemptCreate.push({
               student_id: student.id,
               test_id: testId,
@@ -143,19 +145,23 @@ export default function LiveRunPage() {
         if (resCreate.length > 0) await base44.entities.TestResult.bulkCreate(resCreate);
         if (resUpdate.length > 0) await base44.entities.TestResult.bulkUpdate(resUpdate);
         if (attemptCreate.length > 0) await base44.entities.TestAttempt.bulkCreate(attemptCreate);
+        savedGradeCount = resCreate.length + resUpdate.length;
         const selectedStatus = Object.fromEntries(resCreate.concat(resUpdate).map(result => [result.student_id, result.status]));
         const covered = classStudentIds.filter(id => {
           const status = selectedStatus[id] || resultByStudent[id]?.status;
           return status && status !== 'pending';
         }).length;
-        await setClassTestStatus(classId, testId, sem, covered === classStudentIds.length ? 'conducted' : covered > 0 ? 'partial' : 'not_conducted');
+        if (savedGradeCount > 0) {
+          await setClassTestStatus(classId, testId, sem, covered === classStudentIds.length ? 'conducted' : 'partial');
+        }
       }
 
       const refreshed = await loadAll();
       if (!refreshed) toast.warning('התוצאות נשמרו, אך רענון הנתונים נכשל. מומלץ לרענן את המסך.');
       run.markSaved();
       run.closeSession();
-      toast.success(testId ? 'התוצאות נשמרו כציוני המבדק' : 'התוצאות נשמרו');
+      if (testId && savedGradeCount === 0) toast.warning('המדידות נשמרו, אך לא נשמרו ציונים משום שאף תלמיד לא סיים עם זמן תקין.');
+      else toast.success(testId ? `נשמרו ${savedGradeCount} ציונים במבדק` : 'התוצאות נשמרו');
       navigate(testId ? `/class/${classId}/tests` : `/class/${classId}`);
     } catch (e) {
       console.error('Failed to save run summary:', e);
