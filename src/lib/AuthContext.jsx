@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -16,10 +16,6 @@ export const AuthProvider = ({ children }) => {
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
 
   useEffect(() => {
-    checkAppState();
-  }, []);
-
-  useEffect(() => {
     const handleUnauthorized = () => {
       clearUserScopedStorage();
       setUser(null);
@@ -30,7 +26,32 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('base44:unauthorized', handleUnauthorized);
   }, []);
 
-  const checkAppState = async () => {
+  const checkUserAuth = useCallback(async () => {
+    try {
+      // Now check if the user is authenticated
+      setIsLoadingAuth(true);
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+      setIsAuthenticated(true);
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
+    } catch (error) {
+      console.error('User auth check failed:', error);
+      setIsLoadingAuth(false);
+      setIsAuthenticated(false);
+      setAuthChecked(true);
+
+      // If user auth fails, it might be an expired token
+      if (error.status === 401 || error.status === 403) {
+        setAuthError({
+          type: 'auth_required',
+          message: 'Authentication required'
+        });
+      }
+    }
+  }, []);
+
+  const checkAppState = useCallback(async () => {
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
@@ -103,32 +124,11 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       setAuthChecked(true);
     }
-  };
+  }, [checkUserAuth]);
 
-  const checkUserAuth = async () => {
-    try {
-      // Now check if the user is authenticated
-      setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      setIsLoadingAuth(false);
-      setAuthChecked(true);
-    } catch (error) {
-      console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-      setAuthChecked(true);
-      
-      // If user auth fails, it might be an expired token
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
-      }
-    }
-  };
+  useEffect(() => {
+    checkAppState();
+  }, [checkAppState]);
 
   const logout = (shouldRedirect = true) => {
     clearUserScopedStorage();

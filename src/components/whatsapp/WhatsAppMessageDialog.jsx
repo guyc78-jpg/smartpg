@@ -10,7 +10,20 @@ import { buildWhatsAppMessage, getMessageType, WHATSAPP_MESSAGE_TYPES } from '@/
 import { isValidWhatsAppPhone, openWhatsApp } from '@/lib/whatsapp';
 import { formatStudentName } from '@/lib/studentName';
 
-export default function WhatsAppMessageDialog({ open, onOpenChange, cls, contacts = [], students = [], initialContactId, initialStudentId, initialMessageType = 'general', canManage = false, onManage }) {
+export default function WhatsAppMessageDialog({
+  open,
+  onOpenChange,
+  cls,
+  contacts = [],
+  students = [],
+  initialContactId,
+  initialStudentId,
+  initialMessageType = 'general',
+  initialNote = '',
+  missingTestNames = [],
+  canManage = false,
+  onManage,
+}) {
   const [contactId, setContactId] = useState('');
   const [studentId, setStudentId] = useState('');
   const [messageType, setMessageType] = useState('general');
@@ -21,8 +34,8 @@ export default function WhatsAppMessageDialog({ open, onOpenChange, cls, contact
     setContactId(initialContactId || contacts[0]?.id || '');
     setStudentId(initialStudentId || '');
     setMessageType(initialMessageType);
-    setNote('');
-  }, [open, initialContactId, initialStudentId, initialMessageType, contacts]);
+    setNote(initialNote);
+  }, [open, initialContactId, initialStudentId, initialMessageType, initialNote, contacts]);
 
   const contact = contacts.find(item => item.id === contactId) || contacts[0];
   const student = students.find(item => item.id === studentId);
@@ -33,7 +46,8 @@ export default function WhatsAppMessageDialog({ open, onOpenChange, cls, contact
     className: cls?.name || 'הכיתה',
     studentName: student ? formatStudentName(student) : '',
     note,
-  }), [messageType, contact?.name, cls?.name, student, note]);
+    missingTestNames,
+  }), [messageType, contact?.name, cls?.name, student, note, missingTestNames]);
 
   const handleOpenWhatsApp = () => {
     if (!contact) return toast.error('לא הוגדר מחנכ/ת לכיתה');

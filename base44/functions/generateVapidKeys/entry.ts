@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       ecdh.setPrivateKey(toBuf(Deno.env.get('VAPID_PRIVATE_KEY') || ''));
       const derivedPub = ecdh.getPublicKey('base64url');
       storedPairValid = derivedPub === (Deno.env.get('VAPID_PUBLIC_KEY') || '');
-    } catch (_e) {
+    } catch {
       storedPairValid = false;
     }
 
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
       { publicKey: keys.publicKey, privateKey: keys.privateKey, storedPairValid },
       { headers: { 'Cache-Control': 'no-store' } },
     );
-  } catch (_error) {
+  } catch {
     return Response.json({ error: 'Unable to generate VAPID keys' }, { status: 500 });
   }
 });

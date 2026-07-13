@@ -29,6 +29,8 @@ const IMPORT_SCHEMA = {
   },
 };
 
+const PRIVATE_FILE_URL_TTL_SECONDS = 300;
+
 function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -143,8 +145,15 @@ export default function ImportStudentsDialog({ open, onOpenChange, onImport, cla
       let importedRows = [];
       if (isCsv) importedRows = parseCsv(await selectedFile.text());
       else {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
-        const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({ file_url, json_schema: IMPORT_SCHEMA });
+        const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: selectedFile });
+        const { signed_url } = await base44.integrations.Core.CreateFileSignedUrl({
+          file_uri,
+          expires_in: PRIVATE_FILE_URL_TTL_SECONDS,
+        });
+        const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+          file_url: signed_url,
+          json_schema: IMPORT_SCHEMA,
+        });
         importedRows = Array.isArray(extracted.output) ? extracted.output : extracted.output?.rows || [];
       }
       if (!importedRows.length) {

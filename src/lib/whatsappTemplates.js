@@ -22,9 +22,14 @@ export function getMessageType(key) {
   return WHATSAPP_MESSAGE_TYPES.find(type => type.key === key) || WHATSAPP_MESSAGE_TYPES[6];
 }
 
-export function buildWhatsAppMessage({ type, educatorName, className, studentName, note }) {
+export function buildWhatsAppMessage({ type, educatorName, className, studentName, note, missingTestNames = [] }) {
   const greeting = `שלום ${educatorName || 'מחנכ/ת הכיתה'},`;
   const trimmedNote = String(note || '').trim();
+  const normalizedMissingTestNames = [...new Set(
+    (Array.isArray(missingTestNames) ? missingTestNames : [])
+      .map(name => String(name || '').trim())
+      .filter(Boolean)
+  )];
 
   if (type === 'custom') {
     return [greeting, `רציתי לעדכן בנוגע לכיתה ${className}.`, trimmedNote, 'אשמח לשיתוף פעולה ומעקב.'].filter(Boolean).join('\n');
@@ -43,6 +48,9 @@ export function buildWhatsAppMessage({ type, educatorName, className, studentNam
   return [
     greeting,
     `רציתי לעדכן לגבי התלמיד/ה ${student} מכיתה ${className}, בנושא ${TOPICS[type] || 'השתתפות בשיעורי חנ״ג'}.`,
+    type === 'missing_tests' && normalizedMissingTestNames.length > 0
+      ? `המבדקים החסרים: ${normalizedMissingTestNames.join(', ')}.`
+      : '',
     trimmedNote,
     'אשמח לשיתוף פעולה ומעקב.',
   ].filter(Boolean).join('\n');

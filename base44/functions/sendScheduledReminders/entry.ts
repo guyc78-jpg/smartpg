@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({ lessonReminders, testReminders });
-  } catch (_error) {
+  } catch {
     return Response.json({ error: 'Scheduled reminder processing failed' }, { status: 500 });
   }
 });
