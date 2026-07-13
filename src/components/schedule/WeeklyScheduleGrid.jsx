@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { PERIODS, periodsForDay, getCurrentPeriod } from '@/lib/periodTimes';
 import { getScheduleGridDimensions } from '@/lib/scheduleGridLayout';
-import { getAdaptiveClassLabels, groupScheduleLessonsForDisplay } from '@/lib/scheduleDisplay';
+import { formatCompactClassSummary, getAdaptiveClassLabels, groupScheduleLessonsForDisplay } from '@/lib/scheduleDisplay';
 
 const DAYS = [0, 1, 2, 3, 4, 5];
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
@@ -107,8 +107,9 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                             const lessonSubject = lesson.subject || 'חינוך גופני';
                             const lessonClass = lesson.displayClassName || classById[lesson.classId]?.name || lesson.className || '';
                             const classNames = lesson.classLabels || [lessonClass];
-                            const { labels: allClassLabels, visibleLabels, overflowCount } = getAdaptiveClassLabels(classNames);
+                            const { labels: allClassLabels } = getAdaptiveClassLabels(classNames);
                             const hasMultipleClasses = lesson.isGrouped && allClassLabels.length > 1;
+                            const compactClassSummary = formatCompactClassSummary(allClassLabels);
                             return (
                               <button
                                 type="button"
@@ -120,18 +121,9 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                               >
                                 <p className="w-full min-w-0 truncate text-[11px] font-bold leading-tight">{lessonSubject}</p>
                                 {hasMultipleClasses ? (
-                                  <span className="mt-0.5 grid w-full grid-cols-2 gap-0.5 px-0.5" aria-hidden="true">
-                                    {visibleLabels.map(label => (
-                                      <span key={label} className="min-w-0 truncate rounded-md border border-primary/15 bg-background/55 px-0.5 py-px text-[8px] font-black leading-[12px] text-foreground shadow-[inset_0_1px_0_hsl(var(--background)/0.7)] dark:border-white/10 dark:bg-white/[0.06]">
-                                        {label}
-                                      </span>
-                                    ))}
-                                    {overflowCount > 0 && (
-                                      <span className="min-w-0 rounded-md border border-primary/25 bg-primary/10 px-0.5 py-px text-[8px] font-black leading-[12px] text-primary">
-                                        +{overflowCount}
-                                      </span>
-                                    )}
-                                  </span>
+                                  <p className="w-full min-w-0 truncate px-0.5 text-[9px] font-semibold leading-tight text-muted-foreground" aria-hidden="true">
+                                    {compactClassSummary}
+                                  </p>
                                 ) : lessonClass && (
                                   <p className="w-full min-w-0 truncate text-[9px] text-muted-foreground leading-tight">{lessonClass}</p>
                                 )}

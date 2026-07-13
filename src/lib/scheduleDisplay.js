@@ -25,6 +25,15 @@ export function getAdaptiveClassLabels(classNames) {
   return { labels, visibleLabels, overflowCount: labels.length - visibleLabels.length };
 }
 
+export function formatCompactClassSummary(classNames) {
+  const { labels } = getAdaptiveClassLabels(classNames);
+  if (labels.length <= 2) return labels.join(' · ');
+  const visibleLabels = labels.length > 4 ? labels.slice(0, 3) : labels;
+  const summary = formatCombinedClassNames(visibleLabels);
+  const hiddenCount = labels.length - visibleLabels.length;
+  return hiddenCount > 0 ? `${summary} +${hiddenCount}` : summary;
+}
+
 export function formatCombinedClassNames(classNames) {
   const names = [...new Set((classNames || []).map(normalizeClassName).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'he', { numeric: true, sensitivity: 'base' }));
