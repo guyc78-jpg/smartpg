@@ -9,7 +9,9 @@
     "moduleResolution": "bundler",
     "lib": ["esnext", "dom"],
     "target": "esnext",
+    "allowJs": true,
     "checkJs": false,
+    "strict": false,
     "noEmit": true,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
@@ -17,6 +19,6 @@
     "resolveJsonModule": true,
     "types": []
   },
-  "include": ["src/components/**/*.js", "src/pages/**/*.jsx", "src/Layout.jsx"],
-  "exclude": ["node_modules", "dist", "src/vite-plugins", "src/components/ui", "src/api", "src/lib"]
+  "include": ["src/**/*.js", "src/**/*.jsx"],
+  "exclude": ["node_modules", "dist", "base44/functions"]
 }

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useApp } from '@/store/AppProvider';
-import { calculateAnnualGrade } from '@/lib/gradeCalc';
+import { calculateAnnualGrade, isTestEligibleForClass } from '@/lib/gradeCalc';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,11 +40,8 @@ export default function ClassPage() {
 
   const classTests = useMemo(() => {
     if (!cls) return [];
-    const classGenderTrack = cls.genderTrack || 'boys';
-    return data.tests
-      .filter(t => !cls.gradeLevel || t.gradeLevel === cls.gradeLevel)
-      .filter(t => (t.genderTrack || 'boys') === classGenderTrack);
-  }, [data.tests, cls?.gradeLevel, cls?.genderTrack]);
+    return data.tests.filter(test => isTestEligibleForClass(test, cls));
+  }, [data.tests, cls]);
 
   const students = useMemo(
     () => data.students
@@ -55,6 +52,16 @@ export default function ClassPage() {
         || formatStudentName(a).localeCompare(formatStudentName(b), 'he')),
     [data.students, classId]
   );
+  const resultsByStudent = useMemo(() => {
+    const map = new Map();
+    data.results.forEach(result => map.set(result.studentId, [...(map.get(result.studentId) || []), result]));
+    return map;
+  }, [data.results]);
+  const behaviorByStudent = useMemo(() => {
+    const map = new Map();
+    data.behaviorGrades.forEach(result => map.set(result.studentId, [...(map.get(result.studentId) || []), result]));
+    return map;
+  }, [data.behaviorGrades]);
 
   const conductedTestIdsA = useMemo(
     () => data.classTestStatuses.filter(s => s.classId === classId && s.semester === 'A' && s.status === 'conducted').map(s => s.testId),
@@ -99,7 +106,7 @@ export default function ClassPage() {
   };
 
   const handleImport = async (studentsToImport) => {
-    const result = await importStudents(studentsToImport.map(s => ({ ...s, classId })), classId);
+    const result = await importStudents(studentsToImport, classId);
     toast.success(`יובאו ${result.added} תלמידים`);
     return result;
   };
@@ -202,10 +209,12 @@ export default function ClassPage() {
 
         <div className="space-y-2">
           {filtered.map(student => {
-            const annual = calculateAnnualGrade(student.id, classTests, data.results, data.behaviorGrades, data.settings, conductedTestIdsA, conductedTestIdsB, student.peExempt);
+            const studentResults = resultsByStudent.get(student.id) || [];
+            const annual = calculateAnnualGrade(student.id, classTests, studentResults, behaviorByStudent.get(student.id) || [], data.settings, conductedTestIdsA, conductedTestIdsB, student.peExempt);
             const displayGrade = viewMode === 'annual' ? annual.annualGrade : viewMode === 'A' ? annual.semA.semesterFinalGrade : annual.semB.semesterFinalGrade;
-            const completedResults = data.results.filter(r => r.studentId === student.id && r.status === 'completed').length;
-            const progress = classTests.length ? `${completedResults}/${classTests.length}` : '—';
+            const visibleTests = classTests.filter(test => viewMode === 'annual' || !test.semester || test.semester === viewMode);
+            const completedResults = studentResults.filter(r => r.status === 'completed' && visibleTests.some(test => test.id === r.testId) && (viewMode === 'annual' || r.semester === viewMode)).length;
+            const progress = visibleTests.length ? `${completedResults}/${visibleTests.length}` : '—';
             const redBelow = data.settings.gradeColorThresholds?.redBelow ?? 55;
             const isLow = displayGrade !== null && displayGrade < redBelow;
 
@@ -260,8 +269,18 @@ export default function ClassPage() {
           open={!!deleteStudentTarget}
           onOpenChange={() => setDeleteStudentTarget(null)}
           title={`מחיקת ${deleteStudentTarget?.name}`}
-          description="מחיקת התלמיד תסיר אותו מרשימת התלמידים, אך לא תמחק רשומות ציונים או מבדקים קיימות. האם למחוק בכל זאת?"
-          onConfirm={() => { deleteStudent(deleteStudentTarget.id); setDeleteStudentTarget(null); toast.success('התלמיד נמחק'); }}
+          description="מחיקת התלמיד תסיר גם את הציונים, המדידות ורשומות ההתנהגות המשויכות אליו. האם למחוק?"
+          onConfirm={async () => {
+            const target = deleteStudentTarget;
+            try {
+              await deleteStudent(target.id);
+              toast.success('התלמיד נמחק');
+            } catch {
+              toast.error('מחיקת התלמיד נכשלה');
+            } finally {
+              setDeleteStudentTarget(null);
+            }
+          }}
         />
         <WhatsAppMessageDialog
           open={!!whatsappStudent}

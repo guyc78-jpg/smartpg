@@ -17,11 +17,15 @@ export const STATUS_STYLES = {
 };
 
 export function exportFillsCsv(fills, label) {
+  const safe = value => {
+    const text = String(value ?? '');
+    return /^[=+\-@]/.test(text) ? `'${text}` : text;
+  };
   const rows = [
-    ['תאריך', 'שיעור', 'כיתה', 'סטטוס'],
-    ...fills.map(f => [f.date, f.period || '', f.className, STATUS_LABELS[f.status] || f.status]),
+    ['תאריך', 'שיעור', 'כיתה', 'נושא', 'מיקום', 'הערות', 'סטטוס'],
+    ...fills.map(f => [f.date, f.period || '', f.className, f.subject || '', f.location || '', f.notes || '', STATUS_LABELS[f.status] || f.status]),
   ];
-  const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const csv = '\uFEFF' + rows.map(r => r.map(v => `"${safe(v).replace(/"/g, '""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

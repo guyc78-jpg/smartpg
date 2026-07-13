@@ -1,54 +1,70 @@
 const isNode = typeof window === 'undefined';
-const windowObj = isNode ? { localStorage: new Map() } : window;
-const storage = windowObj.localStorage;
 
-const toSnakeCase = (str) => {
-	return str.replace(/([A-Z])/g, '_$1').toLowerCase();
+const EXPECTED_APP_ID = import.meta.env.VITE_BASE44_APP_ID || '6a1d68f94dec55d128da882f';
+const STORAGE_TOKEN_KEY = 'base44_access_token';
+const LEGACY_TOKEN_KEY = 'token';
+
+function consumeQueryParams() {
+  if (isNode) return {};
+
+  const params = new URLSearchParams(window.location.search);
+  const values = {
+    appId: params.get('app_id'),
+    accessToken: params.get('access_token'),
+    functionsVersion: params.get('functions_version'),
+    appBaseUrl: params.get('app_base_url'),
+    fromUrl: params.get('from_url'),
+  };
+
+  if (params.get('clear_access_token') === 'true') {
+    window.localStorage.removeItem(STORAGE_TOKEN_KEY);
+    window.localStorage.removeItem(LEGACY_TOKEN_KEY);
+  }
+
+  // Access tokens must not remain in browser history, copied URLs, or referrers.
+  if (values.accessToken) {
+    window.localStorage.setItem(STORAGE_TOKEN_KEY, values.accessToken);
+  }
+  ['access_token', 'clear_access_token'].forEach((key) => params.delete(key));
+  const nextUrl = `${window.location.pathname}${params.toString() ? `?${params}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, document.title, nextUrl);
+
+  return values;
 }
 
-const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl = false } = {}) => {
-	if (isNode) {
-		return defaultValue;
-	}
-	const storageKey = `base44_${toSnakeCase(paramName)}`;
-	const urlParams = new URLSearchParams(window.location.search);
-	const searchParam = urlParams.get(paramName);
-	if (removeFromUrl) {
-		urlParams.delete(paramName);
-		const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ""
-			}${window.location.hash}`;
-		window.history.replaceState({}, document.title, newUrl);
-	}
-	if (searchParam) {
-		storage.setItem(storageKey, searchParam);
-		return searchParam;
-	}
-	if (defaultValue) {
-		storage.setItem(storageKey, defaultValue);
-		return defaultValue;
-	}
-	const storedValue = storage.getItem(storageKey);
-	if (storedValue) {
-		return storedValue;
-	}
-	return null;
+function sameOriginUrl(value, fallback) {
+  if (isNode) return fallback;
+  try {
+    const parsed = new URL(value || fallback, window.location.origin);
+    return parsed.origin === window.location.origin ? parsed.origin : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
-const getAppParams = () => {
-	if (getAppParamValue("clear_access_token") === 'true') {
-		storage.removeItem('base44_access_token');
-		storage.removeItem('token');
-	}
-	return {
-		appId: getAppParamValue("app_id", { defaultValue: import.meta.env.VITE_BASE44_APP_ID }),
-		token: getAppParamValue("access_token", { removeFromUrl: true }),
-		fromUrl: getAppParamValue("from_url", { defaultValue: window.location.href }),
-		functionsVersion: getAppParamValue("functions_version", { defaultValue: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION }),
-		appBaseUrl: getAppParamValue("app_base_url", { defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL }),
-	}
+function safeFromUrl(value) {
+  if (isNode) return '/';
+  try {
+    const parsed = new URL(value || window.location.href, window.location.origin);
+    return parsed.origin === window.location.origin ? parsed.toString() : window.location.href;
+  } catch {
+    return window.location.href;
+  }
 }
 
+function safeFunctionsVersion(value) {
+  const candidate = value || import.meta.env.VITE_BASE44_FUNCTIONS_VERSION || null;
+  return typeof candidate === 'string' && /^[A-Za-z0-9._-]{1,64}$/.test(candidate) ? candidate : null;
+}
+
+const query = consumeQueryParams();
+const configuredBaseUrl = import.meta.env.VITE_BASE44_APP_BASE_URL || (!isNode ? window.location.origin : '');
 
 export const appParams = {
-	...getAppParams()
-}
+  // Never allow a URL to switch this production client to another Base44 app.
+  appId: query.appId === EXPECTED_APP_ID ? query.appId : EXPECTED_APP_ID,
+  token: !isNode ? window.localStorage.getItem(STORAGE_TOKEN_KEY) || window.localStorage.getItem(LEGACY_TOKEN_KEY) : null,
+  fromUrl: safeFromUrl(query.fromUrl),
+  functionsVersion: safeFunctionsVersion(query.functionsVersion),
+  appBaseUrl: sameOriginUrl(query.appBaseUrl, sameOriginUrl(configuredBaseUrl, !isNode ? window.location.origin : '')),
+};

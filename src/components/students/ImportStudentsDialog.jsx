@@ -77,8 +77,9 @@ function guessMapping(columns) {
 function normalizeGender(value) {
   const text = String(value || '').trim().toLowerCase();
   if (['בת', 'בנות', 'נקבה', 'girl', 'girls', 'female'].includes(text)) return 'girls';
+  if (['בן', 'בנים', 'זכר', 'boy', 'boys', 'male'].includes(text)) return 'boys';
   if (['אחר', 'other'].includes(text)) return 'other';
-  return text ? 'boys' : '';
+  return '';
 }
 
 function isExemptText(value) {
@@ -137,25 +138,26 @@ export default function ImportStudentsDialog({ open, onOpenChange, onImport, cla
     if (!selectedFile) return;
     setLoading(true);
 
-    const isCsv = selectedFile.name.toLowerCase().endsWith('.csv');
-    let importedRows = [];
-    if (isCsv) {
-      importedRows = parseCsv(await selectedFile.text());
-    } else {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
-      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({ file_url, json_schema: IMPORT_SCHEMA });
-      importedRows = Array.isArray(extracted.output) ? extracted.output : extracted.output?.rows || [];
-    }
-
-    if (!importedRows.length) {
-      setError('לא נמצאו שורות בקובץ. ודא שהקובץ כולל כותרות ונתוני תלמידים.');
+    try {
+      const isCsv = selectedFile.name.toLowerCase().endsWith('.csv');
+      let importedRows = [];
+      if (isCsv) importedRows = parseCsv(await selectedFile.text());
+      else {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
+        const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({ file_url, json_schema: IMPORT_SCHEMA });
+        importedRows = Array.isArray(extracted.output) ? extracted.output : extracted.output?.rows || [];
+      }
+      if (!importedRows.length) {
+        setError('לא נמצאו שורות בקובץ. ודא שהקובץ כולל כותרות ונתוני תלמידים.');
+        return;
+      }
+      setRows(importedRows);
+      setMapping(guessMapping(Object.keys(importedRows[0] || {})));
+    } catch (e) {
+      setError(`קריאת הקובץ נכשלה: ${e?.message || 'שגיאה לא ידועה'}`);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setRows(importedRows);
-    setMapping(guessMapping(Object.keys(importedRows[0] || {})));
-    setLoading(false);
   };
 
   const handleImport = async () => {
@@ -165,18 +167,23 @@ export default function ImportStudentsDialog({ open, onOpenChange, onImport, cla
       return;
     }
     setLoading(true);
-    const result = await onImport(mappedRows.map(row => ({
-      firstName: row.firstName,
-      lastName: row.lastName,
-      gender: row.gender,
-      classId: row.classId,
-      peNotes: row.peNotes,
-      medicalLimitations: row.medicalLimitations,
-      peExempt: row.peExempt,
-    })));
-    setSummary(result);
-    if (clearFileAfterImport) resetImport();
-    setLoading(false);
+    try {
+      const result = await onImport(mappedRows.map(row => ({
+        firstName: row.firstName,
+        lastName: row.lastName,
+        gender: row.gender,
+        classId: row.classId,
+        peNotes: row.peNotes,
+        medicalLimitations: row.medicalLimitations,
+        peExempt: row.peExempt,
+      })));
+      setSummary(result);
+      if (clearFileAfterImport) resetImport();
+    } catch (e) {
+      setError(`הייבוא נכשל: ${e?.message || 'שגיאה לא ידועה'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

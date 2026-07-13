@@ -1,0 +1,4 @@
+{
+  "name": "getVapidPublicKey",
+  "entry": "entry.ts"
+}

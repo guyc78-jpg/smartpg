@@ -2,7 +2,93 @@ import { createClientFromRequest } from 'npm:@base44/sdk';
 import mammoth from 'npm:mammoth@1.8.0';
 import { Buffer } from 'node:buffer';
 
+const MAX_DOCX_BYTES = 10 * 1024 * 1024;
+const FETCH_TIMEOUT_MS = 15000;
+
+class RequestError extends Error {
+  status: number;
+
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function isApprovedFileHost(hostname: string) {
+  const host = hostname.toLowerCase();
+  const configured = (Deno.env.get('BASE44_ALLOWED_FILE_HOSTS') || '')
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+  return host === 'media.base44.com'
+    || host === 'base44.app'
+    || host.endsWith('.base44.app')
+    || host.endsWith('.base44.com')
+    || configured.includes(host);
+}
+
+async function fetchApprovedDocx(fileUrl: unknown) {
+  let parsed: URL;
+  try {
+    parsed = new URL(String(fileUrl || ''));
+  } catch {
+    throw new RequestError('Invalid file URL');
+  }
+  if (parsed.protocol !== 'https:' || parsed.username || parsed.password || (parsed.port && parsed.port !== '443')) {
+    throw new RequestError('File URL must use HTTPS');
+  }
+  if (!isApprovedFileHost(parsed.hostname)) throw new RequestError('File host is not approved', 403);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(parsed, { signal: controller.signal, redirect: 'error' });
+  } catch {
+    throw new RequestError('Unable to fetch file');
+  } finally {
+    clearTimeout(timeout);
+  }
+  if (!response.ok) throw new RequestError('Unable to fetch file');
+
+  const declaredLength = Number(response.headers.get('content-length') || 0);
+  if (declaredLength > MAX_DOCX_BYTES) throw new RequestError('File is too large', 413);
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
+  if (contentType && !contentType.includes('wordprocessingml') && !contentType.includes('zip') && !contentType.includes('octet-stream')) {
+    throw new RequestError('Unsupported file type', 415);
+  }
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  const reader = response.body?.getReader();
+  if (!reader) throw new RequestError('Empty file');
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_DOCX_BYTES) {
+      await reader.cancel();
+      throw new RequestError('File is too large', 413);
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
+    throw new RequestError('File is not a valid DOCX document', 415);
+  }
+  return bytes.buffer;
+}
+
 Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405, headers: { Allow: 'POST' } });
+  }
+
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -11,9 +97,7 @@ Deno.serve(async (req) => {
     const { file_url, raw_only } = await req.json();
     if (!file_url) return Response.json({ error: 'file_url is required' }, { status: 400 });
 
-    const fileRes = await fetch(file_url);
-    if (!fileRes.ok) return Response.json({ error: 'Failed to fetch file' }, { status: 400 });
-    const arrayBuffer = await fileRes.arrayBuffer();
+    const arrayBuffer = await fetchApprovedDocx(file_url);
 
     const { value: html } = await mammoth.convertToHtml({ buffer: Buffer.from(arrayBuffer) });
 
@@ -28,7 +112,7 @@ Deno.serve(async (req) => {
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
-    if (raw_only) return Response.json({ text });
+    if (raw_only === true) return Response.json({ text: text.slice(0, 30000) });
 
     const parseVal = (v) => {
       const s = String(v).trim();
@@ -174,6 +258,9 @@ ${text.slice(0, 30000)}`,
 
     return Response.json({ grade_level: result.grade_level || '', gender: result.gender || '', rows });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    if (error instanceof RequestError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
+    return Response.json({ error: 'Document parsing failed' }, { status: 500 });
   }
 });

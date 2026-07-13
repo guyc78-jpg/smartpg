@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '@/store/AppProvider';
-import { calculateAnnualGrade } from '@/lib/gradeCalc';
+import { calculateAnnualGrade, isTestEligibleForClass } from '@/lib/gradeCalc';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,6 @@ import { exportClassReportCSV } from '@/lib/exportReport';
 export default function ReportsPage() {
   const { data } = useApp();
   const [selectedClass, setSelectedClass] = useState('');
-  const [viewMode, setViewMode] = useState('annual');
 
   const sortedClasses = useMemo(() => {
     const gradeIdx = c => {
@@ -36,13 +35,20 @@ export default function ReportsPage() {
     () => data.students.filter(s => s.classId === selectedClass).sort((a, b) => formatStudentName(a).localeCompare(formatStudentName(b), 'he')),
     [data.students, selectedClass]
   );
+  const resultsByStudent = useMemo(() => {
+    const map = new Map();
+    data.results.forEach(result => map.set(result.studentId, [...(map.get(result.studentId) || []), result]));
+    return map;
+  }, [data.results]);
+  const behaviorByStudent = useMemo(() => {
+    const map = new Map();
+    data.behaviorGrades.forEach(result => map.set(result.studentId, [...(map.get(result.studentId) || []), result]));
+    return map;
+  }, [data.behaviorGrades]);
 
   const classTests = useMemo(() => {
-    if (!cls) return data.tests;
-    const g = cls.genderTrack || 'boys';
-    let filtered = data.tests;
-    if (cls.gradeLevel) filtered = filtered.filter(t => t.gradeLevel === cls.gradeLevel);
-    return filtered.filter(t => (t.genderTrack || 'boys') === g);
+    if (!cls) return [];
+    return data.tests.filter(test => isTestEligibleForClass(test, cls));
   }, [data.tests, cls]);
 
   const conductedTestIdsA = useMemo(
@@ -57,9 +63,9 @@ export default function ReportsPage() {
   const studentGrades = useMemo(
     () => students.map(s => ({
       student: s,
-      annual: calculateAnnualGrade(s.id, classTests, data.results, data.behaviorGrades, data.settings, conductedTestIdsA, conductedTestIdsB, s.peExempt),
+      annual: calculateAnnualGrade(s.id, classTests, resultsByStudent.get(s.id) || [], behaviorByStudent.get(s.id) || [], data.settings, conductedTestIdsA, conductedTestIdsB, s.peExempt),
     })),
-    [students, classTests, data.results, data.behaviorGrades, data.settings, conductedTestIdsA, conductedTestIdsB]
+    [students, classTests, resultsByStudent, behaviorByStudent, data.settings, conductedTestIdsA, conductedTestIdsB]
   );
 
   // Global stats
@@ -70,18 +76,16 @@ export default function ReportsPage() {
     let failCount = 0;
     let missingCount = 0;
 
-    data.classes.forEach(c => {
+    const reportClasses = data.classes.filter(c => (c.status || 'active') === 'active');
+    reportClasses.forEach(c => {
       const cs = data.students.filter(s => s.classId === c.id);
-      const g = c.genderTrack || 'boys';
-      let cTests = data.tests;
-      if (c.gradeLevel) cTests = cTests.filter(t => t.gradeLevel === c.gradeLevel);
-      cTests = cTests.filter(t => (t.genderTrack || 'boys') === g);
+      const cTests = data.tests.filter(test => isTestEligibleForClass(test, c));
       const ctsA = data.classTestStatuses.filter(s => s.classId === c.id && s.semester === 'A' && s.status === 'conducted').map(s => s.testId);
       const ctsB = data.classTestStatuses.filter(s => s.classId === c.id && s.semester === 'B' && s.status === 'conducted').map(s => s.testId);
 
       cs.forEach(s => {
         if (s.peExempt) return;
-        const annual = calculateAnnualGrade(s.id, cTests, data.results, data.behaviorGrades, data.settings, ctsA, ctsB, s.peExempt);
+        const annual = calculateAnnualGrade(s.id, cTests, resultsByStudent.get(s.id) || [], behaviorByStudent.get(s.id) || [], data.settings, ctsA, ctsB, s.peExempt);
         if (annual.annualGrade !== null) {
           allGrades.push(annual.annualGrade);
           if (annual.annualGrade < redBelow) failCount++;
@@ -93,8 +97,9 @@ export default function ReportsPage() {
     });
 
     const avgOf = arr => (arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
-    return { avg: avgOf(allGrades), avgA: avgOf(gradesA), avgB: avgOf(gradesB), totalStudents: data.students.length, totalClasses: data.classes.length, failCount, missingCount };
-  }, [data]);
+    const activeIds = new Set(reportClasses.map(c => c.id));
+    return { avg: avgOf(allGrades), avgA: avgOf(gradesA), avgB: avgOf(gradesB), totalStudents: data.students.filter(student => activeIds.has(student.classId)).length, totalClasses: reportClasses.length, failCount, missingCount };
+  }, [data, resultsByStudent, behaviorByStudent, redBelow]);
 
   // Per-class summary
   const summary = useMemo(() => {
@@ -195,7 +200,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-sm">{cls?.name}</h3>
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => exportClassReportCSV(cls?.name, studentGrades)}>
+                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => exportClassReportCSV(cls?.name, studentGrades, classTests, data.results)}>
                   <Download className="w-3 h-3" /> ייצוא
                 </Button>
                 <Badge variant="secondary" className="text-[10px]">{summary.total} תלמידים</Badge>
@@ -227,9 +232,11 @@ export default function ReportsPage() {
                       <span className="text-sm font-medium">{formatStudentName(student)}</span>
                       {student.peExempt && <Badge variant="outline" className="text-[8px] px-1 py-0">פטור</Badge>}
                     </div>
-                    {grade !== null && (
-                      <span className={`text-sm font-bold ${isLow ? 'text-destructive' : 'text-primary'}`}>{grade}</span>
-                    )}
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs shrink-0" dir="ltr">
+                      <span title="מחצית א׳">{annual.semA.semesterFinalGrade ?? '—'}</span>
+                      <span title="מחצית ב׳">{annual.semB.semesterFinalGrade ?? '—'}</span>
+                      <span title="שנתי" className={`font-bold ${isLow ? 'text-destructive' : 'text-primary'}`}>{grade ?? '—'}</span>
+                    </div>
                   </div>
                 );
               })}

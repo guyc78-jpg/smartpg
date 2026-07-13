@@ -1,50 +1,65 @@
 import { createClientFromRequest } from 'npm:@base44/sdk';
 import webpush from 'npm:web-push@3.6.7';
 
+const MAX_TITLE_LENGTH = 100;
+const MAX_BODY_LENGTH = 300;
+
+function safePath(value: unknown) {
+  const path = String(value || '/').trim();
+  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) return '/';
+  return path.slice(0, 500);
+}
+
 Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405, headers: { Allow: 'POST' } });
+  }
+
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { title, body, url, endpoint } = await req.json();
-    if (!title) return Response.json({ error: 'title is required' }, { status: 400 });
-
-    webpush.setVapidDetails(
-      'mailto:notifications@smartpejournal.app',
-      Deno.env.get('VAPID_PUBLIC_KEY'),
-      Deno.env.get('VAPID_PRIVATE_KEY')
-    );
-
-    // Target a specific device (by endpoint) or all of the current user's devices
-    const query = endpoint ? { endpoint } : {};
-    const subs = await base44.entities.PushSubscription.filter(query);
-    if (subs.length === 0) {
-      return Response.json({ error: 'No push subscriptions found' }, { status: 404 });
+    const normalizedTitle = String(title || '').trim().slice(0, MAX_TITLE_LENGTH);
+    const normalizedBody = String(body || '').trim().slice(0, MAX_BODY_LENGTH);
+    const normalizedEndpoint = String(endpoint || '').trim();
+    if (!normalizedTitle) return Response.json({ error: 'title is required' }, { status: 400 });
+    if (!normalizedEndpoint || normalizedEndpoint.length > 2048) {
+      return Response.json({ error: 'A valid endpoint is required' }, { status: 400 });
     }
 
-    const payload = JSON.stringify({ title, body: body || '', url: url || '/' });
-    const results = [];
+    const publicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+    const privateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+    if (!publicKey || !privateKey) {
+      return Response.json({ error: 'Push notifications are unavailable' }, { status: 503 });
+    }
 
-    for (const sub of subs) {
-      try {
-        await webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payload
-        );
-        results.push({ endpoint: sub.endpoint, ok: true });
-      } catch (err) {
-        // Clean up expired/invalid subscriptions
-        if (err.statusCode === 404 || err.statusCode === 410) {
-          await base44.entities.PushSubscription.delete(sub.id);
-        }
-        results.push({ endpoint: sub.endpoint, ok: false, error: err.message, statusCode: err.statusCode });
+    webpush.setVapidDetails('mailto:notifications@smartpejournal.app', publicKey, privateKey);
+
+    // A user may send a test notification only to a subscription they own.
+    const subs = await base44.entities.PushSubscription.filter({
+      endpoint: normalizedEndpoint,
+      created_by: user.email,
+    });
+    const sub = subs?.[0];
+    if (!sub) return Response.json({ error: 'Subscription not found' }, { status: 404 });
+
+    const payload = JSON.stringify({ title: normalizedTitle, body: normalizedBody, url: safePath(url) });
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        payload,
+      );
+    } catch (error: any) {
+      if (error?.statusCode === 404 || error?.statusCode === 410) {
+        await base44.entities.PushSubscription.delete(sub.id);
       }
+      return Response.json({ error: 'Notification delivery failed' }, { status: 502 });
     }
 
-    const sent = results.filter((r) => r.ok).length;
-    return Response.json({ sent, total: results.length, results });
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ sent: 1 });
+  } catch (_error) {
+    return Response.json({ error: 'Notification request failed' }, { status: 500 });
   }
 });

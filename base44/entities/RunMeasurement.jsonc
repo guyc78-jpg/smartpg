@@ -3,17 +3,23 @@
   "type": "object",
   "properties": {
     "student_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "class_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "date": {
       "type": "string",
       "format": "date"
     },
     "period": {
-      "type": "number"
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
     },
     "measurement_type": {
       "type": "string",
@@ -27,10 +33,14 @@
       ]
     },
     "result_seconds": {
-      "type": "number"
+      "type": "number",
+      "minimum": 0,
+      "maximum": 86400
     },
     "result_distance": {
-      "type": "number"
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1000000
     },
     "status": {
       "type": "string",
@@ -42,7 +52,8 @@
       "default": "running"
     },
     "notes": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 2000
     }
   },
   "required": [
@@ -50,5 +61,31 @@
     "class_id",
     "date",
     "measurement_type"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "id": "{{user.id}}" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
 }

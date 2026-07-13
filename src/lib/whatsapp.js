@@ -7,8 +7,12 @@ export function normalizeWhatsAppPhone(phone = '') {
 }
 
 export function isValidWhatsAppPhone(phone) {
+  const raw = String(phone || '').trim();
+  const hasExplicitCountry = raw.startsWith('+') || raw.startsWith('00') || raw.replace(/\D/g, '').startsWith('972');
+  const isIsraeliLocal = raw.replace(/\D/g, '').startsWith('0');
+  if (!hasExplicitCountry && !isIsraeliLocal) return false;
   const normalized = normalizeWhatsAppPhone(phone);
-  return normalized.length >= 8 && normalized.length <= 15;
+  return /^[1-9]\d{9,14}$/.test(normalized);
 }
 
 export function getWhatsAppUrl(phone, message = '') {

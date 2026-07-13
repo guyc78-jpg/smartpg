@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useApp } from '@/store/AppProvider';
-import { calculateAnnualGrade } from '@/lib/gradeCalc';
+import { calculateAnnualGrade, isTestEligibleForClass } from '@/lib/gradeCalc';
 import Layout from '@/components/app/Layout';
 import StudentGradeBreakdown from '@/components/grades/StudentGradeBreakdown';
 import StudentInfoCard from '@/components/student-profile/StudentInfoCard';
@@ -23,10 +23,7 @@ export default function StudentProfilePage() {
 
   const classTests = useMemo(() => {
     if (!cls) return [];
-    const gender = cls.genderTrack || 'boys';
-    return data.tests
-      .filter(t => !cls.gradeLevel || t.gradeLevel === cls.gradeLevel)
-      .filter(t => (t.genderTrack || 'boys') === gender);
+    return data.tests.filter(test => isTestEligibleForClass(test, cls));
   }, [data.tests, cls]);
 
   const conductedTestIdsA = useMemo(
@@ -45,7 +42,7 @@ export default function StudentProfilePage() {
 
   useEffect(() => {
     let active = true;
-    (async () => {
+    const loadRuns = async () => {
       setLoadingRuns(true);
       try {
         const rows = await base44.entities.RunMeasurement.filter({ student_id: studentId });
@@ -54,8 +51,10 @@ export default function StudentProfilePage() {
         if (active) setRunMeasurements([]);
       }
       if (active) setLoadingRuns(false);
-    })();
-    return () => { active = false; };
+    };
+    loadRuns();
+    const unsubscribe = base44.entities.RunMeasurement.subscribe(() => loadRuns());
+    return () => { active = false; unsubscribe?.(); };
   }, [studentId]);
 
   if (!cls || !student) {

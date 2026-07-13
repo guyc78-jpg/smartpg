@@ -5,7 +5,7 @@ import { useTheme } from '@/hooks/useTheme';
 import BottomNav from '@/components/app/BottomNav';
 import HeaderMoreMenu from '@/components/app/HeaderMoreMenu';
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'ראשי' },
   { to: '/schedule', icon: CalendarDays, label: 'מערכת שעות' },
   { to: '/live-run', icon: Activity, label: 'ריצה חיה' },
@@ -15,18 +15,30 @@ const NAV_ITEMS = [
 
 function NavItem({ to, icon: Icon, label }) {
   const location = useLocation();
-  const active = location.pathname === to;
+  const active = location.pathname === to || (to !== '/' && location.pathname.startsWith(`${to}/`));
   return (
-    <Link to={to} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}>
-      <Icon className="w-4 h-4" />
+    <Link
+      to={to}
+      aria-current={active ? 'page' : undefined}
+      className={`flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}
+    >
+      <Icon className="w-4 h-4" aria-hidden="true" />
       {label}
     </Link>
   );
 }
 
+export function DesktopNavigation({ className = '' }) {
+  return (
+    <nav aria-label="ניווט ראשי" className={`hidden md:flex items-center gap-1 ${className}`}>
+      {NAV_ITEMS.map(item => <NavItem key={item.to} {...item} />)}
+      <NavItem to="/settings" icon={Settings} label="הגדרות" />
+    </nav>
+  );
+}
+
 export default function Layout({ children, title, backTo, subtitle, titleAction, menuItems }) {
   const { dark, toggle } = useTheme();
-  const location = useLocation();
   const headerRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -49,16 +61,10 @@ export default function Layout({ children, title, backTo, subtitle, titleAction,
       >
         {/* Desktop Nav Bar */}
         <div className="hidden md:flex items-center gap-3 px-4 h-14 border-b border-border/40">
-          <div className="flex items-center gap-1">
-            {NAV_ITEMS.map(item => <NavItem key={item.to} {...item} />)}
-            <Link to="/settings" className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}>
-              <Settings className="w-4 h-4" />
-              הגדרות
-            </Link>
-          </div>
+          <DesktopNavigation />
           <div className="flex-1" />
-          <button onClick={toggle} aria-label="החלף מצב תצוגה" className="h-8 w-8 flex items-center justify-center text-muted-foreground rounded-md hover:bg-secondary/50 transition-colors">
-            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          <button onClick={toggle} aria-label={dark ? 'מעבר למצב בהיר' : 'מעבר למצב כהה'} className="h-11 w-11 flex items-center justify-center text-muted-foreground rounded-xl hover:bg-secondary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            {dark ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
           </button>
         </div>
 
@@ -66,8 +72,8 @@ export default function Layout({ children, title, backTo, subtitle, titleAction,
         {(title || backTo) && (
           <div className="flex items-center gap-2 px-4 py-2 border-b border-border/30">
             {backTo && (
-              <Link to={backTo} className="flex items-center text-muted-foreground hover:text-foreground transition-colors">
-                <ArrowRight className="w-4 h-4" />
+              <Link to={backTo} aria-label="חזרה" className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             )}
             <div className="flex-1 min-w-0 text-right">

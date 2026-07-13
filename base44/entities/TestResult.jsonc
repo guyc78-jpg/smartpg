@@ -3,10 +3,14 @@
   "type": "object",
   "properties": {
     "student_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "test_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "semester": {
       "type": "string",
@@ -16,7 +20,9 @@
       ]
     },
     "raw_score": {
-      "type": "number"
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1000000
     },
     "status": {
       "type": "string",
@@ -32,7 +38,9 @@
       "default": "completed"
     },
     "attempt_count": {
-      "type": "number",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
       "default": 1
     },
     "test_date": {
@@ -40,21 +48,53 @@
       "format": "date"
     },
     "run_time_seconds": {
-      "type": "number"
+      "type": "number",
+      "minimum": 0,
+      "maximum": 86400
     },
     "laps_completed": {
-      "type": "number"
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10000
     },
     "route_name": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 160
     },
     "live_run_id": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 128
     }
   },
   "required": [
     "student_id",
     "test_id",
     "semester"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "id": "{{user.id}}" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
 }

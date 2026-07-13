@@ -3,14 +3,18 @@
   "type": "object",
   "properties": {
     "class_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "date": {
       "type": "string",
       "format": "date"
     },
     "period": {
-      "type": "number"
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
     },
     "semester": {
       "type": "string",
@@ -20,37 +24,71 @@
       ]
     },
     "topic": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 500
     },
     "location": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 160
     },
     "objective": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 1000
     },
     "equipment": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 1000
     },
     "activity_type": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 120
     },
     "notes": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 4000
     },
     "post_lesson_notes": {
       "type": "string",
-      "description": "Documentation filled in after the lesson took place"
+      "description": "Documentation filled in after the lesson took place",
+      "maxLength": 4000
     },
     "is_template": {
       "type": "boolean",
       "default": false
     },
     "template_name": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 160
     }
   },
   "required": [
     "class_id",
     "date"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "id": "{{user.id}}" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
 }

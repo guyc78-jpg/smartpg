@@ -116,17 +116,20 @@ export default function HomePage() {
 
         <div className="flex items-center justify-start pt-1">
           <button
+            type="button"
             onClick={() => setMyClassesOpen(o => !o)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/60 bg-card/70 text-sm font-bold text-foreground"
+            aria-expanded={myClassesOpen}
+            aria-controls="my-classes-list"
+            className="flex min-h-11 items-center gap-2 px-3 py-2 rounded-full border border-border/60 bg-card/70 text-sm font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Users className="w-4 h-4 text-primary" />
+            <Users className="w-4 h-4 text-primary" aria-hidden="true" />
             הכיתות שלי
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${myClassesOpen ? '' : '-rotate-90'}`} />
+            <ChevronDown aria-hidden="true" className={`w-4 h-4 text-muted-foreground transition-transform ${myClassesOpen ? '' : '-rotate-90'}`} />
           </button>
         </div>
 
         {myClassesOpen && (
-          <div className="space-y-2">
+          <div id="my-classes-list" className="space-y-2">
             {visibleClasses.map(cls => (
               <ClassCard
                 key={cls.id}

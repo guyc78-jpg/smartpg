@@ -4,11 +4,14 @@
   "properties": {
     "name": {
       "type": "string",
-      "description": "Class name"
+      "description": "Class name",
+      "minLength": 1,
+      "maxLength": 120
     },
     "grade_level": {
       "type": "string",
-      "description": "Grade level"
+      "description": "Grade level",
+      "maxLength": 40
     },
     "gender_track": {
       "type": "string",
@@ -19,14 +22,18 @@
       "default": "boys"
     },
     "homeroom_teacher": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 160
     },
     "student_count": {
-      "type": "number",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000,
       "default": 0
     },
     "notes": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 2000
     },
     "status": {
       "type": "string",
@@ -39,12 +46,53 @@
     "homeroom_contacts": {
       "type": "array",
       "items": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "maxLength": 128 },
+          "name": { "type": "string", "maxLength": 160 },
+          "phone": { "type": "string", "maxLength": 32, "pattern": "^[+0-9() .-]*$" }
+        }
       },
-      "default": []
+      "default": [],
+      "rls": {
+        "create": { "user_condition": { "id": "{{user.id}}" } },
+        "read": {
+          "$or": [
+            { "created_by": "{{user.email}}" },
+            { "user_condition": { "role": "admin" } }
+          ]
+        },
+        "update": { "user_condition": { "role": "admin" } }
+      }
     }
   },
   "required": [
     "name"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "id": "{{user.id}}" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
 }

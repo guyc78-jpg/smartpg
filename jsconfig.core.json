@@ -1,0 +1,15 @@
+{
+  "extends": "./jsconfig.json",
+  "compilerOptions": {
+    "checkJs": true,
+    "noImplicitAny": false,
+    "types": []
+  },
+  "include": [
+    "src/lib/gradeCalc.js",
+    "src/lib/scheduleImport.js",
+    "src/lib/whatsapp.js",
+    "src/components/live-run/runSetupUtils.js"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

@@ -60,7 +60,7 @@ export default function ResetPassword() {
       subtitle="הזינו את הסיסמה החדשה שלכם"
     >
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div id="reset-password-error" role="alert" aria-live="assertive" className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
           {error}
         </div>
       )}
@@ -78,6 +78,8 @@ export default function ResetPassword() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="pl-10 h-12"
+              aria-describedby={error ? 'reset-password-error' : undefined}
+              aria-invalid={Boolean(error)}
               required
             />
           </div>
@@ -94,6 +96,8 @@ export default function ResetPassword() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="pl-10 h-12"
+              aria-describedby={error ? 'reset-password-error' : undefined}
+              aria-invalid={Boolean(error)}
               required
             />
           </div>

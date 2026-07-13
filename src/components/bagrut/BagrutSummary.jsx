@@ -18,14 +18,19 @@ export default function BagrutSummary({ cls, students, components, bagrutResults
   }), [students, components, bagrutResults]);
 
   const exportCsv = () => {
+    const csvCell = value => {
+      const text = String(value ?? '');
+      const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
+      return `"${safe.replace(/"/g, '""')}"`;
+    };
     const header = ['שם התלמיד', ...components.map(c => `${c.name} (${c.weight}%)`), 'ציון סופי', 'רכיבים חסרים'];
     const lines = rows.map(r => [
       formatStudentName(r.student),
       ...(r.exempt ? components.map(() => 'פטור') : r.compGrades.map(g => g ?? '')),
       r.grade ?? '',
       r.exempt ? '' : r.missingCount,
-    ].join(','));
-    const csv = '\uFEFF' + [header.join(','), ...lines].join('\n');
+    ].map(csvCell).join(','));
+    const csv = '\uFEFF' + [header.map(csvCell).join(','), ...lines].join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url;

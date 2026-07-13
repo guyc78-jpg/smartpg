@@ -13,6 +13,7 @@ import { AppProvider, useApp } from '@/store/AppProvider';
 import { LiveRunProvider } from '@/contexts/LiveRunContext';
 import FloatingRunTimer from '@/components/live-run/FloatingRunTimer';
 import NewUserGuide from '@/components/onboarding/NewUserGuide';
+import RouteTelemetry from '@/components/app/RouteTelemetry';
 
 const Login = lazy(() => import('@/pages/Login'));
 const Register = lazy(() => import('@/pages/Register'));
@@ -33,6 +34,8 @@ const LessonManagePage = lazy(() => import('./pages/LessonManagePage'));
 const LessonEditPage = lazy(() => import('./pages/LessonEditPage'));
 const SubstituteFillsPage = lazy(() => import('./pages/SubstituteFillsPage'));
 const MissingGradesPage = lazy(() => import('./pages/MissingGradesPage'));
+const AttendancePage = lazy(() => import('./pages/AttendancePage'));
+const StopwatchPage = lazy(() => import('./pages/StopwatchPage'));
 
 const PageFallback = () => (
   <div className="min-h-screen flex items-center justify-center" dir="rtl">
@@ -46,7 +49,7 @@ const PageFallback = () => (
 
 const AppShell = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
-  const { loading: isLoadingData } = useApp();
+  const { loading: isLoadingData, loadError, loadAll } = useApp();
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [loaderGone, setLoaderGone] = useState(false);
 
@@ -59,6 +62,24 @@ const AppShell = () => {
 
   if (appReady && authError) {
     if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
+  }
+
+  if (appReady && loadError) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-5" dir="rtl">
+        <section className="glass-surface w-full max-w-md rounded-3xl p-6 text-center space-y-4" role="alert">
+          <h1 className="text-xl font-black">לא הצלחנו לטעון את נתוני היומן</h1>
+          <p className="text-sm text-muted-foreground">הנתונים שלך לא נמחקו. בדוק את החיבור ונסה שוב.</p>
+          <button
+            type="button"
+            onClick={() => loadAll()}
+            className="btn-3d min-h-12 w-full rounded-xl bg-primary px-4 font-bold text-primary-foreground"
+          >
+            נסה לטעון מחדש
+          </button>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -78,12 +99,14 @@ const AppShell = () => {
           <Route path="/class/:classId" element={<ClassPage />} />
           <Route path="/class/:classId/student/:studentId" element={<StudentProfilePage />} />
           <Route path="/class/:classId/tests" element={<TestsPage />} />
+          <Route path="/class/:classId/attendance" element={<AttendancePage />} />
           <Route path="/class/:classId/bagrut" element={<BagrutTestsPage />} />
           <Route path="/manage-tests" element={<ManageTestsPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/lesson-manage" element={<LessonManagePage />} />
           <Route path="/lesson-edit" element={<LessonEditPage />} />
           <Route path="/live-run" element={<LiveRunPage />} />
+          <Route path="/stopwatch" element={<StopwatchPage />} />
           <Route path="/substitute-fills" element={<SubstituteFillsPage />} />
           <Route path="/missing-grades" element={<MissingGradesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
@@ -112,6 +135,7 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <RouteTelemetry />
           <AuthenticatedApp />
         </Router>
         <Toaster />

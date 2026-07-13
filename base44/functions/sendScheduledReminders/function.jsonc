@@ -1,0 +1,16 @@
+{
+  "name": "sendScheduledReminders",
+  "entry": "entry.ts",
+  "automations": [
+    {
+      "name": "Send PE schedule and test reminders",
+      "description": "Runs every five minutes and sends owner-scoped reminders in Israel local time",
+      "type": "scheduled",
+      "schedule_mode": "recurring",
+      "schedule_type": "cron",
+      "cron_expression": "*/5 * * * *",
+      "ends_type": "never",
+      "is_active": true
+    }
+  ]
+}

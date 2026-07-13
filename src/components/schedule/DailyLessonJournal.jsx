@@ -15,7 +15,7 @@ export default function DailyLessonJournal({ dateIso, onDateChange, scheduleLess
   const currentPeriod = dateIso === todayIso ? getCurrentPeriod() : null;
 
   const dayLessons = (scheduleLessons || []).filter(l => l.dayOfWeek === dayIdx);
-  const lessonAt = (p) => dayLessons.find(l => Number(l.period) === Number(p)) || null;
+  const lessonsAt = (p) => dayLessons.filter(l => Number(l.period) === Number(p));
 
   return (
     <div className="space-y-3" dir="rtl">
@@ -31,11 +31,8 @@ export default function DailyLessonJournal({ dateIso, onDateChange, scheduleLess
 
       <div className="space-y-2">
         {periodsForDay(dayIdx).map(p => {
-          const lesson = lessonAt(p);
-          const cls = lesson ? classById[lesson.classId] : null;
-          const topic = lesson
-            ? (lessonTopics || []).find(t => t.classId === lesson.classId && t.date === dateIso && Number(t.period) === p)
-            : null;
+          const lessons = lessonsAt(p);
+          const lesson = lessons[0] || null;
           const isCurrent = p === currentPeriod;
           const isOpen = expanded === p;
 
@@ -47,7 +44,7 @@ export default function DailyLessonJournal({ dateIso, onDateChange, scheduleLess
                 </span>
                 <Calendar className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                 <span className={`text-sm truncate ${lesson ? 'font-black text-primary' : 'font-semibold text-muted-foreground'}`}>
-                  {lesson ? (cls?.name || lesson.className) : 'פנוי'}
+                  {lesson ? lessons.map(item => classById[item.classId]?.name || item.className || item.subject).filter(Boolean).join(', ') : 'פנוי'}
                 </span>
                 <span className="flex-1" />
                 <span className={`font-mono text-sm font-bold tracking-wide shrink-0 ${isCurrent ? 'text-foreground' : 'text-muted-foreground'}`} dir="ltr">
@@ -59,23 +56,25 @@ export default function DailyLessonJournal({ dateIso, onDateChange, scheduleLess
               {isOpen && (
                 <div className="px-3 pb-3 space-y-2 border-t border-border/50 pt-2">
                   {lesson ? (
-                    <>
-                      <p className="text-xs text-muted-foreground">{topic?.topic || 'טרם הוגדר נושא לשיעור'}</p>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <Link to={`/lesson-edit?classId=${lesson.classId}&period=${p}&date=${dateIso}`} className="h-10 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
-                          <Edit2 className="w-3.5 h-3.5" />
-                          עריכה
-                        </Link>
-                        <Link to={`/live-run?classId=${lesson.classId}&period=${p}&date=${dateIso}`} className="h-10 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70">
-                          <Activity className="w-3.5 h-3.5" />
-                          ריצה חיה
-                        </Link>
-                        <Link to={`/lesson-manage?classId=${lesson.classId}&period=${p}&date=${dateIso}`} className="h-10 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-primary/10 text-primary text-[10px] font-semibold hover:bg-primary/20">
-                          <ChevronLeft className="w-3.5 h-3.5" />
-                          ניהול שיעור
-                        </Link>
-                      </div>
-                    </>
+                    <div className="space-y-2">
+                      {lessons.map(item => {
+                        const itemClass = classById[item.classId];
+                        const topic = (lessonTopics || []).find(t => t.classId === item.classId && t.date === dateIso && Number(t.period) === p);
+                        return (
+                          <div key={item.id} className="rounded-xl border border-border/50 p-2 space-y-2">
+                            <p className="text-xs font-bold">{itemClass?.name || item.className || item.subject}</p>
+                            <p className="text-xs text-muted-foreground">{topic?.topic || 'טרם הוגדר נושא לשיעור'}</p>
+                            {item.classId && (
+                              <div className="grid grid-cols-3 gap-1.5">
+                                <Link to={`/lesson-edit?classId=${item.classId}&period=${p}&date=${dateIso}`} className="h-10 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70"><Edit2 className="w-3.5 h-3.5" />עריכה</Link>
+                                <Link to={`/live-run?classId=${item.classId}&period=${p}&date=${dateIso}&lock=1`} className="h-10 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/70"><Activity className="w-3.5 h-3.5" />ריצה חיה</Link>
+                                <Link to={`/lesson-manage?classId=${item.classId}&period=${p}&date=${dateIso}`} className="h-10 flex flex-col items-center justify-center gap-0.5 rounded-lg bg-primary/10 text-primary text-[10px] font-semibold hover:bg-primary/20"><ChevronLeft className="w-3.5 h-3.5" />ניהול שיעור</Link>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : (
                     <Button variant="outline" onClick={() => onAssign(dayIdx, p)} className="w-full h-10 text-xs gap-1.5 rounded-xl">
                       <Plus className="w-3.5 h-3.5" />

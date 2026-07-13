@@ -114,24 +114,24 @@ export default function LessonEditPage() {
 
             <Card className="card-3d rounded-2xl p-4 space-y-3">
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">נושא שיעור</Label>
-                <Input value={form.topic} onChange={e => updateForm('topic', e.target.value)} className="h-10 text-sm text-right" />
+                <Label htmlFor="lesson-topic" className="text-xs text-muted-foreground">נושא שיעור</Label>
+                <Input id="lesson-topic" value={form.topic} onChange={e => updateForm('topic', e.target.value)} className="h-11 text-sm text-right" />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">מטרת השיעור</Label>
-                <Textarea value={form.objective} onChange={e => updateForm('objective', e.target.value)} className="min-h-[64px] text-sm text-right" />
+                <Label htmlFor="lesson-objective" className="text-xs text-muted-foreground">מטרת השיעור</Label>
+                <Textarea id="lesson-objective" value={form.objective} onChange={e => updateForm('objective', e.target.value)} className="min-h-[64px] text-sm text-right" />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">ציוד נדרש</Label>
-                <Input value={form.equipment} onChange={e => updateForm('equipment', e.target.value)} className="h-10 text-sm text-right" />
+                <Label htmlFor="lesson-equipment" className="text-xs text-muted-foreground">ציוד נדרש</Label>
+                <Input id="lesson-equipment" value={form.equipment} onChange={e => updateForm('equipment', e.target.value)} className="h-11 text-sm text-right" />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">הערות</Label>
-                <Textarea value={form.notes} onChange={e => updateForm('notes', e.target.value)} className="min-h-[64px] text-sm text-right" />
+                <Label htmlFor="lesson-notes" className="text-xs text-muted-foreground">הערות</Label>
+                <Textarea id="lesson-notes" value={form.notes} onChange={e => updateForm('notes', e.target.value)} className="min-h-[64px] text-sm text-right" />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">תיעוד לאחר שיעור</Label>
-                <Textarea value={form.postLessonNotes} onChange={e => updateForm('postLessonNotes', e.target.value)} className="min-h-[64px] text-sm text-right" />
+                <Label htmlFor="lesson-post-notes" className="text-xs text-muted-foreground">תיעוד לאחר שיעור</Label>
+                <Textarea id="lesson-post-notes" value={form.postLessonNotes} onChange={e => updateForm('postLessonNotes', e.target.value)} className="min-h-[64px] text-sm text-right" />
               </div>
             </Card>
 

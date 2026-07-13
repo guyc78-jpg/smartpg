@@ -225,7 +225,7 @@ const SidebarTrigger = React.forwardRef(({ className, onClick, asChild = false, 
       data-sidebar="trigger"
       variant="ghost"
       size="icon"
-      className={cn("h-7 w-7", className)}
+      className={cn("h-11 w-11", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
@@ -237,7 +237,7 @@ const SidebarTrigger = React.forwardRef(({ className, onClick, asChild = false, 
       ) : (
         <>
           <PanelLeft />
-          <span className="sr-only">Toggle Sidebar</span>
+          <span className="sr-only">פתיחה או סגירה של סרגל הצד</span>
         </>
       )}
     </Button>)
@@ -252,10 +252,10 @@ const SidebarRail = React.forwardRef(({ className, ...props }, ref) => {
     (<button
       ref={ref}
       data-sidebar="rail"
-      aria-label="Toggle Sidebar"
+      aria-label="פתיחה או סגירה של סרגל הצד"
       tabIndex={-1}
       onClick={toggleSidebar}
-      title="Toggle Sidebar"
+      title="סרגל צד"
       className={cn(
         "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex",
         "[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize",

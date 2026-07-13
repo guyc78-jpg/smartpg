@@ -78,7 +78,7 @@ export default function Register() {
         subtitle={`שלחנו קוד ל-${email}`}
       >
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          <div id="register-otp-error" role="alert" aria-live="assertive" className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
             {error}
           </div>
         )}
@@ -89,8 +89,12 @@ export default function Register() {
             onChange={setOtpCode}
             autoFocus
             autoComplete="one-time-code"
+            aria-label="קוד אימות בן שש ספרות"
+            aria-describedby={error ? 'register-otp-error' : undefined}
+            aria-invalid={Boolean(error)}
+            dir="ltr"
           >
-            <InputOTPGroup>
+            <InputOTPGroup dir="ltr">
               <InputOTPSlot index={0} />
               <InputOTPSlot index={1} />
               <InputOTPSlot index={2} />
@@ -157,7 +161,7 @@ export default function Register() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div id="register-error" role="alert" aria-live="assertive" className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
           {error}
         </div>
       )}
@@ -175,7 +179,9 @@ export default function Register() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
+              className="pl-10 h-12 text-left"
+              dir="ltr"
+              aria-describedby={error ? 'register-error' : undefined}
               required
             />
           </div>
@@ -192,6 +198,8 @@ export default function Register() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="pl-10 h-12"
+              aria-describedby={error ? 'register-error' : undefined}
+              aria-invalid={Boolean(error)}
               required
             />
           </div>
@@ -208,6 +216,8 @@ export default function Register() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="pl-10 h-12"
+              aria-describedby={error ? 'register-error' : undefined}
+              aria-invalid={Boolean(error)}
               required
             />
           </div>

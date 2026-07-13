@@ -4,18 +4,26 @@
   "properties": {
     "parent_behavior_weight": {
       "type": "number",
+      "minimum": 0,
+      "maximum": 100,
       "default": 30
     },
     "semester_behavior_weight": {
       "type": "number",
+      "minimum": 0,
+      "maximum": 100,
       "default": 30
     },
     "tests_weight": {
       "type": "number",
+      "minimum": 0,
+      "maximum": 100,
       "default": 40
     },
     "penalty_score": {
       "type": "number",
+      "minimum": 0,
+      "maximum": 100,
       "default": 15
     },
     "auto_convert_missing": {
@@ -24,14 +32,22 @@
     },
     "completion_penalty_factor": {
       "type": "number",
+      "minimum": 0,
+      "maximum": 1,
       "default": 0
     },
     "min_completed_grade": {
       "type": "number",
+      "minimum": 0,
+      "maximum": 100,
       "default": 56
     },
     "grade_color_thresholds": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "redBelow": { "type": "number", "minimum": 0, "maximum": 100 },
+        "greenAt": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
     },
     "default_gender_track": {
       "type": "string",
@@ -46,5 +62,31 @@
       "description": "Custom bell schedule: { weekday: {period: [start, end]}, friday: {...} }"
     }
   },
-  "required": []
+  "required": [],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "id": "{{user.id}}" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
 }

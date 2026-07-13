@@ -10,11 +10,12 @@ const NAV_ITEMS = [
 
 function MobileNavItem({ to, icon: Icon, label }) {
   const location = useLocation();
-  const active = location.pathname === to;
+  const active = location.pathname === to || (to !== '/' && location.pathname.startsWith(`${to}/`));
   return (
     <Link
       to={to}
-      className={`relative flex flex-col items-center justify-center gap-0.5 w-[68px] h-full text-[10px] leading-tight transition-all duration-300 active:scale-90 ${active ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}
+      aria-current={active ? 'page' : undefined}
+      className={`relative flex flex-col items-center justify-center gap-0.5 w-[68px] h-full rounded-full text-[11px] leading-tight transition-all duration-300 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}
     >
       {active && (
         <>
@@ -28,7 +29,7 @@ function MobileNavItem({ to, icon: Icon, label }) {
           />
         </>
       )}
-      <Icon className={`relative w-5 h-5 transition-transform duration-300 ${active ? 'scale-110 drop-shadow-[0_1px_4px_hsl(var(--primary)/0.5)]' : ''}`} />
+      <Icon aria-hidden="true" className={`relative w-5 h-5 transition-transform duration-300 ${active ? 'scale-110 drop-shadow-[0_1px_4px_hsl(var(--primary)/0.5)]' : ''}`} />
       <span className="relative truncate max-w-full px-0.5">{label}</span>
     </Link>
   );
@@ -38,6 +39,7 @@ export default function BottomNav() {
   return (
     <nav
       dir="rtl"
+      aria-label="ניווט ראשי"
       className="md:hidden fixed inset-x-0 z-40 flex justify-center pointer-events-none"
       style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 4px)' }}
     >

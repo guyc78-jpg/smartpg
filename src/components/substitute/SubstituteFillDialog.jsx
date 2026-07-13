@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EditDialog, { Field, fieldClass } from '@/components/app/EditDialog';
@@ -14,6 +15,9 @@ export default function SubstituteFillDialog({ open, onOpenChange, classes, init
   const [classChoice, setClassChoice] = useState(FREE_TEXT);
   const [freeName, setFreeName] = useState('');
   const [status, setStatus] = useState('not_reported');
+  const [subject, setSubject] = useState('');
+  const [location, setLocation] = useState('');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -23,6 +27,9 @@ export default function SubstituteFillDialog({ open, onOpenChange, classes, init
     setClassChoice(FREE_TEXT);
     setFreeName('');
     setStatus('not_reported');
+    setSubject('');
+    setLocation('');
+    setNotes('');
   }, [open, initial]);
 
   const selectedClass = classes.find(c => c.id === classChoice);
@@ -36,6 +43,9 @@ export default function SubstituteFillDialog({ open, onOpenChange, classes, init
       classId: classChoice === FREE_TEXT ? '' : classChoice,
       className,
       status,
+      subject: subject.trim(),
+      location: location.trim(),
+      notes: notes.trim(),
     });
   };
 
@@ -72,6 +82,15 @@ export default function SubstituteFillDialog({ open, onOpenChange, classes, init
             </Button>
           ))}
         </div>
+      </Field>
+      <Field label="נושא השיעור">
+        <Input value={subject} onChange={e => setSubject(e.target.value)} className={fieldClass} />
+      </Field>
+      <Field label="מיקום">
+        <Input value={location} onChange={e => setLocation(e.target.value)} className={fieldClass} />
+      </Field>
+      <Field label="הערות">
+        <Textarea value={notes} onChange={e => setNotes(e.target.value)} className="min-h-20 text-right" />
       </Field>
     </EditDialog>
   );

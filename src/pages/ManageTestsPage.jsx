@@ -57,7 +57,7 @@ export default function ManageTestsPage() {
   const updateField = (test, field, value) => updateTest({ ...test, [field]: value });
 
   const handleImport = async (tests) => {
-    for (const t of tests) await addTest(t);
+    await Promise.all(tests.map(test => addTest(test)));
     return tests.length;
   };
 
@@ -169,7 +169,17 @@ export default function ManageTestsPage() {
           onOpenChange={() => setDeleteTestTarget(null)}
           title={`מחיקת ${deleteTestTarget?.name}`}
           description="המבדק וטבלת ההמרה שלו ימחקו. פעולה זו לא ניתנת לביטול."
-          onConfirm={() => { deleteTest(deleteTestTarget.id); setDeleteTestTarget(null); toast.success('המבדק נמחק'); }}
+          onConfirm={async () => {
+            const target = deleteTestTarget;
+            try {
+              await deleteTest(target.id);
+              toast.success('המבדק נמחק');
+            } catch {
+              toast.error('מחיקת המבדק נכשלה');
+            } finally {
+              setDeleteTestTarget(null);
+            }
+          }}
         />
       </div>
     </Layout>

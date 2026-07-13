@@ -4,6 +4,16 @@ const STORAGE_KEY = 'pe_live_run_session_v2';
 const LEGACY_KEY = 'pe_live_run_session_v1';
 const LiveRunContext = createContext(null);
 
+function studentSnapshot(student) {
+  return {
+    id: student.id,
+    name: student.name || '',
+    firstName: student.firstName || student.first_name || '',
+    lastName: student.lastName || student.last_name || '',
+    classId: student.classId || student.class_id || '',
+  };
+}
+
 function readStoredSession() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY);
@@ -37,11 +47,14 @@ export function LiveRunProvider({ children }) {
 
   useEffect(() => {
     if (!session?.running) return;
-    const id = setInterval(() => setTick(Date.now()), 100);
+    const id = setInterval(() => setTick(Date.now()), 250);
     return () => clearInterval(id);
   }, [session?.running]);
 
-  const elapsedMs = useMemo(() => getElapsed(session), [session, tick]);
+  const elapsedMs = useMemo(() => {
+    void tick;
+    return getElapsed(session);
+  }, [session, tick]);
 
   const startSession = useCallback((setup, students) => {
     const unique = [];
@@ -59,7 +72,9 @@ export function LiveRunProvider({ children }) {
       setup,
       participants,
       selectedIds: unique.map(s => s.id),
-      studentsById: Object.fromEntries(unique.map(s => [s.id, s])),
+      // Persist only display-safe fields. Medical notes and other sensitive
+      // student data must never be copied into localStorage.
+      studentsById: Object.fromEntries(unique.map(s => [s.id, studentSnapshot(s)])),
       running: false,
       startedAt: null,
       elapsedBeforePause: 0,
@@ -195,7 +210,7 @@ export function LiveRunProvider({ children }) {
       return {
         ...prev,
         selectedIds: unique.map(s => s.id),
-        studentsById: { ...(prev.studentsById || {}), ...Object.fromEntries(unique.map(s => [s.id, s])) },
+        studentsById: { ...(prev.studentsById || {}), ...Object.fromEntries(unique.map(s => [s.id, studentSnapshot(s)])) },
         participants,
         phase: 'running',
         saved: false,
