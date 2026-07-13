@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Trash2, Edit2, UserCheck, Archive } from 'lucide-react';
+import { Trash2, Edit2, Archive } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { GENDER_TRACK_LABELS } from '@/lib/types';
 import EducatorContactButton from '@/components/home/EducatorContactButton';
@@ -8,13 +8,6 @@ export default function ClassCard({ cls, students, studentCount, isAdmin, onEdit
   return (
     <div dir="rtl" className="rounded-2xl bg-card border border-border/70 shadow-sm p-2 flex items-center justify-between gap-1 overflow-hidden">
       <div className="flex items-center gap-1 min-w-0 flex-1 justify-start overflow-hidden">
-        <Link
-          to={`/class/${cls.id}/attendance`}
-          aria-label={`נוכחות בכיתה ${cls.name}`}
-          className="h-11 w-11 shrink-0 flex items-center justify-center rounded-xl text-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <UserCheck className="w-4 h-4" aria-hidden="true" />
-        </Link>
         <Link to={`/class/${cls.id}`} className="text-right min-w-0 flex-1 block overflow-hidden">
           <div className="flex items-center gap-1 justify-start overflow-hidden">
             <span className="truncate font-bold text-[15px]">{cls.name}</span>

@@ -34,7 +34,6 @@ const LessonManagePage = lazy(() => import('./pages/LessonManagePage'));
 const LessonEditPage = lazy(() => import('./pages/LessonEditPage'));
 const SubstituteFillsPage = lazy(() => import('./pages/SubstituteFillsPage'));
 const MissingGradesPage = lazy(() => import('./pages/MissingGradesPage'));
-const AttendancePage = lazy(() => import('./pages/AttendancePage'));
 const StopwatchPage = lazy(() => import('./pages/StopwatchPage'));
 
 const PageFallback = () => (
@@ -99,7 +98,7 @@ const AppShell = () => {
           <Route path="/class/:classId" element={<ClassPage />} />
           <Route path="/class/:classId/student/:studentId" element={<StudentProfilePage />} />
           <Route path="/class/:classId/tests" element={<TestsPage />} />
-          <Route path="/class/:classId/attendance" element={<AttendancePage />} />
+          <Route path="/class/:classId/attendance" element={<Navigate to=".." relative="path" replace />} />
           <Route path="/class/:classId/bagrut" element={<BagrutTestsPage />} />
           <Route path="/manage-tests" element={<ManageTestsPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
