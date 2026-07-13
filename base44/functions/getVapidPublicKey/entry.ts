@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const publicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     if (!publicKey) return Response.json({ error: 'Push notifications are unavailable' }, { status: 503 });
     return Response.json({ publicKey }, { headers: { 'Cache-Control': 'private, max-age=3600' } });
-  } catch (_error) {
+  } catch {
     return Response.json({ error: 'Unable to load push configuration' }, { status: 500 });
   }
 });

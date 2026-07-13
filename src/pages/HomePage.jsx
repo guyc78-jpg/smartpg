@@ -10,6 +10,7 @@ import ClassCard from '@/components/home/ClassCard';
 import DailyScheduleCard from '@/components/home/DailyScheduleCard';
 import GradeFilterPills from '@/components/home/GradeFilterPills';
 import HomeActionButtons from '@/components/home/HomeActionButtons';
+import RiskAlertsCard from '@/components/home/RiskAlertsCard';
 import AddClassDialog from '@/components/app/AddClassDialog';
 import EditClassDialog from '@/components/app/EditClassDialog';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
@@ -105,6 +106,7 @@ export default function HomePage() {
       <main className="flex-1 px-4 pt-2 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-3">
         <HomeStatsBar classCount={activeClasses.length} studentCount={data.students.length} />
         <DailyScheduleCard scheduleLessons={data.scheduleLessons || []} classById={classById} />
+        <RiskAlertsCard />
 
         <GradeFilterPills selected={gradeFilter} onSelect={setGradeFilter} />
 

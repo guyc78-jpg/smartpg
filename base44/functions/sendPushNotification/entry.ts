@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({ sent: 1 });
-  } catch (_error) {
+  } catch {
     return Response.json({ error: 'Notification request failed' }, { status: 500 });
   }
 });
