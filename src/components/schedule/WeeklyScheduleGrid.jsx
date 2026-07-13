@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { PERIODS, periodsForDay, getCurrentPeriod } from '@/lib/periodTimes';
+import { getScheduleGridDimensions } from '@/lib/scheduleGridLayout';
 
 const DAYS = [0, 1, 2, 3, 4, 5];
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
@@ -20,7 +21,7 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
 
   return (
     <div className="schedule-grid overflow-x-auto no-scrollbar rounded-2xl" dir="rtl">
-      <table className="border-separate border-spacing-0 w-full min-w-[620px]">
+      <table className="table-fixed border-separate border-spacing-0 w-full min-w-[720px]">
         <thead>
           <tr>
             <th
@@ -45,58 +46,94 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
           </tr>
         </thead>
         <tbody>
-          {PERIODS.map((p, rowIdx) => (
-            <tr key={p}>
-              <th
-                className="schedule-period-head sticky right-0 z-10 border-b border-l border-border p-1"
-              >
-                <div className={`w-8 h-8 mx-auto rounded-lg flex items-center justify-center text-sm font-black ${p === currentPeriod ? 'text-primary-foreground bg-primary ring-1 ring-primary/50' : ''}`}>
-                  {p}
-                </div>
-              </th>
-              {DAYS.map(d => {
-                const dayHasPeriod = periodsForDay(d).includes(p);
-                if (!dayHasPeriod) {
-                  return <td key={d} className="schedule-cell is-unavailable h-14 min-w-[92px] border-b border-l border-border" />;
-                }
-                const cellLessons = lessonsAt(d, p);
-                const isTodayCol = d === today;
-                const isLiveNow = isTodayCol && p === currentPeriod && cellLessons.length > 0;
-                return (
-                  <td
-                    key={d}
-                    onClick={() => { if (cellLessons.length <= 1) onCellClick(d, p, cellLessons[0] || null); }}
-                    className={`schedule-cell min-h-14 min-w-[92px] border-b border-l border-border p-1 cursor-pointer transition-colors align-middle
-                      ${isTodayCol ? 'is-today' : rowIdx % 2 === 1 ? 'is-alternate' : ''}
-                      ${isTodayCol && p === currentPeriod ? 'is-current' : ''}
-                      hover:brightness-110`}
-                  >
-                    {cellLessons.length > 0 ? (
-                      <div className="space-y-1">
-                        {cellLessons.map(lesson => (
-                          <button
-                            type="button"
-                            key={lesson.id}
-                            onClick={event => { event.stopPropagation(); onCellClick(d, p, lesson); }}
-                            className={`schedule-lesson block w-full text-center space-y-0.5 rounded-xl px-1 py-1 ${isLiveNow ? 'is-live' : ''}`}
-                          >
-                            <p className="text-xs font-bold truncate leading-tight">{lesson.subject || 'חינוך גופני'}</p>
-                            {(classById[lesson.classId]?.name || lesson.className) && (
-                              <p className="text-[10px] text-muted-foreground truncate leading-tight">{classById[lesson.classId]?.name || lesson.className}</p>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center">
-                        <Plus className="w-4 h-4 text-muted-foreground/40" />
-                      </div>
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+          {PERIODS.map((p, rowIdx) => {
+            const lessonsByDay = Object.fromEntries(DAYS.map(day => {
+              const lessons = lessonsAt(day, p).sort((a, b) => {
+                const aClass = classById[a.classId]?.name || a.className || '';
+                const bClass = classById[b.classId]?.name || b.className || '';
+                return aClass.localeCompare(bClass, 'he', { numeric: true, sensitivity: 'base' })
+                  || (a.subject || '').localeCompare(b.subject || '', 'he');
+              });
+              return [day, lessons];
+            }));
+            const maxLessonsInPeriod = Math.max(0, ...DAYS.map(day => lessonsByDay[day].length));
+            const { columns: lessonColumnCount, rows: lessonTrackCount } = getScheduleGridDimensions(maxLessonsInPeriod);
+            const lessonGridStyle = {
+              gridTemplateColumns: `repeat(${lessonColumnCount}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${lessonTrackCount}, minmax(2.75rem, 1fr))`,
+            };
+
+            return (
+              <tr key={p} data-lesson-columns={lessonColumnCount} data-lesson-tracks={lessonTrackCount}>
+                <th
+                  className="schedule-period-head sticky right-0 z-10 border-b border-l border-border p-1"
+                >
+                  <div className={`w-8 h-8 mx-auto rounded-lg flex items-center justify-center text-sm font-black ${p === currentPeriod ? 'text-primary-foreground bg-primary ring-1 ring-primary/50' : ''}`}>
+                    {p}
+                  </div>
+                </th>
+                {DAYS.map(d => {
+                  const dayHasPeriod = periodsForDay(d).includes(p);
+                  if (!dayHasPeriod) {
+                    return <td key={d} className="schedule-cell is-unavailable h-14 min-w-[92px] border-b border-l border-border" />;
+                  }
+                  const cellLessons = lessonsByDay[d];
+                  const isTodayCol = d === today;
+                  const isLiveNow = isTodayCol && p === currentPeriod && cellLessons.length > 0;
+                  return (
+                    <td
+                      key={d}
+                      onClick={() => { if (cellLessons.length <= 1) onCellClick(d, p, cellLessons[0] || null); }}
+                      className={`schedule-cell min-h-14 min-w-[92px] border-b border-l border-border p-1 cursor-pointer transition-colors align-top
+                        ${isTodayCol ? 'is-today' : rowIdx % 2 === 1 ? 'is-alternate' : ''}
+                        ${isTodayCol && p === currentPeriod ? 'is-current' : ''}
+                        hover:brightness-110`}
+                    >
+                      {cellLessons.length > 0 ? (
+                        <div
+                          className="grid h-full gap-1 content-start"
+                          style={lessonGridStyle}
+                          role="group"
+                          aria-label={`${cellLessons.length} שיעורים ביום ${DAY_NAMES[d]}, שעה ${p}`}
+                        >
+                          {cellLessons.map((lesson, lessonIndex) => {
+                            const canUseFullWidthRows = lessonColumnCount === 2
+                              && cellLessons.length <= lessonTrackCount;
+                            const isBalancedLastLesson = lessonColumnCount === 2
+                              && cellLessons.length % 2 === 1
+                              && lessonIndex === cellLessons.length - 1;
+                            const shouldSpanFullRow = canUseFullWidthRows || isBalancedLastLesson;
+                            const lessonSubject = lesson.subject || 'חינוך גופני';
+                            const lessonClass = classById[lesson.classId]?.name || lesson.className || '';
+                            return (
+                              <button
+                                type="button"
+                                key={lesson.id}
+                                onClick={event => { event.stopPropagation(); onCellClick(d, p, lesson); }}
+                                title={[lessonSubject, lessonClass].filter(Boolean).join(' · ')}
+                                className={`schedule-lesson flex min-h-11 h-full min-w-0 w-full flex-col items-center justify-center overflow-hidden rounded-xl px-0.5 py-1 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${shouldSpanFullRow ? 'col-span-2' : ''} ${isLiveNow ? 'is-live' : ''}`}
+                              >
+                                <p className="w-full min-w-0 truncate text-[11px] font-bold leading-tight">{lessonSubject}</p>
+                                {lessonClass && (
+                                  <p className="w-full min-w-0 truncate text-[9px] text-muted-foreground leading-tight">{lessonClass}</p>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="grid h-full min-h-12" style={lessonGridStyle}>
+                          <span className="grid place-items-center" style={{ gridColumn: '1 / -1', gridRow: '1 / -1' }}>
+                            <Plus className="w-4 h-4 text-muted-foreground/40" />
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
