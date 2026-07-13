@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getPeClassIdsForDate, getPeriodsForClassAndDate } from '@/lib/peLessons';
 import { displayRunStudentName } from './runUtils';
 import { toLocalISODate } from '@/lib/dateTime';
+import { isTestEligibleForClass } from '@/lib/gradeCalc';
+import { inferRunDistance } from './runSetupUtils';
 
 function FieldCard({ label, icon: Icon, children, className = '' }) {
   return (
@@ -42,7 +44,7 @@ export default function RunSetup({ data, initial, onStart }) {
   const locked = Boolean(initial?.lock && initial?.classId);
   const [classId, setClassId] = useState(initial?.classId || '');
   const scheduledPeriods = useMemo(() => getPeriodsForClassAndDate(data.scheduleLessons, date, classId), [data.scheduleLessons, date, classId]);
-  const periods = scheduledPeriods.length > 0 ? scheduledPeriods : [1, 2, 3, 4, 5, 6, 7, 8];
+  const periods = useMemo(() => scheduledPeriods.length > 0 ? scheduledPeriods : [1, 2, 3, 4, 5, 6, 7, 8], [scheduledPeriods]);
   const [period, setPeriod] = useState(initial?.period ? Number(initial.period) : '');
 
   const [testId, setTestId] = useState('none');
@@ -66,11 +68,12 @@ export default function RunSetup({ data, initial, onStart }) {
       .sort((a, b) => displayRunStudentName(a).localeCompare(displayRunStudentName(b), 'he')),
     [data.students, classId]
   );
+  const studentIdsKey = useMemo(() => students.map(student => student.id).join('|'), [students]);
 
   const [selectedIds, setSelectedIds] = useState([]);
   useEffect(() => {
-    setSelectedIds(students.map(s => s.id));
-  }, [classId, students.length]);
+    setSelectedIds(studentIdsKey ? studentIdsKey.split('|') : []);
+  }, [classId, studentIdsKey]);
 
   const allSelected = students.length > 0 && selectedIds.length === students.length;
   const toggleStudent = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -78,8 +81,7 @@ export default function RunSetup({ data, initial, onStart }) {
 
   const relevantTests = useMemo(() => {
     if (!cls) return [];
-    const matches = data.tests.filter(t => t.classId === cls.id || (!t.classId && t.gradeLevel === cls.gradeLevel && (t.genderTrack || 'boys') === (cls.genderTrack || 'boys')));
-    return matches.length > 0 ? matches : data.tests;
+    return data.tests.filter(test => test.testType === 'running' && isTestEligibleForClass(test, cls));
   }, [data.tests, cls]);
 
   useEffect(() => {
@@ -90,6 +92,8 @@ export default function RunSetup({ data, initial, onStart }) {
     setTestId(value);
     const test = data.tests.find(t => t.id === value);
     if (test?.semester) setSemester(test.semester);
+    const inferredDistance = inferRunDistance(test);
+    if (inferredDistance) setDistance(inferredDistance);
   };
 
   const totalLaps = Number(distance) > 0 && Number(trackLength) > 0
@@ -169,8 +173,8 @@ export default function RunSetup({ data, initial, onStart }) {
         {testId !== 'none' && (
           <FieldCard label="מחצית" icon={Check}>
             <div className="grid grid-cols-2 gap-2">
-              <Button type="button" variant={semester === 'A' ? 'default' : 'outline'} onClick={() => setSemester('A')} className="h-9 rounded-xl font-bold text-sm">מחצית א'</Button>
-              <Button type="button" variant={semester === 'B' ? 'default' : 'outline'} onClick={() => setSemester('B')} className="h-9 rounded-xl font-bold text-sm">מחצית ב'</Button>
+              <Button type="button" disabled={Boolean(data.tests.find(t => t.id === testId)?.semester && data.tests.find(t => t.id === testId)?.semester !== 'A')} variant={semester === 'A' ? 'default' : 'outline'} onClick={() => setSemester('A')} className="h-9 rounded-xl font-bold text-sm">מחצית א'</Button>
+              <Button type="button" disabled={Boolean(data.tests.find(t => t.id === testId)?.semester && data.tests.find(t => t.id === testId)?.semester !== 'B')} variant={semester === 'B' ? 'default' : 'outline'} onClick={() => setSemester('B')} className="h-9 rounded-xl font-bold text-sm">מחצית ב'</Button>
             </div>
           </FieldCard>
         )}

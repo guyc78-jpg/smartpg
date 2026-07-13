@@ -6,7 +6,17 @@
       "enum": [
         "admin",
         "user"
-      ]
+      ],
+      "default": "user",
+      "rls": {
+        "read": {
+          "$or": [
+            { "id": "{{user.id}}" },
+            { "user_condition": { "role": "admin" } }
+          ]
+        },
+        "write": { "user_condition": { "role": "admin" } }
+      }
     },
     "onboarding_completed": {
       "type": "boolean",
@@ -18,5 +28,21 @@
     "role"
   ],
   "name": "User",
-  "type": "object"
+  "type": "object",
+  "rls": {
+    "create": false,
+    "read": {
+      "$or": [
+        { "id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
 }

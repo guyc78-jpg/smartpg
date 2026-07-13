@@ -2,6 +2,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk';
 import webpush from 'npm:web-push@3.6.7';
 
 Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405, headers: { Allow: 'POST' } });
+  }
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -14,7 +17,7 @@ Deno.serve(async (req) => {
     let storedPairValid = false;
     try {
       const { createECDH } = await import('node:crypto');
-      const toBuf = (s) => {
+      const toBuf = (s: string) => {
         const b64 = s.replace(/-/g, '+').replace(/_/g, '/');
         return Uint8Array.from(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4)), (c) => c.charCodeAt(0));
       };
@@ -26,8 +29,11 @@ Deno.serve(async (req) => {
       storedPairValid = false;
     }
 
-    return Response.json({ publicKey: keys.publicKey, privateKey: keys.privateKey, storedPairValid });
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json(
+      { publicKey: keys.publicKey, privateKey: keys.privateKey, storedPairValid },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
+  } catch (_error) {
+    return Response.json({ error: 'Unable to generate VAPID keys' }, { status: 500 });
   }
 });

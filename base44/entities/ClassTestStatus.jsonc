@@ -3,10 +3,14 @@
   "type": "object",
   "properties": {
     "class_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "test_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "semester": {
       "type": "string",
@@ -30,5 +34,31 @@
     "class_id",
     "test_id",
     "semester"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "id": "{{user.id}}" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
 }

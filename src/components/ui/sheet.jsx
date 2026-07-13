@@ -49,9 +49,9 @@ const SheetContent = React.forwardRef(({ side = "right", className, children, ..
     <SheetOverlay />
     <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
       <SheetPrimitive.Close
-        className="liquid-chip absolute left-4 top-4 h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:pointer-events-none">
+        className="liquid-chip absolute left-4 top-4 h-11 w-11 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:pointer-events-none">
         <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
+        <span className="sr-only">סגירה</span>
       </SheetPrimitive.Close>
       {children}
     </SheetPrimitive.Content>
@@ -64,7 +64,7 @@ const SheetHeader = ({
   ...props
 }) => (
   <div
-    className={cn("flex flex-col space-y-2 text-center sm:text-left", className)}
+    className={cn("flex flex-col space-y-2 text-center sm:text-start", className)}
     {...props} />
 )
 SheetHeader.displayName = "SheetHeader"
@@ -74,7 +74,7 @@ const SheetFooter = ({
   ...props
 }) => (
   <div
-    className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}
+    className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
     {...props} />
 )
 SheetFooter.displayName = "SheetFooter"

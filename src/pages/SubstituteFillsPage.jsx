@@ -38,10 +38,14 @@ export default function SubstituteFillsPage() {
     const rows = await base44.entities.SubstituteFill.list('-date', 1000);
     setFills((rows || []).map(r => ({
       id: r.id, date: r.date, period: r.period, classId: r.class_id || '',
-      className: r.class_name, status: r.status || 'not_reported',
+      className: r.class_name, subject: r.subject || '', location: r.location || '', notes: r.notes || '', status: r.status || 'not_reported',
     })));
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const unsubscribe = base44.entities.SubstituteFill.subscribe(() => load());
+    return () => unsubscribe?.();
+  }, []);
 
   const activeClasses = useMemo(() => data.classes.filter(c => (c.status || 'active') === 'active'), [data.classes]);
   const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
@@ -67,7 +71,15 @@ export default function SubstituteFillsPage() {
   const changeMonth = (delta) => setMonth(m => new Date(m.getFullYear(), m.getMonth() + delta, 1));
 
   const handleSave = async (payload) => {
-    const record = { date: payload.date, class_id: payload.classId, class_name: payload.className, status: payload.status };
+    const record = {
+      date: payload.date,
+      class_id: payload.classId,
+      class_name: payload.className,
+      subject: payload.subject || '',
+      location: payload.location || '',
+      notes: payload.notes || '',
+      status: payload.status,
+    };
     if (payload.period) record.period = payload.period;
     await base44.entities.SubstituteFill.create(record);
     toast.success('מילוי המקום נוסף');
@@ -78,13 +90,25 @@ export default function SubstituteFillsPage() {
   const handleCycleStatus = async (fill) => {
     const next = STATUS_NEXT[fill.status];
     setFills(fs => fs.map(f => f.id === fill.id ? { ...f, status: next } : f));
-    await base44.entities.SubstituteFill.update(fill.id, { status: next });
+    try {
+      await base44.entities.SubstituteFill.update(fill.id, { status: next });
+    } catch (error) {
+      setFills(fs => fs.map(f => f.id === fill.id ? fill : f));
+      toast.error('עדכון הסטטוס נכשל');
+      throw error;
+    }
   };
 
   const handleDelete = async (fill) => {
     setFills(fs => fs.filter(f => f.id !== fill.id));
-    await base44.entities.SubstituteFill.delete(fill.id);
-    toast.success('מילוי המקום נמחק');
+    try {
+      await base44.entities.SubstituteFill.delete(fill.id);
+      toast.success('מילוי המקום נמחק');
+    } catch (error) {
+      setFills(fs => [...fs, fill]);
+      toast.error('מחיקת מילוי המקום נכשלה');
+      throw error;
+    }
   };
 
   return (

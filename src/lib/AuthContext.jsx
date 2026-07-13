@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { clearUserScopedStorage } from '@/lib/userStorage';
 
 const AuthContext = createContext();
 
@@ -16,6 +17,17 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAppState();
+  }, []);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      clearUserScopedStorage();
+      setUser(null);
+      setIsAuthenticated(false);
+      setAuthError({ type: 'auth_required', message: 'Authentication required' });
+    };
+    window.addEventListener('base44:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('base44:unauthorized', handleUnauthorized);
   }, []);
 
   const checkAppState = async () => {
@@ -119,6 +131,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = (shouldRedirect = true) => {
+    clearUserScopedStorage();
     setUser(null);
     setIsAuthenticated(false);
     

@@ -41,8 +41,8 @@ export function normalizeDayOfWeek(rawDay) {
   if (DAY_NAME_MAP[text] !== undefined) return DAY_NAME_MAP[text];
   const numeric = Number(text);
   if (Number.isNaN(numeric)) return null;
-  if (numeric >= 0 && numeric <= 6) return numeric;
-  if (numeric >= 1 && numeric <= 7) return numeric - 1;
+  if (numeric === 0) return 0;
+  if (Number.isInteger(numeric) && numeric >= 1 && numeric <= 7) return numeric - 1;
   return null;
 }
 
@@ -111,7 +111,7 @@ export function parseTeacherReportCsv(text) {
   const rows = parseCsvRows(text);
   const dataRows = rows.filter(cols => {
     const period = Number(String(cols[0] || '').trim());
-    return Number.isFinite(period) && period >= 1 && period <= 15 && DAY_NAME_MAP[normalizeText(cols[1])] !== undefined;
+    return Number.isInteger(period) && period >= 1 && period <= 12 && DAY_NAME_MAP[normalizeText(cols[1])] !== undefined;
   });
   if (dataRows.length < 5) return null;
 
@@ -171,7 +171,7 @@ export function parseTeacherReportCsv(text) {
   return { lessons, scanned: dataRows.length, matched, duplicates, invalid };
 }
 
-// Given raw imported rows + column mapping, returns only the PE lessons, deduped.
+// Given raw imported rows + column mapping, returns all valid lessons, deduped.
 export function extractPeLessons(rows, mapping) {
   const scanned = rows.length;
   const seenKeys = new Set();
@@ -182,15 +182,17 @@ export function extractPeLessons(rows, mapping) {
 
   rows.forEach(row => {
     const subjectRaw = mapping.subject ? row[mapping.subject] : '';
-    if (!isPeSubject(subjectRaw)) return;
-    matched += 1;
+    const subject = normalizeText(subjectRaw);
+    if (!subject) return;
+    const isPe = isPeSubject(subject);
+    if (isPe) matched += 1;
 
     const dayOfWeek = normalizeDayOfWeek(mapping.day ? row[mapping.day] : '');
     const period = Number(mapping.period ? row[mapping.period] : NaN);
     const className = mapping.className ? String(row[mapping.className] || '').trim() : '';
-    const classKey = normalizeClassName(className);
+    const classKey = normalizeClassName(isPe ? className : `${subject}|${className}`);
 
-    if (dayOfWeek === null || !Number.isFinite(period) || !classKey) {
+    if (dayOfWeek === null || !Number.isInteger(period) || period < 1 || period > 12 || (isPe && !className)) {
       invalid += 1;
       return;
     }
@@ -201,7 +203,7 @@ export function extractPeLessons(rows, mapping) {
       return;
     }
     seenKeys.add(key);
-    lessons.push({ dayOfWeek, period, className, classKey, subject: PE_SUBJECT_NAME });
+    lessons.push({ dayOfWeek, period, className, classKey, subject: isPe ? PE_SUBJECT_NAME : subject, isPe });
   });
 
   return { lessons, scanned, matched, duplicates, invalid };

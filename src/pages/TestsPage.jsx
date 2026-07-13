@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useApp } from '@/store/AppProvider';
-import { convertRawToGradeDetailed } from '@/lib/gradeCalc';
+import { convertRawToGradeDetailed, isTestEligibleForClass } from '@/lib/gradeCalc';
 import Layout from '@/components/app/Layout';
 import { Badge } from '@/components/ui/badge';
 import { useMemo, useState } from 'react';
@@ -13,10 +13,11 @@ const resultStatuses = ['completed', 'not_participated', 'not_completed', 'exemp
 
 export default function TestsPage() {
   const { classId } = useParams();
-  const { data, setTestResult } = useApp();
+  const { data, setTestResult, setClassTestStatus } = useApp();
   const [semester, setSemester] = useState('A');
   const [selectedTestIdx, setSelectedTestIdx] = useState(0);
   const [listOpen, setListOpen] = useState(false);
+  const [draftScores, setDraftScores] = useState({});
 
   const cls = data.classes.find(c => c.id === classId);
   const students = useMemo(
@@ -26,13 +27,9 @@ export default function TestsPage() {
 
   const classTests = useMemo(() => {
     if (!cls) return [];
-    const gender = cls.genderTrack || 'boys';
     return data.tests
-      .filter(t => !cls.gradeLevel || t.gradeLevel === cls.gradeLevel)
-      .filter(t => (t.genderTrack || 'boys') === gender)
-      .filter(t => !t.classId || t.classId === classId)
-      .filter(t => !t.semester || t.semester === semester);
-  }, [data.tests, cls, classId, semester]);
+      .filter(t => isTestEligibleForClass(t, cls, semester));
+  }, [data.tests, cls, semester]);
 
   if (!cls) return <Layout title="כיתה לא נמצאה" backTo="/"><p className="text-center text-muted-foreground py-16">הכיתה לא נמצאה</p></Layout>;
 
@@ -41,25 +38,40 @@ export default function TestsPage() {
 
   const getTestProgress = (testId) =>
     students.filter(s => {
+      if (s.peExempt) return true;
       const result = data.results.find(r => r.studentId === s.id && r.testId === testId && r.semester === semester);
       return result && result.status !== 'pending';
     }).length;
 
   const filledCount = currentTest ? getTestProgress(currentTest.id) : 0;
 
+  const updateConductedStatus = async (studentId, testId, nextStatus) => {
+    const relevant = students.filter(student => !student.peExempt);
+    const filled = relevant.filter(student => {
+      if (student.id === studentId) return nextStatus !== 'pending';
+      const result = data.results.find(r => r.studentId === student.id && r.testId === testId && r.semester === semester);
+      return Boolean(result && result.status !== 'pending');
+    }).length;
+    const status = filled === 0 ? 'not_conducted' : filled === relevant.length ? 'conducted' : 'partial';
+    await setClassTestStatus(classId, testId, semester, status);
+  };
+
   const handleRawScore = async (studentId, testId, value) => {
     if (value === '') {
       await setTestResult(studentId, testId, semester, null, 'pending');
+      await updateConductedStatus(studentId, testId, 'pending');
       return;
     }
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue) || numericValue < 0) return;
     await setTestResult(studentId, testId, semester, numericValue, 'completed');
+    await updateConductedStatus(studentId, testId, 'completed');
   };
 
   const handleStatus = async (studentId, testId, status, rawScore) => {
     if (status === 'completed' && (rawScore === null || rawScore === undefined)) return;
     await setTestResult(studentId, testId, semester, status === 'completed' ? rawScore : null, status);
+    await updateConductedStatus(studentId, testId, status);
   };
 
   return (
@@ -121,9 +133,9 @@ export default function TestsPage() {
                 const status = student.peExempt ? 'exempt' : (result?.status || 'pending');
                 const detailedGrade = status === 'completed' && rawScore !== null ? convertRawToGradeDetailed(rawScore, currentTest?.conversionTable) : null;
                 const finalGrade = status === 'completed' && detailedGrade?.grade !== null && detailedGrade?.grade !== undefined
-                  ? Math.max(detailedGrade.grade, data.settings.minCompletedGrade || 56)
+                  ? Math.max(detailedGrade.grade, data.settings.minCompletedGrade ?? 56)
                   : ['not_completed', 'not_participated'].includes(status)
-                    ? (data.settings.penaltyScore || 15)
+                    ? (data.settings.penaltyScore ?? 15)
                     : null;
                 const needsTable = status === 'completed' && rawScore !== null && detailedGrade?.reason === 'missing_table';
                 const redBelow = data.settings.gradeColorThresholds?.redBelow ?? 55;
@@ -163,9 +175,15 @@ export default function TestsPage() {
                           type="number"
                           inputMode="decimal"
                           min="0"
-                          value={rawScore ?? ''}
+                          value={draftScores[`${student.id}:${currentTest.id}:${semester}`] ?? rawScore ?? ''}
                           disabled={student.peExempt || ['not_completed', 'not_participated', 'exempt'].includes(status)}
-                          onChange={e => handleRawScore(student.id, currentTest.id, e.target.value)}
+                          onChange={e => setDraftScores(scores => ({ ...scores, [`${student.id}:${currentTest.id}:${semester}`]: e.target.value }))}
+                          onBlur={async e => {
+                            const key = `${student.id}:${currentTest.id}:${semester}`;
+                            await handleRawScore(student.id, currentTest.id, e.target.value);
+                            setDraftScores(scores => { const next = { ...scores }; delete next[key]; return next; });
+                          }}
+                          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                           className="w-full sm:w-24 h-8 text-center text-sm"
                           placeholder={currentTest?.unit || 'תוצאה'}
                         />

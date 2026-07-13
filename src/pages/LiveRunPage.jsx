@@ -77,7 +77,7 @@ export default function LiveRunPage() {
       const studentIds = selectedStudents.map(s => s.id);
 
       // --- Run measurements (batched) ---
-      const existing = await base44.entities.RunMeasurement.filter({ class_id: classId, date, measurement_type: measurementType });
+      const existing = await base44.entities.RunMeasurement.filter({ class_id: classId, date, measurement_type: measurementType, notes: session.id });
       const existingByStudent = Object.fromEntries(existing.filter(r => (r.period ?? null) === periodNum).map(r => [r.student_id, r]));
 
       const toCreate = [];
@@ -88,6 +88,7 @@ export default function LiveRunPage() {
         const payload = {
           student_id: student.id, class_id: classId, date, period: periodNum,
           measurement_type: measurementType,
+          notes: session.id,
           result_seconds: completed ? secondsFromMs(participant.finishTimeMs) : null,
           result_distance: participant.laps && trackLength ? Math.round(participant.laps * trackLength) : null,
           status: completed ? 'finished' : 'not_participated',
@@ -102,28 +103,56 @@ export default function LiveRunPage() {
       // --- Test results (batched) ---
       if (testId) {
         const sem = semester || 'A';
-        const existingResults = await base44.entities.TestResult.filter({ test_id: testId, semester: sem, student_id: { $in: studentIds } });
+        const classStudentIds = data.students.filter(student => student.classId === classId && !student.peExempt).map(student => student.id);
+        const existingResults = classStudentIds.length > 0
+          ? await base44.entities.TestResult.filter({ test_id: testId, semester: sem, student_id: { $in: classStudentIds } })
+          : [];
         const resultByStudent = Object.fromEntries(existingResults.map(r => [r.student_id, r]));
+        const existingAttempts = studentIds.length > 0
+          ? await base44.entities.TestAttempt.filter({ test_id: testId, semester: sem, student_id: { $in: studentIds } })
+          : [];
         const resCreate = [];
         const resUpdate = [];
+        const attemptCreate = [];
         for (const student of selectedStudents) {
           const p = session.participants[student.id];
+          const match = resultByStudent[student.id];
+          const sameRun = match?.live_run_id === session.id;
           const status = p.status === 'finished' ? 'completed' : p.status === 'not_completed' ? 'not_completed' : 'not_participated';
           const raw = p.status === 'finished' && p.finishTimeMs != null ? secondsFromMs(p.finishTimeMs) : null;
+          const previousAttempts = existingAttempts.filter(attempt => attempt.student_id === student.id);
+          const previousAttemptNumber = Math.max(0, ...previousAttempts.map(attempt => Number(attempt.attempt_number) || 0));
+          const nextAttemptNumber = sameRun ? (match.attempt_count ?? previousAttemptNumber) : previousAttemptNumber + 1;
           const payload = {
             student_id: student.id, test_id: testId, semester: sem, raw_score: raw, status,
             run_time_seconds: raw, laps_completed: p.laps ?? null, live_run_id: session.id,
+            attempt_count: p.status === 'finished' ? nextAttemptNumber : (resultByStudent[student.id]?.attempt_count ?? 1),
           };
-          const match = resultByStudent[student.id];
           if (match) resUpdate.push({ id: match.id, ...payload });
           else resCreate.push(payload);
+          if (p.status === 'finished' && raw !== null && !sameRun) {
+            attemptCreate.push({
+              student_id: student.id,
+              test_id: testId,
+              semester: sem,
+              raw_score: raw,
+              attempt_number: nextAttemptNumber,
+            });
+          }
         }
         if (resCreate.length > 0) await base44.entities.TestResult.bulkCreate(resCreate);
         if (resUpdate.length > 0) await base44.entities.TestResult.bulkUpdate(resUpdate);
-        await setClassTestStatus(classId, testId, sem, 'conducted');
+        if (attemptCreate.length > 0) await base44.entities.TestAttempt.bulkCreate(attemptCreate);
+        const selectedStatus = Object.fromEntries(resCreate.concat(resUpdate).map(result => [result.student_id, result.status]));
+        const covered = classStudentIds.filter(id => {
+          const status = selectedStatus[id] || resultByStudent[id]?.status;
+          return status && status !== 'pending';
+        }).length;
+        await setClassTestStatus(classId, testId, sem, covered === classStudentIds.length ? 'conducted' : covered > 0 ? 'partial' : 'not_conducted');
       }
 
-      await loadAll();
+      const refreshed = await loadAll();
+      if (!refreshed) toast.warning('התוצאות נשמרו, אך רענון הנתונים נכשל. מומלץ לרענן את המסך.');
       run.markSaved();
       run.closeSession();
       toast.success(testId ? 'התוצאות נשמרו כציוני המבדק' : 'התוצאות נשמרו');

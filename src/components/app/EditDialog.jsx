@@ -1,17 +1,27 @@
-import { useEffect, useState } from 'react';
+import { cloneElement, isValidElement, useEffect, useId, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, Loader2, Trash2 } from 'lucide-react';
 
-export const fieldClass = 'h-11 text-sm text-foreground liquid-field rounded-xl shadow-none focus-visible:ring-0';
-export const textareaClass = 'min-h-[70px] text-sm text-foreground liquid-field rounded-xl focus-visible:ring-0';
+export const fieldClass = 'h-11 text-sm text-foreground liquid-field rounded-xl shadow-none focus-visible:ring-2';
+export const textareaClass = 'min-h-[70px] text-sm text-foreground liquid-field rounded-xl focus-visible:ring-2';
 
-export function Field({ label, children }) {
+export function Field({ label, children, id }) {
+  const generatedId = useId();
+  const fieldId = id || `field-${generatedId.replace(/:/g, '')}`;
+  const labelId = `${fieldId}-label`;
+  const labelledControl = isValidElement(children)
+    ? cloneElement(children, {
+        id: children.props.id || fieldId,
+        'aria-labelledby': children.props['aria-labelledby'] || labelId,
+      })
+    : children;
+
   return (
     <div className="space-y-1.5 text-right">
-      <Label className="text-xs font-semibold text-foreground">{label}</Label>
-      {children}
+      <Label id={labelId} htmlFor={fieldId} className="text-xs font-semibold text-foreground">{label}</Label>
+      {labelledControl}
     </div>
   );
 }
@@ -48,7 +58,7 @@ export default function EditDialog({ open, onOpenChange, title, children, onSave
           {children}
 
           {error && (
-            <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+            <div role="alert" aria-live="assertive" className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span className="font-medium">{error}</span>
             </div>

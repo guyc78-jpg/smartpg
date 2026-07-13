@@ -7,23 +7,30 @@
       "format": "date"
     },
     "period": {
-      "type": "number"
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
     },
     "class_id": {
       "type": "string",
-      "description": "Linked app class id, empty when free-text class"
+      "description": "Linked app class id, empty when free-text class",
+      "maxLength": 128
     },
     "class_name": {
       "type": "string",
-      "description": "Class display name (from list or free text)"
+      "description": "Class display name (from list or free text)",
+      "minLength": 1,
+      "maxLength": 160
     },
     "subject": {
       "type": "string",
-      "description": "Lesson subject/topic for the fill"
+      "description": "Lesson subject/topic for the fill",
+      "maxLength": 300
     },
     "location": {
       "type": "string",
-      "description": "Location (hall, field...)"
+      "description": "Location (hall, field...)",
+      "maxLength": 160
     },
     "status": {
       "type": "string",
@@ -35,11 +42,38 @@
       "default": "not_reported"
     },
     "notes": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 2000
     }
   },
   "required": [
     "date",
     "class_name"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "id": "{{user.id}}" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
 }

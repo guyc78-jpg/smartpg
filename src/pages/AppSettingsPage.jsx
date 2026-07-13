@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { Loader2, Save } from 'lucide-react';
 
 export default function AppSettingsPage() {
-  const { data, updateSettings, updateBagrutSettings, updateDefaultGenderTrack, defaultGenderTrack: storeDefaultGender } = useApp();
+  const { data, updateSettings, updateDefaultGenderTrack, defaultGenderTrack: storeDefaultGender } = useApp();
 
   const [teacherName, setTeacherName] = useState(() => localStorage.getItem('teacherName') || '');
   const [schoolName, setSchoolName] = useState(() => localStorage.getItem('schoolName') || '');
@@ -24,23 +24,27 @@ export default function AppSettingsPage() {
   const [autoConvertMissing, setAutoConvertMissing] = useState(data.settings.autoConvertMissing ?? false);
   const [minCompletedGrade, setMinCompletedGrade] = useState(data.settings.minCompletedGrade ?? 56);
   const [redBelow, setRedBelow] = useState(data.settings.gradeColorThresholds?.redBelow ?? 55);
-  const [greenAt, setGreenAt] = useState(data.settings.gradeColorThresholds?.greenAt ?? 100);
+  const [greenAt] = useState(data.settings.gradeColorThresholds?.greenAt ?? 100);
 
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
-    localStorage.setItem('teacherName', teacherName);
-    localStorage.setItem('schoolName', schoolName);
-    localStorage.setItem('defaultSemester', defaultSemester);
-
-    await updateSettings({
-      penaltyScore, autoConvertMissing, minCompletedGrade,
-      gradeColorThresholds: { redBelow, greenAt },
-    });
-    await updateDefaultGenderTrack(genderTrack);
-    setSaving(false);
-    toast.success('ההגדרות נשמרו');
+    try {
+      await updateSettings({
+        penaltyScore, autoConvertMissing, minCompletedGrade,
+        gradeColorThresholds: { redBelow, greenAt },
+      });
+      await updateDefaultGenderTrack(genderTrack);
+      localStorage.setItem('teacherName', teacherName);
+      localStorage.setItem('schoolName', schoolName);
+      localStorage.setItem('defaultSemester', defaultSemester);
+      toast.success('ההגדרות נשמרו');
+    } catch {
+      toast.error('שמירת ההגדרות נכשלה');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

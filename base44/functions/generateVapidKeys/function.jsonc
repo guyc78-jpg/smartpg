@@ -1,0 +1,4 @@
+{
+  "name": "generateVapidKeys",
+  "entry": "entry.ts"
+}

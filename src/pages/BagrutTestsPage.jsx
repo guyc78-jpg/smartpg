@@ -15,6 +15,7 @@ export default function BagrutTestsPage() {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [listOpen, setListOpen] = useState(false);
   const [view, setView] = useState('entry');
+  const [draftScores, setDraftScores] = useState({});
 
   const cls = data.classes.find(c => c.id === classId);
   const students = useMemo(
@@ -23,17 +24,21 @@ export default function BagrutTestsPage() {
   );
 
   const components = useMemo(
-    () => data.bagrutComponents.filter(c => c.genderTrack === (cls?.genderTrack || 'boys')).sort((a, b) => a.sortOrder - b.sortOrder),
-    [data.bagrutComponents, cls?.genderTrack]
+    () => data.bagrutComponents
+      .filter(c => c.genderTrack === (cls?.genderTrack || 'boys'))
+      .filter(c => !c.classId || c.classId === classId)
+      .sort((a, b) => a.sortOrder - b.sortOrder),
+    [data.bagrutComponents, cls?.genderTrack, classId]
   );
 
   const handleRawScore = (studentId, compId, rawVal) => {
     const comp = components.find(c => c.id === compId);
     if (!comp) return;
-    if (rawVal === null) {
+    if (rawVal === null || rawVal === '') {
       setBagrutResult(studentId, compId, null, 'missing', '', null);
       return;
     }
+    if (!Number.isFinite(Number(rawVal)) || Number(rawVal) < 0) return;
     const grade = convertRawToGrade(rawVal, comp.conversionTable);
     setBagrutResult(studentId, compId, grade, grade !== null ? 'entered' : 'missing', '', rawVal);
   };
@@ -43,7 +48,7 @@ export default function BagrutTestsPage() {
 
   const redBelow = data.settings.gradeColorThresholds?.redBelow ?? 55;
   const currentComp = components[selectedIdx] ?? components[0];
-  const filledCount = students.filter(s => data.bagrutResults.some(r => r.studentId === s.id && r.componentId === currentComp?.id && r.rawScore !== null)).length;
+  const filledCount = students.filter(s => s.peExempt || data.bagrutResults.some(r => r.studentId === s.id && r.componentId === currentComp?.id && r.status === 'entered' && r.score !== null)).length;
 
   return (
     <Layout title={`בגרות חנ״ג — ${cls.name}`} backTo={`/class/${classId}`}>
@@ -108,8 +113,15 @@ export default function BagrutTestsPage() {
                       <Input
                         type="number"
                         inputMode="decimal"
-                        value={rawScore ?? ''}
-                        onChange={e => handleRawScore(student.id, currentComp.id, e.target.value === '' ? null : Number(e.target.value))}
+                        value={draftScores[`${student.id}:${currentComp.id}`] ?? rawScore ?? ''}
+                        min="0"
+                        onChange={e => setDraftScores(scores => ({ ...scores, [`${student.id}:${currentComp.id}`]: e.target.value }))}
+                        onBlur={e => {
+                          const key = `${student.id}:${currentComp.id}`;
+                          handleRawScore(student.id, currentComp.id, e.target.value);
+                          setDraftScores(scores => { const next = { ...scores }; delete next[key]; return next; });
+                        }}
+                        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                         className="w-20 h-8 text-center text-sm"
                         placeholder="—"
                       />

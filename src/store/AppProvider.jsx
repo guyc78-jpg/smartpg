@@ -24,6 +24,39 @@ export function generateId() {
   return `local_${Date.now()}_${++idCounter}`;
 }
 
+const mutationQueues = new Map();
+
+function enqueueMutation(key, task) {
+  const previous = mutationQueues.get(key) || Promise.resolve();
+  const next = previous.catch(() => {}).then(task);
+  mutationQueues.set(key, next);
+  return next.finally(() => {
+    if (mutationQueues.get(key) === next) mutationQueues.delete(key);
+  });
+}
+
+async function withRetry(task, attempts = 2) {
+  let lastError;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await task();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
+async function listAll(entity, sort = '-created_date') {
+  const pageSize = 5000;
+  const rows = [];
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await withRetry(() => entity.list(sort, pageSize, skip));
+    rows.push(...(page || []));
+    if (!page || page.length < pageSize) return rows;
+  }
+}
+
 export const AppContext = createContext(null);
 
 export function useApp() {
@@ -36,28 +69,25 @@ export function AppProvider({ children }) {
   const { isAuthenticated } = useAuth();
   const [data, setData] = useState({ ...DEFAULT_DATA });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [defaultGenderTrack, setDefaultGenderTrack] = useState('boys');
   const loadedRef = useRef(false);
 
-  const loadAll = useCallback(async () => {
+  const loadAll = useCallback(async ({ seedDefaults = true } = {}) => {
     setLoading(true);
+    setLoadError(null);
     try {
-      const [classesData, studentsData, testsData, resultsData, behaviorData, settingsData, bagrutCompData, bagrutResultsData, classTestStatusData, gradeOverridesData, attemptsData, lessonData, scheduleData, substitutionData] = await Promise.all([
-        base44.entities.SchoolClass.list('-created_date', 500),
-        base44.entities.Student.list('-created_date', 500),
-        base44.entities.TestDefinition.list('-created_date', 500),
-        base44.entities.TestResult.list('-created_date', 5000),
-        base44.entities.BehaviorGrade.list('-created_date', 5000),
-        base44.entities.TeacherSettings.list('-created_date', 100),
-        base44.entities.BagrutComponent.list('-created_date', 500),
-        base44.entities.BagrutResult.list('-created_date', 5000),
-        base44.entities.ClassTestStatus.list('-created_date', 5000),
-        base44.entities.GradeOverride.list('-created_date', 5000),
-        base44.entities.TestAttempt.list('-created_date', 5000),
-        base44.entities.LessonTopic.list('-created_date', 5000),
-        base44.entities.TeacherSchedule.list('-created_date', 5000),
-        base44.entities.Substitution.list('-created_date', 5000),
-      ]);
+      const requests = [
+        base44.entities.SchoolClass, base44.entities.Student, base44.entities.TestDefinition,
+        base44.entities.TestResult, base44.entities.BehaviorGrade, base44.entities.TeacherSettings,
+        base44.entities.BagrutComponent, base44.entities.BagrutResult, base44.entities.ClassTestStatus,
+        base44.entities.GradeOverride, base44.entities.TestAttempt, base44.entities.LessonTopic,
+        base44.entities.TeacherSchedule, base44.entities.Substitution,
+      ].map(entity => listAll(entity));
+      const settled = await Promise.allSettled(requests);
+      const failed = settled.filter(result => result.status === 'rejected');
+      if (failed.length > 0) throw new AggregateError(failed.map(result => result.reason), 'Failed to load application data');
+      const [classesData, studentsData, testsData, resultsData, behaviorData, settingsData, bagrutCompData, bagrutResultsData, classTestStatusData, gradeOverridesData, attemptsData, lessonData, scheduleData, substitutionData] = settled.map(result => result.value);
 
       const classes = (classesData || []).map(c => ({
         id: c.id, name: c.name, gradeLevel: c.grade_level, genderTrack: c.gender_track || 'boys',
@@ -80,7 +110,7 @@ export function AppProvider({ children }) {
         conversionTable: jsonToConversionTable(t.conversion_table),
       }));
 
-      if (tests.length === 0) {
+      if (tests.length === 0 && seedDefaults) {
         const seeded = await Promise.all(
           DEFAULT_TESTS.map(t => base44.entities.TestDefinition.create({
             name: t.name, test_type: t.testType || 'other', weight: t.weight, grade_level: t.gradeLevel,
@@ -96,6 +126,7 @@ export function AppProvider({ children }) {
       }
 
       const results = (resultsData || []).map(r => ({
+        id: r.id,
         studentId: r.student_id, testId: r.test_id, semester: r.semester, rawScore: r.raw_score ?? null,
         status: r.status || 'completed', attemptCount: r.attempt_count ?? 1,
         testDate: r.test_date, runTimeSeconds: r.run_time_seconds, lapsCompleted: r.laps_completed,
@@ -125,6 +156,7 @@ export function AppProvider({ children }) {
       } : DEFAULT_DATA.settings;
 
       if (settingsRaw?.bell_schedule) applyRemoteBellTimes(settingsRaw.bell_schedule);
+      else resetBellTimes();
 
       if (settingsRaw?.default_gender_track) setDefaultGenderTrack(settingsRaw.default_gender_track);
 
@@ -172,18 +204,40 @@ export function AppProvider({ children }) {
       return true;
     } catch (e) {
       console.error('Failed to load data:', e);
+      setLoadError(e);
       setLoading(false);
       return false;
     }
   }, []);
 
   useEffect(() => {
+    let retryTimer = null;
+    let cancelled = false;
     if (isAuthenticated && !loadedRef.current) {
       loadedRef.current = true;
-      loadAll();
+      const boot = async () => {
+        const ok = await loadAll();
+        if (!ok && !cancelled) {
+          loadedRef.current = false;
+          retryTimer = setTimeout(() => {
+            if (!cancelled) {
+              loadedRef.current = true;
+              boot();
+            }
+          }, 3000);
+        }
+      };
+      boot();
     } else if (!isAuthenticated) {
+      loadedRef.current = false;
+      setData({ ...DEFAULT_DATA });
+      setLoadError(null);
       setLoading(false);
     }
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, [isAuthenticated, loadAll]);
 
   // --- Realtime subscriptions (debounced reload for cross-session sync) ---
@@ -202,7 +256,8 @@ export function AppProvider({ children }) {
     const entitiesToWatch = [
       'SchoolClass', 'Student', 'TestResult', 'BehaviorGrade',
       'ClassTestStatus', 'LessonTopic', 'TeacherSchedule', 'Substitution',
-      'TeacherSettings',
+      'TeacherSettings', 'TestDefinition', 'TestAttempt', 'GradeOverride',
+      'BagrutComponent', 'BagrutResult',
     ];
     const unsubs = entitiesToWatch.map(name => {
       try {
@@ -244,34 +299,54 @@ export function AppProvider({ children }) {
 
   const deleteClass = useCallback(async (id) => {
     const studentIds = data.students.filter(s => s.classId === id).map(s => s.id);
-    await base44.entities.SchoolClass.delete(id);
+    const classTestIds = data.tests.filter(test => test.classId === id).map(test => test.id);
     if (studentIds.length > 0) {
+      await Promise.all([
+        base44.entities.TestResult.deleteMany({ student_id: { $in: studentIds } }),
+        base44.entities.BehaviorGrade.deleteMany({ student_id: { $in: studentIds } }),
+        base44.entities.BagrutResult.deleteMany({ student_id: { $in: studentIds } }),
+        base44.entities.TestAttempt.deleteMany({ student_id: { $in: studentIds } }),
+        base44.entities.GradeOverride.deleteMany({ student_id: { $in: studentIds } }),
+        base44.entities.RunMeasurement.deleteMany({ student_id: { $in: studentIds } }),
+      ]);
       await base44.entities.Student.deleteMany({ class_id: id });
-      await base44.entities.TestResult.deleteMany({ student_id: { $in: studentIds } });
-      await base44.entities.BehaviorGrade.deleteMany({ student_id: { $in: studentIds } });
-      await base44.entities.BagrutResult.deleteMany({ student_id: { $in: studentIds } });
-      await base44.entities.TestAttempt.deleteMany({ student_id: { $in: studentIds } });
-      await base44.entities.GradeOverride.deleteMany({ student_id: { $in: studentIds } });
     }
-    await base44.entities.LessonTopic.deleteMany({ class_id: id });
-    await base44.entities.TeacherSchedule.deleteMany({ class_id: id });
-    await base44.entities.ClassTestStatus.deleteMany({ class_id: id });
-    await base44.entities.RunMeasurement.deleteMany({ class_id: id });
-    await base44.entities.PeStopwatchLog.deleteMany({ class_id: id });
+    if (classTestIds.length > 0) {
+      await Promise.all([
+        base44.entities.TestResult.deleteMany({ test_id: { $in: classTestIds } }),
+        base44.entities.TestAttempt.deleteMany({ test_id: { $in: classTestIds } }),
+        base44.entities.ClassTestStatus.deleteMany({ test_id: { $in: classTestIds } }),
+        base44.entities.BagrutResult.deleteMany({ component_id: { $in: classTestIds } }),
+      ]);
+      await base44.entities.TestDefinition.deleteMany({ class_id: id });
+    }
+    await Promise.all([
+      base44.entities.LessonTopic.deleteMany({ class_id: id }),
+      base44.entities.TeacherSchedule.deleteMany({ class_id: id }),
+      base44.entities.ClassTestStatus.deleteMany({ class_id: id }),
+      base44.entities.RunMeasurement.deleteMany({ class_id: id }),
+      base44.entities.PeStopwatchLog.deleteMany({ class_id: id }),
+      base44.entities.Substitution.deleteMany({ original_class_id: id }),
+      base44.entities.Substitution.deleteMany({ substitute_class_id: id }),
+      base44.entities.SubstituteFill.deleteMany({ class_id: id }),
+    ]);
+    await base44.entities.SchoolClass.delete(id);
     setData(d => ({
       ...d,
       classes: d.classes.filter(c => c.id !== id),
       students: d.students.filter(s => s.classId !== id),
-      results: d.results.filter(r => !studentIds.includes(r.studentId)),
+      results: d.results.filter(r => !studentIds.includes(r.studentId) && !classTestIds.includes(r.testId)),
       behaviorGrades: d.behaviorGrades.filter(b => !studentIds.includes(b.studentId)),
-      bagrutResults: d.bagrutResults.filter(r => !studentIds.includes(r.studentId)),
-      testAttempts: d.testAttempts.filter(a => !studentIds.includes(a.studentId)),
+      bagrutResults: d.bagrutResults.filter(r => !studentIds.includes(r.studentId) && !classTestIds.includes(r.componentId)),
+      testAttempts: d.testAttempts.filter(a => !studentIds.includes(a.studentId) && !classTestIds.includes(a.testId)),
       gradeOverrides: d.gradeOverrides.filter(o => o.classId !== id),
       lessonTopics: d.lessonTopics.filter(l => l.classId !== id),
       scheduleLessons: d.scheduleLessons.filter(l => l.classId !== id),
-      classTestStatuses: d.classTestStatuses.filter(s => s.classId !== id),
+      classTestStatuses: d.classTestStatuses.filter(s => s.classId !== id && !classTestIds.includes(s.testId)),
+      tests: d.tests.filter(test => test.classId !== id),
+      substitutions: d.substitutions.filter(s => s.originalClassId !== id && s.substituteClassId !== id),
     }));
-  }, [data.students]);
+  }, [data.students, data.tests]);
 
   const editClass = useCallback(async (id, classData, gradeLevel, genderTrack) => {
     const payloadData = typeof classData === 'object'
@@ -351,8 +426,24 @@ export function AppProvider({ children }) {
   }, []);
 
   const deleteStudent = useCallback(async (id) => {
+    await Promise.all([
+      base44.entities.TestResult.deleteMany({ student_id: id }),
+      base44.entities.BehaviorGrade.deleteMany({ student_id: id }),
+      base44.entities.BagrutResult.deleteMany({ student_id: id }),
+      base44.entities.TestAttempt.deleteMany({ student_id: id }),
+      base44.entities.GradeOverride.deleteMany({ student_id: id }),
+      base44.entities.RunMeasurement.deleteMany({ student_id: id }),
+    ]);
     await base44.entities.Student.delete(id);
-    setData(d => ({ ...d, students: d.students.filter(s => s.id !== id) }));
+    setData(d => ({
+      ...d,
+      students: d.students.filter(s => s.id !== id),
+      results: d.results.filter(r => r.studentId !== id),
+      behaviorGrades: d.behaviorGrades.filter(r => r.studentId !== id),
+      bagrutResults: d.bagrutResults.filter(r => r.studentId !== id),
+      testAttempts: d.testAttempts.filter(r => r.studentId !== id),
+      gradeOverrides: d.gradeOverrides.filter(r => r.studentId !== id),
+    }));
   }, []);
 
   const editStudent = useCallback(async (id, studentData, peExempt, subClassName) => {
@@ -380,23 +471,28 @@ export function AppProvider({ children }) {
   }, []);
 
   const importStudents = useCallback(async (items, classId) => {
-    const existing = new Set(data.students.filter(s => s.classId === classId).map(s => s.name));
+    const keyFor = (name, targetClassId) => `${targetClassId}::${String(name || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('he')}`;
+    const seen = new Set(data.students.map(s => keyFor(s.name, s.classId)));
     const payloads = items.map(item => {
       const payloadData = typeof item === 'object' ? item : { name: item };
       const fullName = payloadData.name || [payloadData.lastName, payloadData.firstName].filter(Boolean).join(' ');
+      const targetClassId = payloadData.classId || classId;
+      const key = keyFor(fullName, targetClassId);
+      if (!fullName || !targetClassId || seen.has(key)) return null;
+      seen.add(key);
       return {
         name: fullName,
         first_name: payloadData.firstName || '',
         last_name: payloadData.lastName || '',
         gender: payloadData.gender || '',
-        class_id: payloadData.classId || classId,
+        class_id: targetClassId,
         pe_exempt: payloadData.peExempt || false,
         medical_limitations: payloadData.medicalLimitations || '',
         pe_notes: payloadData.peNotes || '',
         study_group: payloadData.studyGroup || '',
         sub_class_name: payloadData.studyGroup || '',
       };
-    }).filter(p => p.name && !existing.has(p.name));
+    }).filter(Boolean);
     if (payloads.length === 0) return { added: 0, updated: 0, skipped: items.length, errors: [] };
     const created = await base44.entities.Student.bulkCreate(payloads);
     setData(d => ({ ...d, students: [...d.students, ...created.map(s => ({
@@ -426,33 +522,37 @@ export function AppProvider({ children }) {
   }, []);
 
   const updateTest = useCallback(async (test) => {
-    await base44.entities.TestDefinition.update(test.id, {
+    setData(d => ({ ...d, tests: d.tests.map(t => t.id === test.id ? test : t) }));
+    await enqueueMutation(`test:${test.id}`, () => base44.entities.TestDefinition.update(test.id, {
       name: test.name, test_type: test.testType || 'other', weight: test.weight,
       grade_level: test.gradeLevel, class_id: test.classId || '', gender_track: test.genderTrack,
       semester: test.semester || undefined, test_date: test.testDate || undefined, unit: test.unit || '',
       conversion_table: test.conversionTable,
-    });
-    setData(d => ({ ...d, tests: d.tests.map(t => t.id === test.id ? test : t) }));
+    }));
   }, []);
 
   const deleteTest = useCallback(async (id) => {
+    await Promise.all([
+      base44.entities.TestResult.deleteMany({ test_id: id }),
+      base44.entities.TestAttempt.deleteMany({ test_id: id }),
+      base44.entities.ClassTestStatus.deleteMany({ test_id: id }),
+      base44.entities.BagrutResult.deleteMany({ component_id: id }),
+    ]);
     await base44.entities.TestDefinition.delete(id);
-    setData(d => ({ ...d, tests: d.tests.filter(t => t.id !== id) }));
+    setData(d => ({
+      ...d,
+      tests: d.tests.filter(t => t.id !== id),
+      results: d.results.filter(r => r.testId !== id),
+      testAttempts: d.testAttempts.filter(r => r.testId !== id),
+      classTestStatuses: d.classTestStatuses.filter(r => r.testId !== id),
+      bagrutResults: d.bagrutResults.filter(r => r.componentId !== id),
+    }));
   }, []);
 
   // --- Test Results ---
   const setTestResult = useCallback(async (studentId, testId, semester, rawScore, status, metadata = {}) => {
     const lookup = { student_id: studentId, test_id: testId, semester };
     if (metadata.test_date) lookup.test_date = metadata.test_date;
-    const allExisting = await base44.entities.TestResult.filter(lookup);
-    const payload = { student_id: studentId, test_id: testId, semester, raw_score: rawScore, status, ...metadata };
-    
-    if (allExisting.length > 0) {
-      await base44.entities.TestResult.update(allExisting[0].id, payload);
-    } else {
-      await base44.entities.TestResult.create(payload);
-    }
-    
     setData(d => {
       const filtered = d.results.filter(r => {
         const sameBase = r.studentId === studentId && r.testId === testId && r.semester === semester;
@@ -465,33 +565,48 @@ export function AppProvider({ children }) {
         lapsCompleted: metadata.laps_completed, routeName: metadata.route_name, liveRunId: metadata.live_run_id,
       }] };
     });
+    await enqueueMutation(`result:${studentId}:${testId}:${semester}:${metadata.test_date || ''}`, async () => {
+      const allExisting = await base44.entities.TestResult.filter(lookup);
+      const shouldRecordAttempt = status === 'completed' && rawScore !== null && rawScore !== undefined
+        && (allExisting.length === 0 || allExisting[0].raw_score !== rawScore || allExisting[0].status !== status);
+      const attempts = shouldRecordAttempt
+        ? await base44.entities.TestAttempt.filter({ student_id: studentId, test_id: testId, semester })
+        : [];
+      const attemptCount = shouldRecordAttempt ? attempts.length + 1 : (allExisting[0]?.attempt_count ?? 1);
+      const payload = { student_id: studentId, test_id: testId, semester, raw_score: rawScore, status, attempt_count: attemptCount, ...metadata };
+      if (allExisting.length > 0) await base44.entities.TestResult.update(allExisting[0].id, payload);
+      else await base44.entities.TestResult.create(payload);
+      if (shouldRecordAttempt) {
+        await base44.entities.TestAttempt.create({ student_id: studentId, test_id: testId, semester, raw_score: rawScore, attempt_number: attemptCount });
+      }
+    });
   }, []);
 
   // --- Behavior Grades ---
   const setBehaviorGrade = useCallback(async (studentId, quarter, grade) => {
-    const existing = await base44.entities.BehaviorGrade.filter({ student_id: studentId, quarter });
-    if (existing.length > 0) {
-      await base44.entities.BehaviorGrade.update(existing[0].id, { grade });
-    } else {
-      await base44.entities.BehaviorGrade.create({ student_id: studentId, quarter, grade });
-    }
     setData(d => {
       const filtered = d.behaviorGrades.filter(b => !(b.studentId === studentId && b.quarter === quarter));
       return { ...d, behaviorGrades: [...filtered, { studentId, quarter, grade }] };
+    });
+    await enqueueMutation(`behavior:${studentId}:${quarter}`, async () => {
+      const existing = await base44.entities.BehaviorGrade.filter({ student_id: studentId, quarter });
+      if (grade === null) {
+        await Promise.all(existing.map(row => base44.entities.BehaviorGrade.delete(row.id)));
+      } else if (existing.length > 0) await base44.entities.BehaviorGrade.update(existing[0].id, { grade });
+      else await base44.entities.BehaviorGrade.create({ student_id: studentId, quarter, grade });
     });
   }, []);
 
   // --- Class Test Status ---
   const setClassTestStatus = useCallback(async (classId, testId, semester, status) => {
-    const existing = await base44.entities.ClassTestStatus.filter({ class_id: classId, test_id: testId, semester });
-    if (existing.length > 0) {
-      await base44.entities.ClassTestStatus.update(existing[0].id, { status });
-    } else {
-      await base44.entities.ClassTestStatus.create({ class_id: classId, test_id: testId, semester, status });
-    }
     setData(d => {
       const filtered = d.classTestStatuses.filter(s => !(s.classId === classId && s.testId === testId && s.semester === semester));
       return { ...d, classTestStatuses: [...filtered, { classId, testId, semester, status }] };
+    });
+    await enqueueMutation(`test-status:${classId}:${testId}:${semester}`, async () => {
+      const existing = await base44.entities.ClassTestStatus.filter({ class_id: classId, test_id: testId, semester });
+      if (existing.length > 0) await base44.entities.ClassTestStatus.update(existing[0].id, { status });
+      else await base44.entities.ClassTestStatus.create({ class_id: classId, test_id: testId, semester, status });
     });
   }, []);
 
@@ -559,16 +674,16 @@ export function AppProvider({ children }) {
 
   // --- Bagrut Results ---
   const setBagrutResult = useCallback(async (studentId, componentId, score, status, notes, rawScore) => {
-    const existing = await base44.entities.BagrutResult.filter({ student_id: studentId, component_id: componentId });
-    const payload = { student_id: studentId, component_id: componentId, score, status, notes: notes || '', raw_score: rawScore };
-    if (existing.length > 0) {
-      await base44.entities.BagrutResult.update(existing[0].id, payload);
-    } else {
-      await base44.entities.BagrutResult.create(payload);
-    }
     setData(d => {
       const filtered = d.bagrutResults.filter(r => !(r.studentId === studentId && r.componentId === componentId));
       return { ...d, bagrutResults: [...filtered, { studentId, componentId, score, status, notes: notes || '', rawScore }] };
+    });
+    await enqueueMutation(`bagrut:${studentId}:${componentId}`, async () => {
+      const existing = await base44.entities.BagrutResult.filter({ student_id: studentId, component_id: componentId });
+      const payload = { student_id: studentId, component_id: componentId, score, status, notes: notes || '', raw_score: rawScore };
+      if (rawScore === null) await Promise.all(existing.map(row => base44.entities.BagrutResult.delete(row.id)));
+      else if (existing.length > 0) await base44.entities.BagrutResult.update(existing[0].id, payload);
+      else await base44.entities.BagrutResult.create(payload);
     });
   }, []);
 
@@ -613,7 +728,7 @@ export function AppProvider({ children }) {
       }
       let cls = existingClassByKey.get(lesson.classKey);
       if (!cls) {
-        const gradeLevel = GRADE_LEVELS.find(g => lesson.className.trim().startsWith(g)) || null;
+        const gradeLevel = [...GRADE_LEVELS].sort((a, b) => b.length - a.length).find(g => lesson.className.trim().startsWith(g)) || null;
         const genderTrack = /בנות/.test(lesson.className) ? 'girls' : 'boys';
         const created = await base44.entities.SchoolClass.create({
           name: lesson.className, grade_level: gradeLevel, gender_track: genderTrack,
@@ -658,19 +773,27 @@ export function AppProvider({ children }) {
   // --- Delete All ---
   const deleteAllData = useCallback(async () => {
     const entities = [
-    base44.entities.SchoolClass, base44.entities.Student,
-    base44.entities.TestResult, base44.entities.BehaviorGrade,
-    base44.entities.ClassTestStatus, base44.entities.GradeOverride,
-    base44.entities.TestAttempt, base44.entities.BagrutResult,
-    base44.entities.LessonTopic, base44.entities.TeacherSchedule,
-    base44.entities.RunMeasurement, base44.entities.PeStopwatchLog,
-    base44.entities.Substitution,
+      base44.entities.TestResult, base44.entities.BehaviorGrade,
+      base44.entities.ClassTestStatus, base44.entities.GradeOverride,
+      base44.entities.TestAttempt, base44.entities.BagrutResult,
+      base44.entities.LessonTopic, base44.entities.TeacherSchedule,
+      base44.entities.RunMeasurement, base44.entities.PeStopwatchLog,
+      base44.entities.Substitution, base44.entities.SubstituteFill,
+      base44.entities.BagrutComponent, base44.entities.Student,
+      base44.entities.TestDefinition, base44.entities.SchoolClass,
+      base44.entities.TeacherSettings,
     ];
     for (const entity of entities) {
       await entity.deleteMany({});
     }
+    await Promise.allSettled([
+      base44.entities.PushSubscription.deleteMany({}),
+      base44.entities.SentReminder.deleteMany({}),
+    ]);
     setData({ ...DEFAULT_DATA });
-    await loadAll();
+    setDefaultGenderTrack('boys');
+    resetBellTimes();
+    await loadAll({ seedDefaults: false });
   }, [loadAll]);
 
   // --- Lesson Topics ---
@@ -719,7 +842,7 @@ export function AppProvider({ children }) {
   const closeSemester = useCallback(() => {}, []);
 
   const value = {
-    data, loading, defaultGenderTrack,
+    data, loading, loadError, defaultGenderTrack,
     addClass, deleteClass, editClass, archiveClass, duplicateClass, updateHomeroomContacts,
     addStudent, deleteStudent, editStudent, importStudents,
     addTest, updateTest, deleteTest,
@@ -744,7 +867,7 @@ function buildBagrutComponentsFromTests(tests, exclusions = []) {
       .sort((a, b) => a.name.localeCompare(b.name, 'he'))
       .map((test, index) => ({
         id: test.id, name: test.name, weight: test.weight, sortOrder: index,
-        isRequired: true, genderTrack: track, conversionTable: test.conversionTable,
+        isRequired: true, genderTrack: track, classId: test.classId || '', conversionTable: test.conversionTable,
       }))
   );
 }

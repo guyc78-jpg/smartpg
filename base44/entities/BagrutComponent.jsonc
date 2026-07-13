@@ -3,13 +3,19 @@
   "type": "object",
   "properties": {
     "name": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
     },
     "weight": {
-      "type": "number"
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
     },
     "sort_order": {
-      "type": "number"
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000
     },
     "is_required": {
       "type": "boolean",
@@ -26,11 +32,44 @@
     "conversion_table": {
       "type": "array",
       "items": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "minResult": { "type": "number" },
+          "maxResult": { "type": "number" },
+          "min_result": { "type": "number" },
+          "max_result": { "type": "number" },
+          "grade": { "type": "number", "minimum": 0, "maximum": 100 }
+        }
       }
     }
   },
   "required": [
     "name"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "id": "{{user.id}}" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
 }

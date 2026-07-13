@@ -80,41 +80,51 @@ export default function SchedulePage() {
       { label: 'מחיקת כל המערכת', icon: Trash2, destructive: true, onClick: () => setDeleteOpen(true) },
     ]}>
       <div className="max-w-3xl mx-auto p-4 space-y-4" dir="rtl">
-        <div className="grid grid-cols-2 rounded-full liquid-pill p-1 gap-1">
+        <div className="grid grid-cols-2 rounded-full liquid-pill p-1 gap-1" role="tablist" aria-label="תצוגת מערכת שעות">
           <button
             type="button"
+            id="schedule-grid-tab"
+            role="tab"
+            aria-selected={tab === 'grid'}
+            aria-controls="schedule-grid-panel"
             onClick={() => setTab('grid')}
-            className={`h-10 rounded-full text-sm font-bold transition-all duration-200 active:scale-95 ${tab === 'grid' ? 'liquid-chip-active' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`h-11 rounded-full text-sm font-bold transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${tab === 'grid' ? 'liquid-chip-active' : 'text-muted-foreground hover:text-foreground'}`}
           >
             מערכת שעות
           </button>
           <button
             type="button"
+            id="schedule-journal-tab"
+            role="tab"
+            aria-selected={tab === 'journal'}
+            aria-controls="schedule-journal-panel"
             onClick={() => setTab('journal')}
-            className={`h-10 rounded-full text-sm font-bold transition-all duration-200 active:scale-95 ${tab === 'journal' ? 'liquid-chip-active' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`h-11 rounded-full text-sm font-bold transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${tab === 'journal' ? 'liquid-chip-active' : 'text-muted-foreground hover:text-foreground'}`}
           >
             יומן שיעורים
           </button>
         </div>
 
         {tab === 'grid' ? (
-          <>
+          <section id="schedule-grid-panel" role="tabpanel" aria-labelledby="schedule-grid-tab" className="space-y-4">
             <LiveNowBanner scheduleLessons={data.scheduleLessons} classById={classById} />
             <WeeklyScheduleGrid
               scheduleLessons={data.scheduleLessons}
               classById={classById}
               onCellClick={handleCellClick}
             />
-          </>
+          </section>
         ) : (
-          <DailyLessonJournal
-            dateIso={dateIso}
-            onDateChange={setDateIso}
-            scheduleLessons={data.scheduleLessons}
-            classById={classById}
-            lessonTopics={lessonTopics}
-            onAssign={(day, period) => setAssignSlot({ day, period, lesson: null })}
-          />
+          <section id="schedule-journal-panel" role="tabpanel" aria-labelledby="schedule-journal-tab">
+            <DailyLessonJournal
+              dateIso={dateIso}
+              onDateChange={setDateIso}
+              scheduleLessons={data.scheduleLessons}
+              classById={classById}
+              lessonTopics={lessonTopics}
+              onAssign={(day, period) => setAssignSlot({ day, period, lesson: null })}
+            />
+          </section>
         )}
 
         <AssignLessonDialog

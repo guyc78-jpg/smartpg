@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk';
 import webpush from 'npm:web-push@3.6.7';
 
-// Default bell schedule (mirrors src/lib/periodTimes.js)
 const DEFAULT_WEEKDAY = {
   1: ['08:15', '09:05'], 2: ['09:05', '09:50'], 3: ['10:15', '11:00'], 4: ['11:00', '11:45'],
   5: ['12:05', '12:50'], 6: ['12:50', '13:35'], 7: ['13:45', '14:30'], 8: ['14:35', '15:20'],
@@ -11,110 +10,146 @@ const DEFAULT_FRIDAY = {
   1: ['08:15', '09:05'], 2: ['09:05', '09:50'], 3: ['10:15', '11:00'], 4: ['11:00', '11:45'],
   5: ['11:50', '12:35'], 6: ['12:35', '13:20'], 7: ['13:25', '14:10'],
 };
+const WEEKDAY_MAP: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
-const WEEKDAY_MAP = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+function toMinutes(value: unknown) {
+  const [hours, minutes] = String(value).split(':').map(Number);
+  return Number.isFinite(hours) && Number.isFinite(minutes) ? hours * 60 + minutes : null;
+}
 
-function toMinutes(t) {
-  const [h, m] = String(t).split(':').map(Number);
-  return h * 60 + m;
+function ownerKey(value: unknown) {
+  return String(value || '').trim().toLowerCase().slice(0, 160);
+}
+
+async function listAll(entity: any, sort = '-created_date') {
+  const rows = [];
+  const pageSize = 1000;
+  for (let skip = 0; skip < 50000; skip += pageSize) {
+    const page = await entity.list(sort, pageSize, skip);
+    rows.push(...(page || []));
+    if (!page || page.length < pageSize) break;
+  }
+  return rows;
 }
 
 Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405, headers: { Allow: 'POST' } });
+  }
+
   try {
     const base44 = createClientFromRequest(req);
-    const db = base44.asServiceRole.entities;
+    const caller = await base44.auth.me();
+    if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (caller.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
 
-    // Israel local time
+    const publicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+    const privateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+    if (!publicKey || !privateKey) {
+      return Response.json({ error: 'Push notifications are unavailable' }, { status: 503 });
+    }
+
+    const db = base44.asServiceRole.entities;
     const parts = new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit', hour12: false, weekday: 'short',
     }).formatToParts(new Date());
-    const get = (type) => parts.find(p => p.type === type)?.value;
+    const get = (type: string) => parts.find((part) => part.type === type)?.value;
     const localDate = `${get('year')}-${get('month')}-${get('day')}`;
     const nowMinutes = Number(get('hour')) * 60 + Number(get('minute'));
     const day = WEEKDAY_MAP[get('weekday')];
 
-    const subs = await db.PushSubscription.list('-created_date', 100);
-    if (!subs || subs.length === 0) return Response.json({ sent: 0, reason: 'no_subscriptions' });
+    const subscriptions = await listAll(db.PushSubscription);
+    const subscriptionsByOwner = new Map<string, any[]>();
+    for (const subscription of subscriptions) {
+      const owner = ownerKey(subscription.created_by);
+      if (!owner) continue;
+      if (!subscriptionsByOwner.has(owner)) subscriptionsByOwner.set(owner, []);
+      subscriptionsByOwner.get(owner).push(subscription);
+    }
+    if (subscriptionsByOwner.size === 0) {
+      return Response.json({ lessonReminders: 0, testReminders: 0, reason: 'no_owned_subscriptions' });
+    }
 
-    webpush.setVapidDetails(
-      'mailto:notifications@smartpejournal.app',
-      Deno.env.get('VAPID_PUBLIC_KEY'),
-      Deno.env.get('VAPID_PRIVATE_KEY')
-    );
+    webpush.setVapidDetails('mailto:notifications@smartpejournal.app', publicKey, privateKey);
 
-    const sendToAll = async (title, body, url) => {
-      const payload = JSON.stringify({ title, body, url: url || '/' });
-      for (const sub of subs) {
+    const sendToOwner = async (owner: string, title: unknown, body: unknown, url: string) => {
+      let sent = 0;
+      for (const subscription of subscriptionsByOwner.get(owner) || []) {
         try {
           await webpush.sendNotification(
-            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-            payload
+            { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
+            JSON.stringify({ title: String(title).slice(0, 100), body: String(body).slice(0, 300), url }),
           );
-        } catch (err) {
-          if (err.statusCode === 404 || err.statusCode === 410) {
-            await db.PushSubscription.delete(sub.id);
+          sent += 1;
+        } catch (error: any) {
+          if (error?.statusCode === 404 || error?.statusCode === 410) {
+            await db.PushSubscription.delete(subscription.id);
           }
         }
       }
+      return sent;
     };
 
-    const alreadySent = async (key) => {
-      const rows = await db.SentReminder.filter({ key });
+    const alreadySent = async (key: string) => {
+      const rows = await db.SentReminder.filter({ key }, '-created_date', 1);
       return rows.length > 0;
     };
 
     let lessonReminders = 0;
     let testReminders = 0;
 
-    // --- Lesson reminders (~10 minutes before start), Sun-Fri ---
-    if (day !== 6) {
-      const settingsRows = await db.TeacherSettings.list('-created_date', 10);
-      const bell = settingsRows?.[0]?.bell_schedule || null;
-      const times = day === 5
-        ? { ...DEFAULT_FRIDAY, ...(bell?.friday || {}) }
-        : { ...DEFAULT_WEEKDAY, ...(bell?.weekday || {}) };
+    for (const owner of subscriptionsByOwner.keys()) {
+      if (day !== 6) {
+        const settingsRows = await db.TeacherSettings.filter({ created_by: owner }, '-created_date', 1);
+        const bell = settingsRows?.[0]?.bell_schedule || null;
+        const times = day === 5
+          ? { ...DEFAULT_FRIDAY, ...(bell?.friday || {}) }
+          : { ...DEFAULT_WEEKDAY, ...(bell?.weekday || {}) };
+        const lessons = await db.TeacherSchedule.filter({ day_of_week: day, created_by: owner });
 
-      const lessons = await db.TeacherSchedule.filter({ day_of_week: day });
-      for (const lesson of lessons || []) {
-        const t = times[lesson.period];
-        if (!t) continue;
-        const start = toMinutes(t[0]);
-        const lead = start - nowMinutes;
-        if (lead < 1 || lead >= 6) continue;
+        for (const lesson of lessons || []) {
+          const periodTimes = times[lesson.period];
+          if (!periodTimes) continue;
+          const start = toMinutes(periodTimes[0]);
+          if (start === null) continue;
+          const lead = start - nowMinutes;
+          if (lead < 1 || lead >= 6) continue;
 
-        const key = `lesson_${localDate}_${lesson.period}_${lesson.id}`;
-        if (await alreadySent(key)) continue;
-        await db.SentReminder.create({ key, date: localDate });
+          const key = `lesson_${localDate}_${lesson.id}`.slice(0, 240);
+          if (await alreadySent(key)) continue;
+          const sent = await sendToOwner(
+            owner,
+            `⏰ השיעור מתחיל עוד רגע (${periodTimes[0]})`,
+            `כיתה ${lesson.class_name || 'שיעור'} | שעה ${lesson.period} במערכת`,
+            '/schedule',
+          );
+          if (sent > 0) {
+            await db.SentReminder.create({ key, date: localDate });
+            lessonReminders += 1;
+          }
+        }
+      }
 
-        const who = lesson.class_name || 'שיעור';
-        await sendToAll(
-          `⏰ השיעור מתחיל עוד רגע (${t[0]})`,
-          `כיתה ${who} | שעה ${lesson.period} במערכת`,
-          '/schedule'
-        );
-        lessonReminders++;
+      if (Number(get('hour')) === 19) {
+        const [year, month, date] = localDate.split('-').map(Number);
+        const tomorrow = new Date(Date.UTC(year, month - 1, date) + 86400000).toISOString().slice(0, 10);
+        const tests = await db.TestDefinition.filter({ test_date: tomorrow, created_by: owner });
+        for (const test of tests || []) {
+          const key = `test_${test.id}_${tomorrow}`.slice(0, 240);
+          if (await alreadySent(key)) continue;
+          const suffix = test.grade_level ? ` (שכבה ${test.grade_level})` : '';
+          const sent = await sendToOwner(owner, '📋 תזכורת: מבדק מחר', `${test.name}${suffix} מתוכנן למחר`, '/manage-tests');
+          if (sent > 0) {
+            await db.SentReminder.create({ key, date: localDate });
+            testReminders += 1;
+          }
+        }
       }
     }
 
-    // --- Test reminders: evening before (19:00-19:59 local) ---
-    if (Number(get('hour')) === 19) {
-      const [y, m, d] = localDate.split('-').map(Number);
-      const tomorrow = new Date(Date.UTC(y, m - 1, d) + 86400000).toISOString().slice(0, 10);
-      const tests = await db.TestDefinition.filter({ test_date: tomorrow });
-      for (const test of tests || []) {
-        const key = `test_${test.id}_${tomorrow}`;
-        if (await alreadySent(key)) continue;
-        await db.SentReminder.create({ key, date: localDate });
-
-        const extra = test.grade_level ? ` (שכבה ${test.grade_level})` : '';
-        await sendToAll('📋 תזכורת: מבדק מחר', `${test.name}${extra} מתוכנן למחר`, '/manage-tests');
-        testReminders++;
-      }
-    }
-
-    return Response.json({ lessonReminders, testReminders, localDate, nowMinutes, day });
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ lessonReminders, testReminders });
+  } catch (_error) {
+    return Response.json({ error: 'Scheduled reminder processing failed' }, { status: 500 });
   }
 });

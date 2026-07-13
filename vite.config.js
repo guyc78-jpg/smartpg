@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  logLevel: 'error', // Suppress warnings, only show errors
+  logLevel: 'warn',
   server: {
     warmup: {
       // Pre-transform the app's module graph on server start so cold loads

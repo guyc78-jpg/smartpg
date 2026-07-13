@@ -65,26 +65,27 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                 return (
                   <td
                     key={d}
-                    onClick={() => onCellClick(d, p, cellLessons[0] || null)}
-                    className={`schedule-cell h-14 min-w-[92px] border-b border-l border-border p-1 cursor-pointer transition-colors align-middle
+                    onClick={() => { if (cellLessons.length <= 1) onCellClick(d, p, cellLessons[0] || null); }}
+                    className={`schedule-cell min-h-14 min-w-[92px] border-b border-l border-border p-1 cursor-pointer transition-colors align-middle
                       ${isTodayCol ? 'is-today' : rowIdx % 2 === 1 ? 'is-alternate' : ''}
                       ${isTodayCol && p === currentPeriod ? 'is-current' : ''}
                       hover:brightness-110`}
                   >
                     {cellLessons.length > 0 ? (
-                      <div className={`schedule-lesson text-center space-y-0.5 rounded-xl px-1 py-1 ${isLiveNow ? 'is-live' : ''}`}>
-                        <p className="text-xs font-bold truncate leading-tight">
-                          {[...new Set(cellLessons.map(l => l.subject || 'חינוך גופני'))].join(', ')}
-                        </p>
-                        {(() => {
-                          const names = cellLessons
-                            .map(l => classById[l.classId]?.name || l.className)
-                            .filter(Boolean)
-                            .join(', ');
-                          return names ? (
-                            <p className="text-[10px] text-muted-foreground truncate leading-tight">{names}</p>
-                          ) : null;
-                        })()}
+                      <div className="space-y-1">
+                        {cellLessons.map(lesson => (
+                          <button
+                            type="button"
+                            key={lesson.id}
+                            onClick={event => { event.stopPropagation(); onCellClick(d, p, lesson); }}
+                            className={`schedule-lesson block w-full text-center space-y-0.5 rounded-xl px-1 py-1 ${isLiveNow ? 'is-live' : ''}`}
+                          >
+                            <p className="text-xs font-bold truncate leading-tight">{lesson.subject || 'חינוך גופני'}</p>
+                            {(classById[lesson.classId]?.name || lesson.className) && (
+                              <p className="text-[10px] text-muted-foreground truncate leading-tight">{classById[lesson.classId]?.name || lesson.className}</p>
+                            )}
+                          </button>
+                        ))}
                       </div>
                     ) : (
                       <div className="flex items-center justify-center">

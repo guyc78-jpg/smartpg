@@ -1,5 +1,6 @@
 import { useAuth } from '@/lib/AuthContext';
 import HeaderActions from '@/components/app/HeaderActions';
+import { DesktopNavigation } from '@/components/app/Layout';
 
 export default function HomeHeader() {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ export default function HomeHeader() {
         </div>
         <HeaderActions />
       </div>
+      <DesktopNavigation className="mt-2 border-t border-border/40 pt-1" />
     </header>
   );
 }

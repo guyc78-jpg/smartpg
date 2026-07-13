@@ -40,6 +40,15 @@ export function convertRawToGradeDetailed(rawScore, conversionTable) {
   return { grade: nearest.grade, rawScore: score, matchType: 'nearest' };
 }
 
+export function isTestEligibleForClass(test, cls, semester) {
+  if (!test || !cls) return false;
+  if (test.classId && test.classId !== cls.id) return false;
+  if (cls.gradeLevel && test.gradeLevel && test.gradeLevel !== cls.gradeLevel) return false;
+  if ((test.genderTrack || 'boys') !== (cls.genderTrack || 'boys')) return false;
+  if (semester && test.semester && test.semester !== semester) return false;
+  return true;
+}
+
 // Calculate semester grades for a student
 export function calculateSemesterGrades(studentId, tests, results, behaviorGrades, settings, conductedTestIds, semester, peExempt) {
   if (peExempt) return { testsAvg: null, behaviorGrade: null, semesterFinalGrade: null, missingTests: [], conductedCount: 0 };
@@ -66,14 +75,17 @@ export function calculateSemesterGrades(studentId, tests, results, behaviorGrade
     if (rawScore !== null && rawScore !== undefined && status === 'completed') {
       const grade = convertRawToGrade(rawScore, test.conversionTable);
       if (grade !== null) {
-        const finalGrade = Math.max(grade, settings.minCompletedGrade || 56);
+        const finalGrade = Math.max(grade, settings.minCompletedGrade ?? 56);
         weightedSum += finalGrade * test.weight;
         totalWeight += test.weight;
       } else {
         missingTests.push(test.name);
       }
     } else if (status === 'not_completed' || status === 'not_participated') {
-      weightedSum += (settings.penaltyScore || 15) * test.weight;
+      weightedSum += (settings.penaltyScore ?? 15) * test.weight;
+      totalWeight += test.weight;
+    } else if (settings.autoConvertMissing) {
+      weightedSum += (settings.penaltyScore ?? 15) * test.weight;
       totalWeight += test.weight;
     } else {
       missingTests.push(test.name);
@@ -93,7 +105,7 @@ export function calculateSemesterGrades(studentId, tests, results, behaviorGrade
   let semesterFinalGrade = null;
   if (testsAvg !== null) {
     if (behaviorGrade !== null) {
-      const tw = settings.testsWeight || 40;
+      const tw = settings.testsWeight ?? 40;
       const bw = 100 - tw;
       semesterFinalGrade = Math.round((testsAvg * tw + behaviorGrade * bw) / 100);
     } else {
