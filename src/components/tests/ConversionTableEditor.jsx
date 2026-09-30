@@ -12,6 +12,11 @@ export default function ConversionTableEditor({ rows = [], unit, timeBased = fal
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
+  const dirtyRef = useRef(false);
+  const editDraftRows = updater => {
+    dirtyRef.current = true;
+    setDraftRows(updater);
+  };
 
   const displayValue = (v) => {
     if (v === '' || v === null || v === undefined) return '';
@@ -26,6 +31,7 @@ export default function ConversionTableEditor({ rows = [], unit, timeBased = fal
   };
 
   useEffect(() => {
+    if (dirtyRef.current) return;
     setDraftRows((rows || []).map(row => ({
       minResult: displayValue(row.minResult),
       maxResult: displayValue(row.maxResult),
@@ -35,8 +41,15 @@ export default function ConversionTableEditor({ rows = [], unit, timeBased = fal
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, timeBased]);
 
+  useEffect(() => {
+    if (!dirtyRef.current) return;
+    const warn = event => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [draftRows]);
+
   const updateRow = (index, field, value) => {
-    setDraftRows(current => current.map((row, i) => i === index ? { ...row, [field]: value } : row));
+    editDraftRows(current => current.map((row, i) => i === index ? { ...row, [field]: value } : row));
   };
 
   const saveRows = async () => {
@@ -56,6 +69,10 @@ export default function ConversionTableEditor({ rows = [], unit, timeBased = fal
     setSaving(true);
     try {
       await onSave(result.rows);
+      dirtyRef.current = false;
+      setDraftRows(result.rows.map(row => ({
+        minResult: displayValue(row.minResult), maxResult: displayValue(row.maxResult), grade: row.grade,
+      })));
     } catch {
       setError('הטבלה לא נשמרה. הערכים נשארו לעריכה; בדוק את החיבור ונסה שוב.');
     } finally {
@@ -80,7 +97,7 @@ export default function ConversionTableEditor({ rows = [], unit, timeBased = fal
             <Input aria-label={`מינימום בשורה ${index + 1}`} type={timeBased ? 'text' : 'number'} inputMode="decimal" min="0" dir="ltr" placeholder={timeBased ? 'דק:שנ' : (unit || 'מ-')} value={row.minResult} onChange={e => updateRow(index, 'minResult', e.target.value)} className="h-11 text-xs text-center" />
             <Input aria-label={`מקסימום בשורה ${index + 1}`} type={timeBased ? 'text' : 'number'} inputMode="decimal" min="0" dir="ltr" placeholder={timeBased ? 'דק:שנ' : (unit || 'עד')} value={row.maxResult} onChange={e => updateRow(index, 'maxResult', e.target.value)} className="h-11 text-xs text-center" />
             <Input aria-label={`ציון בשורה ${index + 1}`} type="number" inputMode="numeric" min="0" max="100" placeholder="0-100" value={row.grade} onChange={e => updateRow(index, 'grade', e.target.value)} className="h-11 text-xs text-center" />
-            <Button variant="ghost" size="icon" aria-label={`מחיקת שורה ${index + 1}`} className="h-11 w-11" onClick={() => setDraftRows(current => current.filter((_, i) => i !== index))}>
+            <Button variant="ghost" size="icon" aria-label={`מחיקת שורה ${index + 1}`} className="h-11 w-11" onClick={() => editDraftRows(current => current.filter((_, i) => i !== index))}>
               <Trash2 className="w-3.5 h-3.5 text-destructive/70" />
             </Button>
           </div>
@@ -90,7 +107,7 @@ export default function ConversionTableEditor({ rows = [], unit, timeBased = fal
       {error && <div role="alert" aria-live="assertive" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</div>}
 
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" size="sm" onClick={() => setDraftRows(current => [...current, emptyRow])} className="h-11 text-xs">
+        <Button variant="outline" size="sm" onClick={() => editDraftRows(current => [...current, emptyRow])} className="h-11 text-xs">
           <Plus className="w-3.5 h-3.5 ml-1" /> הוסף שורה
         </Button>
         <Button size="sm" onClick={saveRows} className="h-11 text-xs">
