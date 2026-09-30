@@ -8,8 +8,23 @@ function normalizedDrafts(value) {
       || !fields || typeof fields !== 'object' || Array.isArray(fields)) return [];
     const draft = Object.fromEntries(Object.entries(fields).filter(([key, field]) =>
       FIELDS.has(key) && (typeof field === 'string' || (typeof field === 'number' && Number.isFinite(field)))));
+    if (fields._isNew === true && id.startsWith('local_')) {
+      if (typeof fields.name !== 'string') return [];
+      draft.id = id;
+      draft._isNew = true;
+      draft.gradeLevel ||= 'ז';
+      draft.genderTrack ||= 'boys';
+      draft.testType ||= 'other';
+      draft.weight ??= 25;
+      draft.conversionTable = [];
+    }
     return Object.keys(draft).length ? [[id, draft]] : [];
   }));
+}
+
+export function isNewTestDraft(id, draft) {
+  return Boolean(id?.startsWith('local_') && draft?._isNew === true
+    && draft.id === id && typeof draft.name === 'string');
 }
 
 export function readTestDrafts(ownerId, storage) {
