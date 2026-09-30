@@ -2,16 +2,45 @@
   "name": "PeStopwatchLog",
   "type": "object",
   "properties": {
-    "class_id": { "type": "string", "maxLength": 128 },
-    "student_id": { "type": "string", "maxLength": 128 },
-    "label": { "type": "string", "minLength": 1, "maxLength": 160 },
-    "duration_ms": { "type": "number", "minimum": 0, "maximum": 86400000 },
-    "recorded_at": { "type": "string", "format": "date-time" },
-    "date": { "type": "string", "format": "date", "description": "Legacy compatibility field" },
-    "period": { "type": "integer", "minimum": 1, "maximum": 20 },
+    "class_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "student_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "duration_ms": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 86400000
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Legacy compatibility field"
+    },
+    "period": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
     "laps": {
       "type": "array",
-      "items": { "type": "number", "minimum": 0, "maximum": 86400000 }
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 86400000
+      }
     },
     "total_time_ms": {
       "type": "number",
@@ -19,13 +48,35 @@
       "maximum": 86400000,
       "description": "Legacy compatibility field; use duration_ms for new records"
     },
-    "notes": { "type": "string", "maxLength": 2000 }
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    }
   },
   "required": [],
   "rls": {
-    "create": { "user_condition": { "id": "{{user.id}}" } },
-    "read": { "created_by": "{{user.email}}" },
-    "update": { "created_by": "{{user.email}}" },
-    "delete": { "created_by": "{{user.email}}" }
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
   }
 }
