@@ -10,6 +10,17 @@ import {
   validateDocxExtractionResult,
 } from './docxSafety.js';
 
+interface DocxExtraction {
+  grade_level?: string;
+  gender?: string;
+  tests: Array<{
+    test_name: string;
+    unit?: string;
+    lower_is_better: boolean;
+    thresholds: Array<{ result: string; grade: number }>;
+  }>;
+}
+
 const MAX_DOCX_BYTES = 10 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 15000;
 
@@ -129,7 +140,7 @@ Deno.serve(async (req) => {
     const parseVal = parseThresholdValue;
 
     // --- Fast deterministic table parsing (skips the LLM when the structure is standard) ---
-    const cleanCell = (s) => s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
+    const cleanCell = (s: string) => s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
     const htmlTables = [...html.matchAll(/<table[\s\S]*?<\/table>/g)].map((m) =>
       [...m[0].matchAll(/<tr[\s\S]*?<\/tr>/g)].map((r) =>
         [...r[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)].map((c) => cleanCell(c[1]))
@@ -221,12 +232,12 @@ ${text.slice(0, 30000)}`,
       });
     }
 
-    validateDocxExtractionResult(result);
+    const validated = validateDocxExtractionResult(result) as DocxExtraction;
 
-    const rows = buildThresholdRows(result.tests || []);
+    const rows = buildThresholdRows(validated.tests);
 
     assertDocxRowLimit(rows);
-    return Response.json({ grade_level: result.grade_level || '', gender: result.gender || '', rows });
+    return Response.json({ grade_level: validated.grade_level || '', gender: validated.gender || '', rows });
   } catch (error) {
     if (error instanceof RequestError || error instanceof DocxSafetyError) {
       return Response.json({ error: error.message }, { status: error.status });
