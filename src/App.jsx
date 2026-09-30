@@ -94,7 +94,7 @@ const AppShell = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route element={<ProtectedRoute />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/class/:classId" element={<ClassPage />} />
           <Route path="/class/:classId/student/:studentId" element={<StudentProfilePage />} />
