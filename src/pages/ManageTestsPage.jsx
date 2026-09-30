@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Save, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { GRADE_LEVELS, GENDER_TRACK_LABELS, SEMESTER_LABELS, TEST_TYPES } from '@/lib/types';
+import { Field } from '@/components/app/EditDialog';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import ConversionTableEditor from '@/components/tests/ConversionTableEditor.jsx';
 import TestImportExport from '@/components/tests/TestImportExport.jsx';
@@ -28,14 +29,13 @@ export default function ManageTestsPage() {
   const [selectedType, setSelectedType] = useState('all');
   const [deleteTestTarget, setDeleteTestTarget] = useState(null);
   const [drafts, setDrafts] = useState(() => Object.fromEntries(
-    Object.entries(readTestDrafts(user?.id)).filter(([id]) => data.tests.some(test => test.id === id))
+    Object.entries(readTestDrafts(user?.id)).filter(([id, draft]) => data.tests.some(test => test.id === id) || (draft?._isNew && id.startsWith('local_')))
   ));
   const [draftStorageError, setDraftStorageError] = useState(false);
   const [savingIds, setSavingIds] = useState({});
   const savingRef = useRef(new Set());
   const addRef = useRef(false);
   const importingRef = useRef(false);
-  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     setDraftStorageError(!writeTestDrafts(user?.id, drafts));
@@ -51,37 +51,40 @@ export default function ManageTestsPage() {
 
   useEffect(() => { setSelectedGenderTrack(defaultGenderTrack); }, [defaultGenderTrack]);
 
-  const handleAddTest = async () => {
-    if (addRef.current) return;
-    addRef.current = true;
-    setAdding(true);
-    const newTest = {
-      id: generateId(),
-      name: 'מבדק חדש',
-      testType: selectedType === 'all' ? 'other' : selectedType,
-      weight: 25,
-      gradeLevel: selectedGradeLevel === 'all' ? 'ז' : selectedGradeLevel,
-      classId: '',
-      genderTrack: selectedGenderTrack,
-      semester: '',
-      testDate: '',
-      unit: '',
-      conversionTable: [],
-    };
-    try {
-      const id = await addTest(newTest);
-      setOpenGroups(groups => ({ ...groups, [newTest.gradeLevel]: true }));
-      setExpandedTest(id);
-      toast.success('מבדק חדש נוצר');
-    } catch {
-      toast.error('יצירת המבדק נכשלה. בדוק את החיבור ונסה שוב.');
-    } finally {
-      addRef.current = false;
-      setAdding(false);
-    }
+  const discardDraft = id => {
+    if (addRef.current === id) addRef.current = false;
+    setDrafts(current => { const next = { ...current }; delete next[id]; return next; });
   };
 
-  const filteredTests = data.tests
+  const newDrafts = Object.values(drafts).filter(draft => draft._isNew);
+  const allTests = [...data.tests, ...newDrafts];
+
+  const handleAddTest = () => {
+    const existingDraft = newDrafts[0];
+    if (existingDraft) {
+      setSelectedGradeLevel('all');
+      setSelectedGenderTrack(existingDraft.genderTrack || 'boys');
+      setSelectedType('all');
+      setOpenGroups(groups => ({ ...groups, [existingDraft.gradeLevel]: true }));
+      setExpandedTest(existingDraft.id);
+      return;
+    }
+    if (addRef.current) return;
+    const newTest = {
+      id: generateId(), _isNew: true, name: 'מבדק חדש',
+      testType: selectedType === 'all' ? 'other' : selectedType,
+      weight: 25, gradeLevel: selectedGradeLevel === 'all' ? 'ז' : selectedGradeLevel,
+      classId: '', genderTrack: selectedGenderTrack,
+      semester: '', testDate: '', unit: '', conversionTable: [],
+    };
+    addRef.current = newTest.id;
+    setDrafts(current => ({ ...current, [newTest.id]: newTest }));
+    setOpenGroups(groups => ({ ...groups, [newTest.gradeLevel]: true }));
+    setExpandedTest(newTest.id);
+    toast.info('טיוטת מבדק נפתחה. המבדק ייווצר לאחר שמירה.');
+  };
+
+  const filteredTests = allTests
     .filter(t => selectedGradeLevel === 'all' || t.gradeLevel === selectedGradeLevel)
     .filter(t => (t.genderTrack || 'boys') === selectedGenderTrack)
     .filter(t => selectedType === 'all' || (t.testType || 'other') === selectedType)
@@ -100,7 +103,13 @@ export default function ManageTestsPage() {
     savingRef.current.add(test.id);
     setSavingIds(current => ({ ...current, [test.id]: true }));
     try {
-      await updateTest(test, { ...drafts[test.id], ...extra });
+      if (test._isNew) {
+        const id = await addTest({ ...test, ...drafts[test.id], ...extra });
+        if (addRef.current === test.id) addRef.current = false;
+        setExpandedTest(id);
+      } else {
+        await updateTest(test, { ...drafts[test.id], ...extra });
+      }
       const storedDrafts = readTestDrafts(user?.id);
       delete storedDrafts[test.id];
       writeTestDrafts(user?.id, storedDrafts);
@@ -162,11 +171,11 @@ export default function ManageTestsPage() {
       <div className="max-w-4xl mx-auto space-y-3 p-4" dir="rtl">
         <div className="space-y-2">
           <div className="grid grid-cols-7 gap-1.5 w-full" dir="rtl">
-            <button type="button" onClick={() => setSelectedGradeLevel('all')} className={`h-9 rounded-full text-xs font-bold liquid-chip ${selectedGradeLevel === 'all' ? 'liquid-chip-active' : ''}`}>
+            <button type="button" onClick={() => setSelectedGradeLevel('all')} className={`h-11 rounded-full text-xs font-bold liquid-chip ${selectedGradeLevel === 'all' ? 'liquid-chip-active' : ''}`}>
               הכל
             </button>
             {GRADE_LEVELS.map(gl => (
-              <button key={gl} type="button" onClick={() => setSelectedGradeLevel(gl)} className={`h-9 rounded-full text-xs font-bold liquid-chip ${selectedGradeLevel === gl ? 'liquid-chip-active' : ''}`}>
+              <button key={gl} type="button" onClick={() => setSelectedGradeLevel(gl)} className={`h-11 rounded-full text-xs font-bold liquid-chip ${selectedGradeLevel === gl ? 'liquid-chip-active' : ''}`}>
                 {gl}׳
               </button>
             ))}
@@ -179,11 +188,11 @@ export default function ManageTestsPage() {
               <option value="all">כל סוגי המבדקים</option>
               {Object.entries(TEST_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
-            <Button onClick={handleAddTest} disabled={adding} aria-busy={adding} size="sm" className="h-11 rounded-full">
+            <Button onClick={handleAddTest} size="sm" className="h-11 rounded-full">
               <Plus className="w-3.5 h-3.5 ml-1" /> הוסף מבדק
             </Button>
           </div>
-          <TestImportExport tests={filteredTests} allTests={data.tests} onImport={handleImport} onDeleteAll={handleDeleteAll} defaultGradeLevel={selectedGradeLevel === 'all' ? 'ז' : selectedGradeLevel} />
+          <TestImportExport tests={filteredTests.filter(test => !test._isNew)} allTests={data.tests} onImport={handleImport} onDeleteAll={handleDeleteAll} defaultGradeLevel={selectedGradeLevel === 'all' ? 'ז' : selectedGradeLevel} />
         </div>
 
         {Object.keys(drafts).length > 0 && (
@@ -191,7 +200,7 @@ export default function ManageTestsPage() {
             <p>קיימים שינויים שטרם נשמרו ב־{Object.keys(drafts).length} מבדקים.</p>
             {draftStorageError && <p role="alert" className="text-destructive">לא ניתן לשחזר טיוטה בדפדפן זה. שמור את השינויים לפני היציאה.</p>}
             <Button type="button" variant="outline" className="h-11" onClick={() => {
-              const saved = data.tests.find(test => drafts[test.id]);
+              const saved = allTests.find(test => drafts[test.id]);
               if (!saved) return;
               setSelectedGradeLevel("all");
               setSelectedGenderTrack(saved.genderTrack || "boys");
@@ -236,7 +245,7 @@ export default function ManageTestsPage() {
                   </div>
                   {isExpanded ? <ChevronUp className="w-4 h-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
                 </button>
-                <Button type="button" variant="ghost" size="icon" disabled={saving} aria-label={`מחיקת מבדק ${savedTest.name}`} className="h-11 w-11 shrink-0" onClick={() => setDeleteTestTarget({ id: test.id, name: savedTest.name })}>
+                <Button type="button" variant="ghost" size="icon" disabled={saving} aria-label={`מחיקת מבדק ${savedTest.name}`} className="h-11 w-11 shrink-0" onClick={() => test._isNew ? discardDraft(test.id) : setDeleteTestTarget({ id: test.id, name: savedTest.name })}>
                   <Trash2 className="w-3.5 h-3.5 text-destructive/70" aria-hidden="true" />
                 </Button>
                 </div>
@@ -266,9 +275,7 @@ export default function ManageTestsPage() {
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
                           {saving ? 'שומר…' : 'שמור שינויים'}
                         </Button>
-                        <Button type="button" variant="outline" className="h-11" onClick={() => setDrafts(current => {
-                          const next = { ...current }; delete next[test.id]; return next;
-                        })}>ביטול</Button>
+                        <Button type="button" variant="outline" className="h-11" onClick={() => discardDraft(test.id)}>ביטול</Button>
                       </div>
                     )}
                     </fieldset>
@@ -303,11 +310,4 @@ export default function ManageTestsPage() {
   );
 }
 
-function Field({ label, children }) {
-  return (
-    <label className="space-y-1">
-      <span className="text-[10px] text-muted-foreground">{label}</span>
-      {children}
-    </label>
-  );
-}
+
