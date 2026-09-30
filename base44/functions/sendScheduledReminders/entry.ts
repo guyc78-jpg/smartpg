@@ -62,7 +62,11 @@ Deno.serve(async (req) => {
     const get = (type: string) => parts.find((part) => part.type === type)?.value;
     const localDate = `${get('year')}-${get('month')}-${get('day')}`;
     const nowMinutes = Number(get('hour')) * 60 + Number(get('minute'));
-    const day = WEEKDAY_MAP[get('weekday')];
+    const weekday = get('weekday');
+    const day = weekday ? WEEKDAY_MAP[weekday] : undefined;
+    if (day === undefined || !Number.isFinite(nowMinutes)) {
+      return Response.json({ error: 'Unable to determine the local reminder time' }, { status: 500 });
+    }
 
     const subscriptions = (await listAll(db.PushSubscription))
       .filter((subscription) => ownerKey(subscription.created_by) === callerOwner);
@@ -70,8 +74,9 @@ Deno.serve(async (req) => {
     for (const subscription of subscriptions) {
       const owner = ownerKey(subscription.created_by);
       if (!owner) continue;
-      if (!subscriptionsByOwner.has(owner)) subscriptionsByOwner.set(owner, []);
-      subscriptionsByOwner.get(owner).push(subscription);
+      const ownedSubscriptions = subscriptionsByOwner.get(owner) || [];
+      ownedSubscriptions.push(subscription);
+      subscriptionsByOwner.set(owner, ownedSubscriptions);
     }
     if (subscriptionsByOwner.size === 0) {
       return Response.json({ lessonReminders: 0, testReminders: 0, reason: 'no_owned_subscriptions' });
