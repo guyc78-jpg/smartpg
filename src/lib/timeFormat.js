@@ -1,37 +1,40 @@
-// Format seconds to MM:SS
+// Format and parse measurement times without losing hundredths at minute boundaries.
 export function formatLongTime(totalSeconds) {
-  if (totalSeconds === null || totalSeconds === undefined) return '';
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(Math.round(seconds)).padStart(2, '0')}`;
+  if (totalSeconds === null || totalSeconds === undefined || totalSeconds === '') return '';
+  const value = Number(totalSeconds);
+  if (!Number.isFinite(value) || value < 0) return '';
+  const hundredths = Math.round(value * 100);
+  const minutes = Math.floor(hundredths / 6000);
+  const seconds = Math.floor(hundredths / 100) % 60;
+  const fraction = hundredths % 100;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}${fraction ? `.${String(fraction).padStart(2, '0')}` : ''}`;
 }
 
-// Format seconds for short sprint (SS.CC)
 export function formatShortTime(totalSeconds) {
-  if (totalSeconds === null || totalSeconds === undefined) return '';
-  const secs = Math.floor(totalSeconds);
-  const centis = Math.round((totalSeconds - secs) * 100);
-  return `${secs}.${String(centis).padStart(2, '0')}`;
+  if (totalSeconds === null || totalSeconds === undefined || totalSeconds === '') return '';
+  const value = Number(totalSeconds);
+  if (!Number.isFinite(value) || value < 0) return '';
+  return (Math.round(value * 100) / 100).toFixed(2);
 }
 
-// Parse MM:SS to total seconds
-export function parseLongTime(str) {
-  if (!str) return null;
-  const parts = str.split(':');
-  if (parts.length === 2) {
-    const m = parseInt(parts[0]);
-    const s = parseInt(parts[1]);
-    if (!isNaN(m) && !isNaN(s)) return m * 60 + s;
-  }
-  const n = parseFloat(str);
-  return isNaN(n) ? null : n;
+function parsePositiveDecimal(value) {
+  const text = String(value ?? '').trim();
+  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(text)) return null;
+  const number = Number(text);
+  return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
-// Parse SS.CC to seconds
-export function parseShortTime(str) {
-  if (!str) return null;
-  const n = parseFloat(str);
-  return isNaN(n) ? null : n;
+export function parseLongTime(value) {
+  const text = String(value ?? '').trim();
+  if (!text.includes(':')) return parsePositiveDecimal(text);
+  const match = /^(\d+):([0-5]?\d(?:\.\d+)?)$/.exec(text);
+  if (!match) return null;
+  const seconds = Number(match[1]) * 60 + Number(match[2]);
+  return Number.isFinite(seconds) ? seconds : null;
+}
+
+export function parseShortTime(value) {
+  return parsePositiveDecimal(value);
 }
 
 export function isTimeBasedTest(name) {
