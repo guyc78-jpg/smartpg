@@ -13,7 +13,7 @@ import TestImportExport from '@/components/tests/TestImportExport.jsx';
 import { usesTimeFormat } from '@/lib/testImportExport';
 import { buildTestDefinitionPayload } from '@/lib/testDefinitionPayload';
 import { useAuth } from '@/lib/AuthContext';
-import { readTestDrafts, writeTestDrafts } from '@/lib/testDraftStorage';
+import { readTestDrafts, writeTestDrafts, isNewTestDraft } from '@/lib/testDraftStorage';
 import { toast } from 'sonner';
 
 const selectClass = 'h-11 w-full rounded-md border border-input bg-background px-2 text-sm';
@@ -29,7 +29,7 @@ export default function ManageTestsPage() {
   const [selectedType, setSelectedType] = useState('all');
   const [deleteTestTarget, setDeleteTestTarget] = useState(null);
   const [drafts, setDrafts] = useState(() => Object.fromEntries(
-    Object.entries(readTestDrafts(user?.id)).filter(([id, draft]) => data.tests.some(test => test.id === id) || (draft?._isNew && id.startsWith('local_')))
+    Object.entries(readTestDrafts(user?.id)).filter(([id, draft]) => data.tests.some(test => test.id === id) || isNewTestDraft(id, draft))
   ));
   const [draftStorageError, setDraftStorageError] = useState(false);
   const [savingIds, setSavingIds] = useState({});
@@ -56,7 +56,7 @@ export default function ManageTestsPage() {
     setDrafts(current => { const next = { ...current }; delete next[id]; return next; });
   };
 
-  const newDrafts = Object.values(drafts).filter(draft => draft._isNew);
+  const newDrafts = Object.entries(drafts).filter(([id, draft]) => isNewTestDraft(id, draft)).map(([, draft]) => draft);
   const allTests = [...data.tests, ...newDrafts];
 
   const handleAddTest = () => {
@@ -103,7 +103,7 @@ export default function ManageTestsPage() {
     savingRef.current.add(test.id);
     setSavingIds(current => ({ ...current, [test.id]: true }));
     try {
-      if (test._isNew) {
+      if (isNewTestDraft(test.id, test)) {
         const id = await addTest({ ...test, ...drafts[test.id], ...extra });
         if (addRef.current === test.id) addRef.current = false;
         setExpandedTest(id);
@@ -212,7 +212,7 @@ export default function ManageTestsPage() {
         )}
         <div className="space-y-2">
           {filteredTests.map((savedTest, idx) => {
-            const test = { ...savedTest, ...drafts[savedTest.id] };
+            const test = { ...savedTest, ...drafts[savedTest.id], _isNew: isNewTestDraft(savedTest.id, savedTest) };
             const saving = Boolean(savingIds[test.id]);
             const isExpanded = expandedTest === test.id;
             const className = data.classes.find(c => c.id === test.classId)?.name;
