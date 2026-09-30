@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { normalizeClassName, scheduleDedupeKey, PE_SUBJECT_NAME } from '@/lib/scheduleImport';
 import { applyRemoteBellTimes, resetBellTimes } from '@/lib/periodTimes';
 import { buildStudentPayload, studentDedupeKey } from '@/lib/studentPayload';
+import { canRemoveDefaultDuplicate } from '@/lib/defaultTestSafety';
 
 function jsonToConversionTable(json) {
   if (!Array.isArray(json)) return [];
@@ -242,6 +243,7 @@ function defaultTestKey(test) {
 }
 
 const DEFAULT_TEST_KEYS = new Set(DEFAULT_TESTS.map(defaultTestKey));
+const DEFAULT_TEST_BY_KEY = new Map(DEFAULT_TESTS.map(test => [defaultTestKey(test), test]));
 
 export const AppContext = createContext(null);
 
@@ -355,6 +357,12 @@ export function AppProvider({ children }) {
           group.push(row);
           groups.set(key, group);
         }
+        const referencedTestIds = new Set([
+          ...(resultsData || []).map(row => row.test_id),
+          ...(attemptsData || []).map(row => row.test_id),
+          ...(classTestStatusData || []).map(row => row.test_id),
+          ...(bagrutResultsData || []).map(row => row.component_id),
+        ].filter(Boolean));
         const duplicateRows = [];
         for (const group of groups.values()) {
           group.sort((a, b) => {
@@ -362,7 +370,9 @@ export function AppProvider({ children }) {
             return (Number.isFinite(timestampDifference) ? timestampDifference : 0)
               || String(a.id).localeCompare(String(b.id));
           });
-          duplicateRows.push(...group.slice(1));
+          duplicateRows.push(...group.slice(1).filter(row =>
+            canRemoveDefaultDuplicate(row, DEFAULT_TEST_BY_KEY.get(defaultTestKey(row)), referencedTestIds)
+          ));
         }
         if (duplicateRows.length > 0) {
           const outcomes = await Promise.allSettled(
