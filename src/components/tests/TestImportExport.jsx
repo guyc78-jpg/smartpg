@@ -163,7 +163,6 @@ export default function TestImportExport({ tests, allTests, onImport, onDeleteAl
         title="מחיקת כל המבדקים"
         description="כל המבדקים וטבלאות ההמרה שלהם יימחקו לצמיתות. פעולה זו לא ניתנת לביטול."
         onConfirm={async () => {
-          setDeleteAllOpen(false);
           setDeletingAll(true);
           try {
             const count = await onDeleteAll();
@@ -171,6 +170,7 @@ export default function TestImportExport({ tests, allTests, onImport, onDeleteAl
           } catch (err) {
             console.error('Delete all tests failed:', err);
             toast.error('המחיקה נכשלה. נסה שוב.');
+            throw err;
           } finally {
             setDeletingAll(false);
           }
