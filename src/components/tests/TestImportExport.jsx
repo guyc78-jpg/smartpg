@@ -19,6 +19,7 @@ export default function TestImportExport({ tests, allTests, onImport, onDeleteAl
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const fileRef = useRef(null);
+  const importRef = useRef(false);
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
@@ -101,6 +102,8 @@ export default function TestImportExport({ tests, allTests, onImport, onDeleteAl
   };
 
   const handleConfirm = async (chosen) => {
+    if (importRef.current) return;
+    importRef.current = true;
     setImporting(true);
     try {
       const count = await onImport(chosen);
@@ -108,13 +111,14 @@ export default function TestImportExport({ tests, allTests, onImport, onDeleteAl
       toast.success(`יובאו ${count} מבדקים בהצלחה`);
     } catch (err) {
       console.error('Import failed:', err);
-      toast.error('הייבוא נכשל. נסה שוב.');
+      toast.error(err.isImportFailure ? err.message : 'הייבוא נכשל. בדוק את הנתונים והחיבור.');
     } finally {
+      importRef.current = false;
       setImporting(false);
     }
   };
 
-  const chip = 'liquid-chip h-8 px-3 rounded-full text-xs font-bold flex items-center gap-1.5';
+  const chip = 'liquid-chip min-h-11 px-3 rounded-full text-xs font-bold flex items-center gap-1.5';
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap" dir="rtl">
