@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
       setUser(currentUser);
-      setAuthError(null);
+      setAuthError(error => error?.type === 'auth_required' ? null : error);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
