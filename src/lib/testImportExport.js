@@ -1,5 +1,6 @@
-import { formatLongTime, parseLongTime, isTimeBasedTest, isShortSprintTest } from '@/lib/timeFormat';
-import { GENDER_TRACK_LABELS, TEST_TYPES } from '@/lib/types';
+import { formatLongTime, parseLongTime, isTimeBasedTest, isShortSprintTest } from './timeFormat.js';
+import { GENDER_TRACK_LABELS, TEST_TYPES } from './types.js';
+import { buildTestDefinitionPayload } from './testDefinitionPayload.js';
 
 export const usesTimeFormat = (name) => isTimeBasedTest(name) && !isShortSprintTest(name);
 
@@ -11,6 +12,7 @@ export function formatResultValue(value, testName) {
 export function parseResultValue(value) {
   if (value === null || value === undefined || value === '') return null;
   const str = String(value).trim();
+  if (!str) return null;
   if (str.includes(':')) return parseLongTime(str);
   const n = Number(str);
   return Number.isFinite(n) ? n : null;
@@ -97,15 +99,20 @@ export function rowsToTests(rows) {
         genderTrack,
         testType: TYPE_BY_LABEL[(row.test_type || '').toString().trim()] || 'other',
         unit: (row.unit || '').toString(),
-        weight: Number(row.weight) || 25,
+        weight: row.weight == null || String(row.weight).trim() === '' ? 25 : Number(row.weight),
         classId: '', semester: '', testDate: '',
         conversionTable: [],
       });
     }
     const min = parseResultValue(row.min_result ?? row.min);
     const max = parseResultValue(row.max_result ?? row.max);
-    const grade = parseResultValue(row.grade);
-    if (min !== null && max !== null && grade !== null) {
+    const grade = row.grade == null || String(row.grade).trim() === '' ? null : Number(row.grade);
+    const hasValues = [row.min_result ?? row.min, row.max_result ?? row.max, row.grade]
+      .some(value => value != null && String(value).trim() !== '');
+    if (hasValues && (min === null || max === null || grade === null || !Number.isFinite(grade))) {
+      throw new Error(`טבלת ההמרה של ${name} מכילה שורה חסרה או לא תקינה`);
+    }
+    if (hasValues) {
       groups.get(key).conversionTable.push({
         minResult: Math.min(min, max),
         maxResult: Math.max(min, max),
@@ -113,5 +120,7 @@ export function rowsToTests(rows) {
       });
     }
   }
-  return Array.from(groups.values());
+  const tests = Array.from(groups.values());
+  tests.forEach(buildTestDefinitionPayload);
+  return tests;
 }
