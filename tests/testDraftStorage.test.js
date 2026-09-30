@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readTestDrafts, writeTestDrafts, clearTestDrafts } from '../src/lib/testDraftStorage.js';
+import { readTestDrafts, writeTestDrafts, clearTestDrafts, isNewTestDraft } from '../src/lib/testDraftStorage.js';
 
 function storage() {
   const values = new Map();
@@ -17,6 +17,18 @@ test('test drafts survive navigation and remain isolated between accounts', () =
   assert.deepEqual(readTestDrafts('owner-b', tab), {});
   assert.equal(writeTestDrafts('owner-a', {}, tab), true);
   assert.deepEqual(readTestDrafts('owner-a', tab), {});
+});
+
+test('unsaved new tests survive refresh without changing saved test identity', () => {
+  const tab = storage();
+  const draft = { id: 'local_123_1', _isNew: true, name: 'QA מבדק', gradeLevel: 'ז', genderTrack: 'boys', testType: 'running', weight: 0, conversionTable: [] };
+  assert.equal(writeTestDrafts('owner-a', { local_123_1: draft }, tab), true);
+  assert.deepEqual(readTestDrafts('owner-a', tab), { local_123_1: draft });
+  assert.deepEqual(readTestDrafts('owner-b', tab), {});
+  assert.equal(isNewTestDraft('local_123_1', readTestDrafts('owner-a', tab).local_123_1), true);
+  assert.equal(isNewTestDraft('saved-test', { ...draft, id: 'saved-test' }), false);
+  tab.setItem('pe_test_drafts_owner-a', JSON.stringify({ local_bad: { _isNew: true, name: {} }, saved: { _isNew: true, name: 'edit' } }));
+  assert.deepEqual(readTestDrafts('owner-a', tab), { saved: { name: 'edit' } });
 });
 
 test('logout removes only test drafts and corrupted storage cannot break the app', () => {
