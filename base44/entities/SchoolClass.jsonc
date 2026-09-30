@@ -15,7 +15,18 @@
       "description": "Normalized account email used for tenant ownership",
       "rls": {
         "create": {
-          "data.owner_email": "{{user.email}}"
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            }
+          ]
         },
         "read": {
           "data.owner_email": "{{user.email}}"
