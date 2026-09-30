@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EditDialog, { Field, fieldClass, textareaClass } from '@/components/app/EditDialog';
 import { GRADE_LEVELS } from '@/lib/types';
+import { validateStudentName } from '@/lib/recordValidation';
 
 export default function AddClassDialog({ open, onOpenChange, onAdd, defaultGenderTrack = 'boys' }) {
   const [name, setName] = useState('');
@@ -24,6 +25,7 @@ export default function AddClassDialog({ open, onOpenChange, onAdd, defaultGende
 
   const handleSave = async () => {
     const students = studentNames.split('\n').map(s => s.trim()).filter(Boolean);
+    students.forEach(validateStudentName);
     await onAdd({ name: name.trim(), gradeLevel, genderTrack, homeroomTeacher: homeroomTeacher.trim(), notes: notes.trim(), status: 'active' }, students);
   };
 
