@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useApp, generateId } from '@/store/AppProvider';
 import Layout from '@/components/app/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Save, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { GRADE_LEVELS, GENDER_TRACK_LABELS, SEMESTER_LABELS, TEST_TYPES } from '@/lib/types';
 import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import ConversionTableEditor from '@/components/tests/ConversionTableEditor.jsx';
@@ -12,7 +12,7 @@ import TestImportExport from '@/components/tests/TestImportExport.jsx';
 import { usesTimeFormat } from '@/lib/testImportExport';
 import { toast } from 'sonner';
 
-const selectClass = 'h-8 w-full rounded-md border border-input bg-background px-2 text-xs';
+const selectClass = 'h-11 w-full rounded-md border border-input bg-background px-2 text-sm';
 const GRADE_ORDER = { 'ז': 0, 'ח': 1, 'ט': 2, 'י': 3, 'יא': 4, 'יב': 5 };
 
 export default function ManageTestsPage() {
@@ -23,11 +23,26 @@ export default function ManageTestsPage() {
   const [selectedGenderTrack, setSelectedGenderTrack] = useState(defaultGenderTrack);
   const [selectedType, setSelectedType] = useState('all');
   const [deleteTestTarget, setDeleteTestTarget] = useState(null);
+  const [drafts, setDrafts] = useState({});
+  const [savingIds, setSavingIds] = useState({});
+  const savingRef = useRef(new Set());
+  const addRef = useRef(false);
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    if (Object.keys(drafts).length === 0) return;
+    const warn = event => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [drafts]);
   const activeClasses = useMemo(() => data.classes.filter(c => (c.status || 'active') === 'active'), [data.classes]);
 
   useEffect(() => { setSelectedGenderTrack(defaultGenderTrack); }, [defaultGenderTrack]);
 
   const handleAddTest = async () => {
+    if (addRef.current) return;
+    addRef.current = true;
+    setAdding(true);
     const newTest = {
       id: generateId(),
       name: 'מבדק חדש',
@@ -41,8 +56,17 @@ export default function ManageTestsPage() {
       unit: '',
       conversionTable: [],
     };
-    await addTest(newTest);
-    toast.success('מבדק חדש נוצר');
+    try {
+      const id = await addTest(newTest);
+      setOpenGroups(groups => ({ ...groups, [newTest.gradeLevel]: true }));
+      setExpandedTest(id);
+      toast.success('מבדק חדש נוצר');
+    } catch {
+      toast.error('יצירת המבדק נכשלה. בדוק את החיבור ונסה שוב.');
+    } finally {
+      addRef.current = false;
+      setAdding(false);
+    }
   };
 
   const filteredTests = data.tests
@@ -55,7 +79,35 @@ export default function ManageTestsPage() {
       return ga !== gb ? ga - gb : a.name.localeCompare(b.name, 'he');
     });
 
-  const updateField = (test, field, value) => updateTest({ ...test, [field]: value });
+  const updateField = (test, field, value) => {
+    setDrafts(current => ({ ...current, [test.id]: { ...current[test.id], [field]: value } }));
+  };
+
+  const persistTest = async (test, extra = {}) => {
+    if (savingRef.current.has(test.id)) return;
+    savingRef.current.add(test.id);
+    setSavingIds(current => ({ ...current, [test.id]: true }));
+    try {
+      await updateTest(test, { ...drafts[test.id], ...extra });
+      setDrafts(current => {
+        const next = { ...current };
+        delete next[test.id];
+        return next;
+      });
+    } finally {
+      savingRef.current.delete(test.id);
+      setSavingIds(current => ({ ...current, [test.id]: false }));
+    }
+  };
+
+  const saveDraft = async test => {
+    try {
+      await persistTest(test);
+      toast.success('המבדק נשמר');
+    } catch {
+      toast.error('המבדק לא נשמר. בדוק את השם, המשקל וטבלת ההמרה ונסה שוב.');
+    }
+  };
 
   const handleImport = async (tests) => {
     await Promise.all(tests.map(test => addTest(test)));
@@ -83,14 +135,14 @@ export default function ManageTestsPage() {
             ))}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <select value={selectedGenderTrack} onChange={e => setSelectedGenderTrack(e.target.value)} className={selectClass}>
+            <select aria-label="סינון לפי מסלול" value={selectedGenderTrack} onChange={e => setSelectedGenderTrack(e.target.value)} className={selectClass}>
               {Object.entries(GENDER_TRACK_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
-            <select value={selectedType} onChange={e => setSelectedType(e.target.value)} className={selectClass}>
+            <select aria-label="סינון לפי סוג מבדק" value={selectedType} onChange={e => setSelectedType(e.target.value)} className={selectClass}>
               <option value="all">כל סוגי המבדקים</option>
               {Object.entries(TEST_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
-            <Button onClick={handleAddTest} size="sm" className="h-8 rounded-full">
+            <Button onClick={handleAddTest} disabled={adding} aria-busy={adding} size="sm" className="h-11 rounded-full">
               <Plus className="w-3.5 h-3.5 ml-1" /> הוסף מבדק
             </Button>
           </div>
@@ -98,7 +150,9 @@ export default function ManageTestsPage() {
         </div>
 
         <div className="space-y-2">
-          {filteredTests.map((test, idx) => {
+          {filteredTests.map((savedTest, idx) => {
+            const test = { ...savedTest, ...drafts[savedTest.id] };
+            const saving = Boolean(savingIds[test.id]);
             const isExpanded = expandedTest === test.id;
             const className = data.classes.find(c => c.id === test.classId)?.name;
             const grouped = selectedGradeLevel === 'all';
@@ -119,39 +173,52 @@ export default function ManageTestsPage() {
               )}
               {groupOpen && (
               <Card className="card-3d rounded-xl overflow-hidden">
-                <button onClick={() => setExpandedTest(isExpanded ? null : test.id)} className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-right">
+                <div className="flex items-center gap-2 px-3 py-1.5">
+                <button type="button" disabled={saving} aria-expanded={isExpanded} aria-controls={`test-editor-${test.id}`} onClick={() => setExpandedTest(isExpanded ? null : test.id)} className="min-w-0 flex-1 min-h-11 flex items-center justify-between gap-3 text-right">
                   <div className="min-w-0">
                     <div className="font-bold text-sm truncate">{test.name}</div>
                     <div className="text-[11px] text-muted-foreground truncate">
                       {TEST_TYPES[test.testType || 'other']} • {test.gradeLevel}׳ • {GENDER_TRACK_LABELS[test.genderTrack || 'boys']} • {className || 'כל הכיתות'} • {test.conversionTable?.length || 0} שורות
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); setDeleteTestTarget({ id: test.id, name: test.name }); }}>
-                      <Trash2 className="w-3.5 h-3.5 text-destructive/70" />
-                    </Button>
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                  </div>
+                  {isExpanded ? <ChevronUp className="w-4 h-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
                 </button>
+                <Button type="button" variant="ghost" size="icon" disabled={saving} aria-label={`מחיקת מבדק ${savedTest.name}`} className="h-11 w-11 shrink-0" onClick={() => setDeleteTestTarget({ id: test.id, name: savedTest.name })}>
+                  <Trash2 className="w-3.5 h-3.5 text-destructive/70" aria-hidden="true" />
+                </Button>
+                </div>
 
                 {isExpanded && (
-                  <CardContent className="px-3 pb-3 space-y-3">
+                  <CardContent id={`test-editor-${test.id}`} className="px-3 pb-3 space-y-3">
+                    <fieldset disabled={saving} aria-busy={saving} className="space-y-3 min-w-0">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <Field label="שם מבדק"><Input value={test.name} onChange={e => updateField(test, 'name', e.target.value)} className="h-8 text-sm" /></Field>
+                      <Field label="שם מבדק"><Input value={test.name} onChange={e => updateField(test, 'name', e.target.value)} className="h-11 text-sm" /></Field>
                       <Field label="סוג מבדק"><select value={test.testType || 'other'} onChange={e => updateField(test, 'testType', e.target.value)} className={selectClass}>{Object.entries(TEST_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
                       <Field label="שכבה"><select value={test.gradeLevel || 'ז'} onChange={e => updateField(test, 'gradeLevel', e.target.value)} className={selectClass}>{GRADE_LEVELS.map(gl => <option key={gl} value={gl}>{gl}׳</option>)}</select></Field>
                       <Field label="כיתה"><select value={test.classId || ''} onChange={e => updateField(test, 'classId', e.target.value)} className={selectClass}><option value="">כל הכיתות בשכבה</option>{test.classId && !activeClasses.some(c => c.id === test.classId) && <option value={test.classId} disabled>{className || 'כיתה בארכיון'} (ארכיון)</option>}{activeClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
                       <Field label="מגדר"><select value={test.genderTrack || 'boys'} onChange={e => updateField(test, 'genderTrack', e.target.value)} className={selectClass}>{Object.entries(GENDER_TRACK_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
                       <Field label="מחצית"><select value={test.semester || ''} onChange={e => updateField(test, 'semester', e.target.value)} className={selectClass}><option value="">כל המחציות</option>{Object.entries(SEMESTER_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
-                      <Field label="תאריך"><Input type="date" value={test.testDate || ''} onChange={e => updateField(test, 'testDate', e.target.value)} className="h-8 text-sm" /></Field>
-                      <Field label="יחידת מדידה"><Input value={test.unit || ''} onChange={e => updateField(test, 'unit', e.target.value)} placeholder="שניות / מטרים / חזרות..." className="h-8 text-sm" /></Field>
-                      <Field label="משקל בציון"><Input type="number" min="0" max="100" value={test.weight ?? 0} onChange={e => updateField(test, 'weight', Number(e.target.value))} className="h-8 text-sm" /></Field>
+                      <Field label="תאריך"><Input type="date" value={test.testDate || ''} onChange={e => updateField(test, 'testDate', e.target.value)} className="h-11 text-sm" /></Field>
+                      <Field label="יחידת מדידה"><Input value={test.unit || ''} onChange={e => updateField(test, 'unit', e.target.value)} placeholder="שניות / מטרים / חזרות..." className="h-11 text-sm" /></Field>
+                      <Field label="משקל בציון"><Input type="number" min="0" max="100" value={test.weight ?? 0} onChange={e => updateField(test, 'weight', e.target.value)} className="h-11 text-sm" /></Field>
                     </div>
 
                     <div className="rounded-xl border border-border p-2 space-y-2">
                       <div className="text-xs font-bold">טבלת המרה מתוצאה לציון</div>
-                      <ConversionTableEditor rows={test.conversionTable} unit={test.unit} timeBased={usesTimeFormat(test.name)} onSave={rows => { updateField(test, 'conversionTable', rows); toast.success('טבלת ההמרה נשמרה'); }} />
+                      <ConversionTableEditor rows={test.conversionTable} unit={test.unit} timeBased={usesTimeFormat(test.name)} onSave={async rows => { await persistTest(test, { conversionTable: rows }); toast.success('טבלת ההמרה נשמרה'); }} />
                     </div>
+                    {drafts[test.id] && (
+                      <div className="flex gap-2">
+                        <Button type="button" onClick={() => saveDraft(test)} className="h-11 flex-1 gap-2">
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
+                          {saving ? 'שומר…' : 'שמור שינויים'}
+                        </Button>
+                        <Button type="button" variant="outline" className="h-11" onClick={() => setDrafts(current => {
+                          const next = { ...current }; delete next[test.id]; return next;
+                        })}>ביטול</Button>
+                      </div>
+                    )}
+                    </fieldset>
                   </CardContent>
                 )}
               </Card>
@@ -172,14 +239,10 @@ export default function ManageTestsPage() {
           description="המבדק וטבלת ההמרה שלו ימחקו. פעולה זו לא ניתנת לביטול."
           onConfirm={async () => {
             const target = deleteTestTarget;
-            try {
-              await deleteTest(target.id);
-              toast.success('המבדק נמחק');
-            } catch {
-              toast.error('מחיקת המבדק נכשלה');
-            } finally {
-              setDeleteTestTarget(null);
-            }
+            await deleteTest(target.id);
+            setDrafts(current => { const next = { ...current }; delete next[target.id]; return next; });
+            toast.success('המבדק נמחק');
+            setDeleteTestTarget(null);
           }}
         />
       </div>
