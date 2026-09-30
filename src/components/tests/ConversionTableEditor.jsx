@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Save, Trash2 } from 'lucide-react';
@@ -10,6 +10,8 @@ const emptyRow = { minResult: '', maxResult: '', grade: '' };
 export default function ConversionTableEditor({ rows = [], unit, timeBased = false, onSave }) {
   const [draftRows, setDraftRows] = useState([]);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   const displayValue = (v) => {
     if (v === '' || v === null || v === undefined) return '';
@@ -37,7 +39,8 @@ export default function ConversionTableEditor({ rows = [], unit, timeBased = fal
     setDraftRows(current => current.map((row, i) => i === index ? { ...row, [field]: value } : row));
   };
 
-  const saveRows = () => {
+  const saveRows = async () => {
+    if (savingRef.current) return;
     const normalized = draftRows.map(row => ({
       minResult: parseValue(row.minResult),
       maxResult: parseValue(row.maxResult),
@@ -49,11 +52,21 @@ export default function ConversionTableEditor({ rows = [], unit, timeBased = fal
       return;
     }
     setError('');
-    onSave(result.rows);
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      await onSave(result.rows);
+    } catch {
+      setError('הטבלה לא נשמרה. הערכים נשארו לעריכה; בדוק את החיבור ונסה שוב.');
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="space-y-2" dir="rtl">
+    <div className="space-y-2" dir="rtl" aria-busy={saving}>
+      <fieldset disabled={saving} className="space-y-2 min-w-0">
       <div className="grid grid-cols-[1fr_1fr_1fr_44px] gap-1.5 text-xs text-muted-foreground px-1" aria-hidden="true">
         <span>מינימום</span>
         <span>מקסימום</span>
@@ -81,9 +94,10 @@ export default function ConversionTableEditor({ rows = [], unit, timeBased = fal
           <Plus className="w-3.5 h-3.5 ml-1" /> הוסף שורה
         </Button>
         <Button size="sm" onClick={saveRows} className="h-11 text-xs">
-          <Save className="w-3.5 h-3.5 ml-1" /> שמור טבלה
+          <Save className="w-3.5 h-3.5 ml-1" /> {saving ? 'שומר…' : 'שמור טבלה'}
         </Button>
       </div>
+      </fieldset>
     </div>
   );
 }
