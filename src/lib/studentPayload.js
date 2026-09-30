@@ -1,3 +1,5 @@
+import { assertTextLength, validateStudentName } from './recordValidation.js';
+
 const VALID_GENDERS = new Set(['boys', 'girls', 'other']);
 
 export function normalizeStudentGender(value, fallback = 'other') {
@@ -15,7 +17,7 @@ export function buildStudentPayload(input, { classId, fallbackGender = 'other', 
     source.name || [source.lastName, source.firstName].filter(Boolean).join(' '),
   );
   const resolvedClassId = source.classId || classId || existing?.classId || '';
-  if (!name) throw new Error('יש להזין שם תלמיד/ה');
+  validateStudentName(name);
   if (!resolvedClassId) throw new Error('יש לבחור כיתה');
 
   const resolvedGender = normalizeStudentGender(
@@ -35,6 +37,11 @@ export function buildStudentPayload(input, { classId, fallbackGender = 'other', 
     study_group: String(source.studyGroup || '').trim(),
     sub_class_name: String(source.studyGroup || source.subClassName || '').trim(),
   };
+  for (const [key, limit, label] of [
+    ['first_name', 80, 'שם פרטי'], ['last_name', 80, 'שם משפחה'],
+    ['study_group', 120, 'קבוצת לימוד'], ['sub_class_name', 120, 'קבוצת לימוד'],
+    ['medical_limitations', 2000, 'מגבלות רפואיות'], ['pe_notes', 2000, 'הערות חנ״ג'],
+  ]) assertTextLength(payload[key], limit, label);
   if (ownerEmail) payload.owner_email = String(ownerEmail).trim().toLowerCase();
   return payload;
 }
