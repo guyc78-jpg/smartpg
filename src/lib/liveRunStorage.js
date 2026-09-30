@@ -14,6 +14,7 @@ function validParticipant(participant) {
 // Restore only participants that are present in the authenticated owner's data.
 export function restoreOwnedRunSession(session, ownerId, students) {
   if (!ownerId || !session || typeof session !== 'object') return null;
+  if (typeof session.id !== 'string' || !session.id || session.id.length > 128) return null;
   if (session.ownerId && session.ownerId !== ownerId) return null;
   if (!session.setup?.classId || !['running', 'summary', 'edit'].includes(session.phase)) return null;
   if (!Array.isArray(session.selectedIds) || session.selectedIds.length === 0
@@ -36,5 +37,13 @@ export function restoreOwnedRunSession(session, ownerId, students) {
       classId: student.classId || student.class_id || '',
     }];
   }));
-  return { ...session, ownerId, studentsById };
+  const participants = Object.fromEntries(session.selectedIds.map(id => {
+    const participant = session.participants[id];
+    return [id, {
+      ...participant, studentId: id,
+      history: Array.isArray(participant.history)
+        ? participant.history.filter(validParticipant).slice(-12).map(item => ({ ...item, history: [] })) : [],
+    }];
+  }));
+  return { ...session, ownerId, studentsById, participants };
 }
