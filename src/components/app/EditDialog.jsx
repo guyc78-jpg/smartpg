@@ -1,7 +1,8 @@
-import { cloneElement, isValidElement, useEffect, useId, useState } from 'react';
+import { Children, cloneElement, isValidElement, useEffect, useId, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { getActionErrorMessage } from '@/lib/actionErrorMessage';
 import { AlertCircle, Loader2, Trash2 } from 'lucide-react';
 
 export const fieldClass = 'h-11 text-sm text-foreground liquid-field rounded-xl shadow-none focus-visible:ring-2';
@@ -9,14 +10,18 @@ export const textareaClass = 'min-h-[70px] text-sm text-foreground liquid-field 
 
 export function Field({ label, children, id }) {
   const generatedId = useId();
-  const fieldId = id || `field-${generatedId.replace(/:/g, '')}`;
+  const primaryChild = Children.toArray(children).find(isValidElement);
+  const fieldId = id || primaryChild?.props.id || `field-${generatedId.replace(/:/g, '')}`;
   const labelId = `${fieldId}-label`;
-  const labelledControl = isValidElement(children)
-    ? cloneElement(children, {
-        id: children.props.id || fieldId,
-        'aria-labelledby': children.props['aria-labelledby'] || labelId,
-      })
-    : children;
+  let labelled = false;
+  const labelledControl = Children.map(children, child => {
+    if (labelled || !isValidElement(child)) return child;
+    labelled = true;
+    return cloneElement(child, {
+      id: child.props.id || fieldId,
+      'aria-labelledby': child.props['aria-labelledby'] || labelId,
+    });
+  });
 
   return (
     <div className="space-y-1.5 text-right">
@@ -43,7 +48,7 @@ export default function EditDialog({ open, onOpenChange, title, children, onSave
       await onSave();
       onOpenChange(false);
     } catch (e) {
-      setError(e?.response?.data?.detail || e?.message || 'השמירה נכשלה. בדוק את החיבור ונסה שוב.');
+      setError(getActionErrorMessage(e, 'השמירה נכשלה. בדקו את החיבור ונסו שוב.'));
     } finally {
       setSaving(false);
     }
@@ -57,7 +62,7 @@ export default function EditDialog({ open, onOpenChange, title, children, onSave
       await onDelete();
       onOpenChange(false);
     } catch (e) {
-      setError(e?.response?.data?.detail || e?.message || 'המחיקה נכשלה. בדקו את החיבור ונסו שוב.');
+      setError(getActionErrorMessage(e, 'המחיקה נכשלה. בדקו את החיבור ונסו שוב.'));
     } finally {
       setDeleting(false);
     }
