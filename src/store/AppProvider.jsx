@@ -6,6 +6,7 @@ import { normalizeClassName, scheduleDedupeKey, PE_SUBJECT_NAME } from '@/lib/sc
 import { applyRemoteBellTimes, resetBellTimes } from '@/lib/periodTimes';
 import { buildStudentPayload, studentDedupeKey } from '@/lib/studentPayload';
 import { canRemoveDefaultDuplicate } from '@/lib/defaultTestSafety';
+import { buildTestDefinitionPayload } from '@/lib/testDefinitionPayload';
 
 function jsonToConversionTable(json) {
   if (!Array.isArray(json)) return [];
@@ -866,22 +867,17 @@ export function AppProvider({ children }) {
 
   // --- Tests ---
   const addTest = useCallback(async (test) => {
-    const created = await base44.entities.TestDefinition.create({
-      name: test.name, test_type: test.testType || 'other', weight: test.weight,
-      grade_level: test.gradeLevel, class_id: test.classId || '', gender_track: test.genderTrack || 'boys',
-      semester: test.semester || undefined, test_date: test.testDate || undefined, unit: test.unit || '',
-      conversion_table: test.conversionTable,
-    });
+    const created = await base44.entities.TestDefinition.create(buildTestDefinitionPayload(test));
     setData(d => ({ ...d, tests: upsertById(d.tests, mapTest(created)) }));
+    return created.id;
   }, []);
 
-  const updateTest = useCallback(async (test) => {
-    const saved = await enqueueMutation(`test:${test.id}`, () => base44.entities.TestDefinition.update(test.id, {
-      name: test.name, test_type: test.testType || 'other', weight: test.weight,
-      grade_level: test.gradeLevel, class_id: test.classId || '', gender_track: test.genderTrack,
-      semester: test.semester || undefined, test_date: test.testDate || undefined, unit: test.unit || '',
-      conversion_table: test.conversionTable,
-    }));
+  const updateTest = useCallback(async (test, changes) => {
+    const saved = await enqueueMutation(`test:${test.id}`, async () => {
+      // Field patches must be merged with the current server row, not a stale render.
+      const current = changes ? mapTest(await base44.entities.TestDefinition.get(test.id)) : test;
+      return base44.entities.TestDefinition.update(test.id, buildTestDefinitionPayload({ ...current, ...changes }));
+    });
     setData(d => ({ ...d, tests: upsertById(d.tests, mapTest(saved)) }));
   }, []);
 
