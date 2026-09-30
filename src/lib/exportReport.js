@@ -1,5 +1,6 @@
 import { formatStudentName } from '@/lib/studentName';
 import { toLocalISODate } from '@/lib/dateTime';
+import { TEST_STATUS_LABELS } from '@/lib/types';
 
 function sanitizeCsvCell(value) {
   const str = String(value ?? '');
@@ -18,7 +19,7 @@ export function exportClassReportCSV(className, studentGrades, tests = [], resul
     ...tests.flatMap(test => ['A', 'B'].map(semester => {
       const result = results.find(row => row.studentId === student.id && row.testId === test.id && row.semester === semester);
       if (!result) return '';
-      return result.status === 'completed' ? result.rawScore ?? '' : result.status;
+      return result.status === 'completed' ? result.rawScore ?? '' : (TEST_STATUS_LABELS[result.status] || 'לא ידוע');
     })),
   ]);
 
