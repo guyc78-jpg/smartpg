@@ -52,11 +52,23 @@
       "items": {
         "type": "object",
         "properties": {
-          "minResult": { "type": "number" },
-          "maxResult": { "type": "number" },
-          "min_result": { "type": "number" },
-          "max_result": { "type": "number" },
-          "grade": { "type": "number", "minimum": 0, "maximum": 100 }
+          "minResult": {
+            "type": "number"
+          },
+          "maxResult": {
+            "type": "number"
+          },
+          "min_result": {
+            "type": "number"
+          },
+          "max_result": {
+            "type": "number"
+          },
+          "grade": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
         }
       }
     }
@@ -66,9 +78,28 @@
     "weight"
   ],
   "rls": {
-    "create": { "user_condition": { "id": "{{user.id}}" } },
-    "read": { "created_by": "{{user.email}}" },
-    "update": { "created_by": "{{user.email}}" },
-    "delete": { "created_by": "{{user.email}}" }
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
   }
 }
