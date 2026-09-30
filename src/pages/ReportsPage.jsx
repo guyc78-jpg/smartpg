@@ -200,7 +200,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-sm">{cls?.name}</h3>
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => exportClassReportCSV(cls?.name, studentGrades, classTests, data.results)}>
+                <Button size="sm" variant="outline" className="h-11 gap-1 text-xs" onClick={() => exportClassReportCSV(cls?.name, studentGrades, classTests, data.results)}>
                   <Download className="w-3 h-3" /> ייצוא
                 </Button>
                 <Badge variant="secondary" className="text-[10px]">{summary.total} תלמידים</Badge>
