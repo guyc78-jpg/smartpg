@@ -1,12 +1,27 @@
+import { useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { LogIn, Moon, Sun } from "lucide-react";
+import { safeReturnTo } from "@/lib/authReturnTo";
+import { Loader2, LogIn, Moon, Sun } from "lucide-react";
 import GoogleIcon from "@/components/GoogleIcon";
 import { useTheme } from "@/hooks/useTheme";
 
 export default function Login() {
   const { dark, toggle } = useTheme();
-  const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", "/");
+  const pendingRef = useRef(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const handleGoogle = async () => {
+    if (pendingRef.current) return;
+    pendingRef.current = true;
+    setPending(true);
+    setError("");
+    try {
+      await base44.auth.loginWithProvider("google", safeReturnTo());
+    } catch {
+      pendingRef.current = false;
+      setPending(false);
+      setError("לא הצלחנו להתחיל את ההתחברות. בדוק את החיבור ונסה שוב.");
+    }
   };
 
   return (
@@ -20,7 +35,7 @@ export default function Login() {
         onClick={toggle}
         aria-label={dark ? 'מעבר למצב בהיר' : 'מעבר למצב כהה'}
         title={dark ? 'מצב בהיר' : 'מצב כהה'}
-        className="absolute left-4 top-[calc(1rem+env(safe-area-inset-top,0px))] h-10 w-10 rounded-full liquid-chip flex items-center justify-center text-muted-foreground"
+        className="absolute left-4 top-[calc(1rem+env(safe-area-inset-top,0px))] h-11 w-11 rounded-full liquid-chip flex items-center justify-center text-muted-foreground"
       >
         {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
       </button>
@@ -60,8 +75,11 @@ export default function Login() {
           style={{ animation: "loader-fade-up 0.7s 0.3s ease-out both" }}
         >
           <button
+            type="button"
+            disabled={pending}
+            aria-busy={pending}
             onClick={handleGoogle}
-            className="group w-full h-14 rounded-2xl flex items-center justify-center gap-3 text-base font-semibold text-foreground transition-all duration-200 active:scale-[0.98]"
+            className="group w-full h-14 rounded-2xl flex items-center justify-center gap-3 text-base font-semibold text-foreground transition-all duration-200 active:scale-[0.98] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             style={{
               background: "linear-gradient(160deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.65))",
               backdropFilter: "blur(20px) saturate(1.8)",
@@ -80,10 +98,11 @@ export default function Login() {
               e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            <GoogleIcon className="w-6 h-6 shrink-0" />
-            התחברות עם Google
+            {pending ? <Loader2 className="w-6 h-6 shrink-0 animate-spin" aria-hidden="true" /> : <GoogleIcon className="w-6 h-6 shrink-0" />}
+            {pending ? "מתחבר…" : "התחברות עם Google"}
           </button>
 
+          {error && <p role="alert" className="text-center text-sm text-destructive mt-4">{error}</p>}
           <p className="text-center text-xs text-muted-foreground mt-5">
             התחברות מאובטחת באמצעות חשבון Google שלכם
           </p>
