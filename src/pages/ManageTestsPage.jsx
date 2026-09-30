@@ -147,7 +147,13 @@ export default function ManageTestsPage() {
 
   const handleDeleteAll = async () => {
     const ids = data.tests.map(t => t.id);
-    for (const id of ids) await deleteTest(id);
+    for (const id of ids) {
+      await deleteTest(id);
+      const storedDrafts = readTestDrafts(user?.id);
+      delete storedDrafts[id];
+      writeTestDrafts(user?.id, storedDrafts);
+      setDrafts(current => { const next = { ...current }; delete next[id]; return next; });
+    }
     return ids.length;
   };
 
