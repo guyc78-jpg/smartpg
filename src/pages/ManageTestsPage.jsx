@@ -10,6 +10,7 @@ import ConfirmDeleteDialog from '@/components/app/ConfirmDeleteDialog';
 import ConversionTableEditor from '@/components/tests/ConversionTableEditor.jsx';
 import TestImportExport from '@/components/tests/TestImportExport.jsx';
 import { usesTimeFormat } from '@/lib/testImportExport';
+import { buildTestDefinitionPayload } from '@/lib/testDefinitionPayload';
 import { toast } from 'sonner';
 
 const selectClass = 'h-11 w-full rounded-md border border-input bg-background px-2 text-sm';
@@ -27,6 +28,7 @@ export default function ManageTestsPage() {
   const [savingIds, setSavingIds] = useState({});
   const savingRef = useRef(new Set());
   const addRef = useRef(false);
+  const importingRef = useRef(false);
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -110,8 +112,24 @@ export default function ManageTestsPage() {
   };
 
   const handleImport = async (tests) => {
-    await Promise.all(tests.map(test => addTest(test)));
-    return tests.length;
+    if (importingRef.current) throw new Error('ייבוא כבר מתבצע');
+    tests.forEach(buildTestDefinitionPayload);
+    importingRef.current = true;
+    let count = 0;
+    try {
+      for (const test of tests) {
+        await addTest(test);
+        count++;
+      }
+      return count;
+    } catch (cause) {
+      const error = new Error(`הייבוא נעצר לאחר ${count} מבדקים שנשמרו. בדוק את הרשימה לפני ייבוא נוסף.`);
+      error.isImportFailure = true;
+      error.cause = cause;
+      throw error;
+    } finally {
+      importingRef.current = false;
+    }
   };
 
   const handleDeleteAll = async () => {
