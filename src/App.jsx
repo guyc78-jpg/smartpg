@@ -48,7 +48,7 @@ const PageFallback = () => (
 );
 
 const AppShell = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
+  const { user, isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
   const { loading: isLoadingData, loadError, loadAll } = useApp();
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [loaderGone, setLoaderGone] = useState(false);
@@ -87,7 +87,7 @@ const AppShell = () => {
     {!loaderGone && <AppLoader exiting={appReady} onExited={() => setLoaderGone(true)} />}
     {(appReady || loaderGone) && (
     <ErrorBoundary>
-      <LiveRunProvider>
+      <LiveRunProvider key={user?.id || 'anonymous'}>
       <Suspense fallback={<PageFallback />}>
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -115,7 +115,7 @@ const AppShell = () => {
         <Route path="*" element={<PageNotFound />} />
       </Routes>
       </Suspense>
-      <FloatingRunTimer />
+      {isAuthenticated && <FloatingRunTimer />}
       <NewUserGuide enabled={appReady} />
       </LiveRunProvider>
     </ErrorBoundary>
