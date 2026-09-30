@@ -84,7 +84,7 @@ export default function ManageTestsPage() {
   };
 
   const persistTest = async (test, extra = {}) => {
-    if (savingRef.current.has(test.id)) return;
+    if (savingRef.current.has(test.id)) throw new Error('השמירה כבר מתבצעת');
     savingRef.current.add(test.id);
     setSavingIds(current => ({ ...current, [test.id]: true }));
     try {
@@ -156,18 +156,19 @@ export default function ManageTestsPage() {
             const isExpanded = expandedTest === test.id;
             const className = data.classes.find(c => c.id === test.classId)?.name;
             const grouped = selectedGradeLevel === 'all';
-            const isFirstOfGroup = grouped && (idx === 0 || filteredTests[idx - 1].gradeLevel !== test.gradeLevel);
-            const groupOpen = !grouped || !!openGroups[test.gradeLevel];
-            const groupCount = grouped ? filteredTests.filter(t => t.gradeLevel === test.gradeLevel).length : 0;
+            const groupGrade = savedTest.gradeLevel;
+            const isFirstOfGroup = grouped && (idx === 0 || filteredTests[idx - 1].gradeLevel !== groupGrade);
+            const groupOpen = !grouped || !!openGroups[groupGrade];
+            const groupCount = grouped ? filteredTests.filter(t => t.gradeLevel === groupGrade).length : 0;
             return (
               <div key={test.id} className="space-y-2">
               {isFirstOfGroup && (
                 <button
                   type="button"
-                  onClick={() => setOpenGroups(p => ({ ...p, [test.gradeLevel]: !p[test.gradeLevel] }))}
+                  onClick={() => setOpenGroups(p => ({ ...p, [groupGrade]: !p[groupGrade] }))}
                   className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-right bg-primary/10 border border-primary/15 text-primary hover:bg-primary/15 transition-colors"
                 >
-                  <span className="text-sm font-bold">שכבה {test.gradeLevel}׳ <span className="text-xs font-normal opacity-70">({groupCount} מבדקים)</span></span>
+                  <span className="text-sm font-bold">שכבה {groupGrade}׳ <span className="text-xs font-normal opacity-70">({groupCount} מבדקים)</span></span>
                   {groupOpen ? <ChevronUp className="w-4 h-4 opacity-70" /> : <ChevronDown className="w-4 h-4 opacity-70" />}
                 </button>
               )}
