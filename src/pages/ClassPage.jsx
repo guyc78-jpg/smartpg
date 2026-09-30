@@ -167,6 +167,7 @@ export default function ClassPage() {
             onChange={e => { setSearch(e.target.value); setShowSuggestions(true); }}
             onFocus={() => setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            aria-label="חיפוש תלמידים בכיתה"
             placeholder="חיפוש מהיר: הקלד שם תלמיד..."
             className="h-11 pr-9 text-sm rounded-xl"
           />
@@ -175,7 +176,7 @@ export default function ClassPage() {
               {filtered.slice(0, 6).map(s => (
                 <button
                   key={s.id}
-                  onMouseDown={() => {
+                  onClick={() => {
                     setShowSuggestions(false);
                     setSearch('');
                     setHighlightId(s.id);
@@ -184,7 +185,7 @@ export default function ClassPage() {
                     }, 50);
                     setTimeout(() => setHighlightId(null), 2500);
                   }}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm text-right hover:bg-primary/10 transition-colors border-b border-border/30 last:border-0"
+                  className="w-full flex items-center justify-between gap-2 min-h-11 px-3 py-2.5 text-sm text-right hover:bg-primary/10 transition-colors border-b border-border/30 last:border-0"
                 >
                   <span className="font-semibold truncate">{formatStudentName(s)}</span>
                   <span className="text-xs text-muted-foreground shrink-0">{s.studyGroup || cls.name}</span>
@@ -196,7 +197,7 @@ export default function ClassPage() {
 
         <div className="flex gap-2">
           {['A', 'B', 'annual'].map(mode => (
-            <Button key={mode} variant={viewMode === mode ? 'default' : 'outline'} onClick={() => setViewMode(mode)} className="flex-1 h-9 text-xs font-semibold">
+            <Button key={mode} variant={viewMode === mode ? 'default' : 'outline'} onClick={() => setViewMode(mode)} aria-pressed={viewMode === mode} className="flex-1 h-11 text-xs font-semibold">
               {mode === 'annual' ? 'שנתי' : SEMESTER_LABELS[mode]}
             </Button>
           ))}
