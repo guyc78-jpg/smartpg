@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
@@ -8,6 +9,7 @@ export default function CopyTestsDialog({ open, onOpenChange, allTests, defaultT
   const [targetGrade, setTargetGrade] = useState(defaultTargetGrade || 'ז');
   const [selected, setSelected] = useState(new Set());
   const [copying, setCopying] = useState(false);
+  const copyingRef = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -29,20 +31,26 @@ export default function CopyTestsDialog({ open, onOpenChange, allTests, defaultT
   };
 
   const confirm = async () => {
+    if (copyingRef.current) return;
     const chosen = sourceTests
       .filter(t => selected.has(t.id))
       .map(t => ({ ...t, id: undefined, gradeLevel: targetGrade, classId: '' }));
+    if (chosen.length === 0) return;
+    copyingRef.current = true;
     setCopying(true);
     try {
       await onConfirm(chosen);
       onOpenChange(false);
+    } catch (error) {
+      toast.error(error.isImportFailure ? error.message : 'ההעתקה נכשלה. בדוק את הנתונים והחיבור.');
     } finally {
+      copyingRef.current = false;
       setCopying(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={next => { if (!copyingRef.current) onOpenChange(next); }}>
       <DialogContent dir="rtl" className="max-w-[420px] rounded-2xl max-h-[85vh] flex flex-col">
         <DialogHeader className="text-right">
           <DialogTitle className="text-right">העתקת מבדקים משכבה אחרת</DialogTitle>
@@ -55,6 +63,7 @@ export default function CopyTestsDialog({ open, onOpenChange, allTests, defaultT
               <button
                 key={gl}
                 type="button"
+                disabled={copying}
                 onClick={() => { setTargetGrade(gl); setSelected(new Set()); }}
                 className={`h-9 rounded-full text-xs font-bold liquid-chip ${targetGrade === gl ? 'liquid-chip-active' : ''}`}
               >
@@ -75,6 +84,7 @@ export default function CopyTestsDialog({ open, onOpenChange, allTests, defaultT
               <button
                 key={test.id}
                 type="button"
+                disabled={copying}
                 onClick={() => toggle(test.id)}
                 className={`w-full rounded-xl border p-3 flex items-center gap-3 text-right transition-colors ${isSelected ? 'border-primary/40 bg-primary/5' : 'border-border bg-card'}`}
               >
