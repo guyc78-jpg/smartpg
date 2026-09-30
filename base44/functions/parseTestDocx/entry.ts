@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk';
 import mammoth from 'npm:mammoth@1.8.0';
 import { Buffer } from 'node:buffer';
+import { buildThresholdRows, parseThresholdValue } from './conversionRanges.js';
 import {
   DOCX_LIMITS,
   DocxSafetyError,
@@ -48,48 +49,48 @@ async function fetchApprovedDocx(fileUrl: unknown) {
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  let response: Response;
   try {
-    response = await fetch(parsed, { signal: controller.signal, redirect: 'error' });
-  } catch {
-    throw new RequestError('Unable to fetch file');
+    const response = await fetch(parsed, { signal: controller.signal, redirect: 'error' });
+    if (!response.ok) throw new RequestError('Unable to fetch file');
+  
+    const declaredLength = Number(response.headers.get('content-length') || 0);
+    if (declaredLength > MAX_DOCX_BYTES) throw new RequestError('File is too large', 413);
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    if (contentType && !contentType.includes('wordprocessingml') && !contentType.includes('zip') && !contentType.includes('octet-stream')) {
+      throw new RequestError('Unsupported file type', 415);
+    }
+  
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    const reader = response.body?.getReader();
+    if (!reader) throw new RequestError('Empty file');
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_DOCX_BYTES) {
+        await reader.cancel();
+        throw new RequestError('File is too large', 413);
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
+      throw new RequestError('File is not a valid DOCX document', 415);
+    }
+    preflightDocxZip(bytes);
+    return bytes.buffer;
+  } catch (error) {
+    if (error instanceof RequestError || error instanceof DocxSafetyError) throw error;
+    throw new RequestError(controller.signal.aborted ? 'File download timed out' : 'Unable to read file', controller.signal.aborted ? 408 : 400);
   } finally {
     clearTimeout(timeout);
   }
-  if (!response.ok) throw new RequestError('Unable to fetch file');
-
-  const declaredLength = Number(response.headers.get('content-length') || 0);
-  if (declaredLength > MAX_DOCX_BYTES) throw new RequestError('File is too large', 413);
-  const contentType = (response.headers.get('content-type') || '').toLowerCase();
-  if (contentType && !contentType.includes('wordprocessingml') && !contentType.includes('zip') && !contentType.includes('octet-stream')) {
-    throw new RequestError('Unsupported file type', 415);
-  }
-
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  const reader = response.body?.getReader();
-  if (!reader) throw new RequestError('Empty file');
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    total += value.byteLength;
-    if (total > MAX_DOCX_BYTES) {
-      await reader.cancel();
-      throw new RequestError('File is too large', 413);
-    }
-    chunks.push(value);
-  }
-  const bytes = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
-    throw new RequestError('File is not a valid DOCX document', 415);
-  }
-  preflightDocxZip(bytes);
-  return bytes.buffer;
 }
 
 Deno.serve(async (req) => {
@@ -125,14 +126,7 @@ Deno.serve(async (req) => {
 
     if (raw_only === true) return Response.json({ text: text.slice(0, 30000) });
 
-    const parseVal = (v) => {
-      const s = String(v).trim();
-      if (s.includes(':')) {
-        const [m, sec] = s.split(':');
-        return Number(m) * 60 + Number(sec);
-      }
-      return Number(s);
-    };
+    const parseVal = parseThresholdValue;
 
     // --- Fast deterministic table parsing (skips the LLM when the structure is standard) ---
     const cleanCell = (s) => s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
@@ -149,8 +143,9 @@ Deno.serve(async (req) => {
       const gradeCol = header.findIndex((h) => h.includes('ציון'));
       if (gradeCol === -1) continue;
       const dataRows = table.slice(1).filter((r) => {
-        const g = Number(String(r[gradeCol] || '').trim());
-        return Number.isFinite(g) && g > 0 && g <= 100;
+        const rawGrade = String(r[gradeCol] ?? '').trim();
+        const g = Number(rawGrade);
+        return rawGrade !== '' && Number.isFinite(g) && g >= 0 && g <= 100;
       });
       if (dataRows.length < 3) continue;
       for (let col = 0; col < header.length; col++) {
@@ -228,46 +223,7 @@ ${text.slice(0, 30000)}`,
 
     validateDocxExtractionResult(result);
 
-    const formatVal = (num, isTime) => {
-      if (!isTime) return num;
-      const m = Math.floor(num / 60);
-      const s = Math.round(num % 60);
-      return `${m}:${String(s).padStart(2, '0')}`;
-    };
-
-    const rows = [];
-    for (const t of result.tests || []) {
-      const thresholds = (t.thresholds || [])
-        .filter((th) => th.result != null && String(th.result).trim() !== '' && Number.isFinite(th.grade))
-        .map((th) => ({ value: parseVal(th.result), grade: th.grade, isTime: String(th.result).includes(':') }))
-        .filter((th) => Number.isFinite(th.value));
-      if (thresholds.length === 0) continue;
-
-      const lower = !!t.lower_is_better;
-      // sort so ranges are contiguous: by value ascending
-      thresholds.sort((a, b) => a.value - b.value);
-
-      for (let i = 0; i < thresholds.length; i++) {
-        const th = thresholds[i];
-        let min, max;
-        if (lower) {
-          // lower result = better: range is (prev value, this value]
-          min = i === 0 ? 0 : thresholds[i - 1].value + 0.01;
-          max = th.value;
-        } else {
-          // higher result = better: range is [this value, next value)
-          min = th.value;
-          max = i === thresholds.length - 1 ? th.value * 10 : thresholds[i + 1].value - 0.01;
-        }
-        rows.push({
-          test_name: t.test_name,
-          unit: t.unit || '',
-          min_result: formatVal(Math.round(min * 100) / 100, th.isTime),
-          max_result: formatVal(Math.round(max * 100) / 100, th.isTime),
-          grade: th.grade,
-        });
-      }
-    }
+    const rows = buildThresholdRows(result.tests || []);
 
     assertDocxRowLimit(rows);
     return Response.json({ grade_level: result.grade_level || '', gender: result.gender || '', rows });
