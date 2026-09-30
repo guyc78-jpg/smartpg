@@ -1,15 +1,20 @@
 export function validateConversionTable(rows = []) {
+  if (!Array.isArray(rows)) return { valid: false, message: 'טבלת ההמרה חייבת להכיל רשימת שורות.' };
+  const numberOrMissing = value => value === null || value === undefined || String(value).trim() === '' ? null : Number(value);
   const normalized = rows
     .map(row => ({
-      minResult: row.minResult === '' ? null : Number(row.minResult),
-      maxResult: row.maxResult === '' ? null : Number(row.maxResult),
-      grade: row.grade === '' ? null : Number(row.grade),
+      minResult: numberOrMissing(row?.minResult),
+      maxResult: numberOrMissing(row?.maxResult),
+      grade: numberOrMissing(row?.grade),
     }))
     .filter(row => row.minResult !== null || row.maxResult !== null || row.grade !== null);
 
   for (const row of normalized) {
     if (![row.minResult, row.maxResult, row.grade].every(Number.isFinite)) {
       return { valid: false, message: 'יש למלא בכל שורה תוצאה התחלתית, תוצאה סופית וציון מספריים.' };
+    }
+    if (row.minResult < 0 || row.maxResult < 0) {
+      return { valid: false, message: 'תוצאות בטבלת ההמרה חייבות להיות אפס או מספר חיובי.' };
     }
     if (row.grade < 0 || row.grade > 100) {
       return { valid: false, message: 'הציון בטבלת ההמרה חייב להיות בין 0 ל־100.' };
