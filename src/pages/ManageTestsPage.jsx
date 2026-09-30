@@ -11,12 +11,15 @@ import ConversionTableEditor from '@/components/tests/ConversionTableEditor.jsx'
 import TestImportExport from '@/components/tests/TestImportExport.jsx';
 import { usesTimeFormat } from '@/lib/testImportExport';
 import { buildTestDefinitionPayload } from '@/lib/testDefinitionPayload';
+import { useAuth } from '@/lib/AuthContext';
+import { readTestDrafts, writeTestDrafts } from '@/lib/testDraftStorage';
 import { toast } from 'sonner';
 
 const selectClass = 'h-11 w-full rounded-md border border-input bg-background px-2 text-sm';
 const GRADE_ORDER = { 'ז': 0, 'ח': 1, 'ט': 2, 'י': 3, 'יא': 4, 'יב': 5 };
 
 export default function ManageTestsPage() {
+  const { user } = useAuth();
   const { data, updateTest, addTest, deleteTest, defaultGenderTrack } = useApp();
   const [expandedTest, setExpandedTest] = useState(null);
   const [openGroups, setOpenGroups] = useState({});
@@ -24,12 +27,19 @@ export default function ManageTestsPage() {
   const [selectedGenderTrack, setSelectedGenderTrack] = useState(defaultGenderTrack);
   const [selectedType, setSelectedType] = useState('all');
   const [deleteTestTarget, setDeleteTestTarget] = useState(null);
-  const [drafts, setDrafts] = useState({});
+  const [drafts, setDrafts] = useState(() => Object.fromEntries(
+    Object.entries(readTestDrafts(user?.id)).filter(([id]) => data.tests.some(test => test.id === id))
+  ));
+  const [draftStorageError, setDraftStorageError] = useState(false);
   const [savingIds, setSavingIds] = useState({});
   const savingRef = useRef(new Set());
   const addRef = useRef(false);
   const importingRef = useRef(false);
   const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    setDraftStorageError(!writeTestDrafts(user?.id, drafts));
+  }, [user?.id, drafts]);
 
   useEffect(() => {
     if (Object.keys(drafts).length === 0) return;
@@ -91,6 +101,9 @@ export default function ManageTestsPage() {
     setSavingIds(current => ({ ...current, [test.id]: true }));
     try {
       await updateTest(test, { ...drafts[test.id], ...extra });
+      const storedDrafts = readTestDrafts(user?.id);
+      delete storedDrafts[test.id];
+      writeTestDrafts(user?.id, storedDrafts);
       setDrafts(current => {
         const next = { ...current };
         delete next[test.id];
@@ -167,6 +180,21 @@ export default function ManageTestsPage() {
           <TestImportExport tests={filteredTests} allTests={data.tests} onImport={handleImport} onDeleteAll={handleDeleteAll} defaultGradeLevel={selectedGradeLevel === 'all' ? 'ז' : selectedGradeLevel} />
         </div>
 
+        {Object.keys(drafts).length > 0 && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2 text-sm" role="status">
+            <p>קיימים שינויים שטרם נשמרו ב־{Object.keys(drafts).length} מבדקים.</p>
+            {draftStorageError && <p role="alert" className="text-destructive">לא ניתן לשחזר טיוטה בדפדפן זה. שמור את השינויים לפני היציאה.</p>}
+            <Button type="button" variant="outline" className="h-11" onClick={() => {
+              const saved = data.tests.find(test => drafts[test.id]);
+              if (!saved) return;
+              setSelectedGradeLevel("all");
+              setSelectedGenderTrack(saved.genderTrack || "boys");
+              setSelectedType("all");
+              setOpenGroups(groups => ({ ...groups, [saved.gradeLevel]: true }));
+              setExpandedTest(saved.id);
+            }}>המשך לערוך</Button>
+          </div>
+        )}
         <div className="space-y-2">
           {filteredTests.map((savedTest, idx) => {
             const test = { ...savedTest, ...drafts[savedTest.id] };
