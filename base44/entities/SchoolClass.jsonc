@@ -14,8 +14,12 @@
       "maxLength": 254,
       "description": "Normalized account email used for tenant ownership",
       "rls": {
-        "create": { "data.owner_email": "{{user.email}}" },
-        "read": { "data.owner_email": "{{user.email}}" },
+        "create": {
+          "data.owner_email": "{{user.email}}"
+        },
+        "read": {
+          "data.owner_email": "{{user.email}}"
+        },
         "update": false,
         "delete": false
       }
@@ -60,19 +64,50 @@
       "items": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "maxLength": 128 },
-          "name": { "type": "string", "maxLength": 160 },
-          "phone": { "type": "string", "maxLength": 32, "pattern": "^[+0-9() .-]*$" }
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 32,
+            "pattern": "^[+0-9() .-]*$"
+          }
         }
       },
       "default": [],
       "rls": {
-        "create": { "user_condition": { "id": "{{user.id}}" } },
-        "read": { "data.owner_email": "{{user.email}}" },
+        "create": {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            }
+          ]
+        },
+        "read": {
+          "data.owner_email": "{{user.email}}"
+        },
         "update": {
           "$and": [
-            { "data.owner_email": "{{user.email}}" },
-            { "user_condition": { "role": "admin" } }
+            {
+              "data.owner_email": "{{user.email}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
           ]
         }
       }
@@ -85,12 +120,33 @@
   "rls": {
     "create": {
       "$and": [
-        { "user_condition": { "id": "{{user.id}}" } },
-        { "data.owner_email": "{{user.email}}" }
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            }
+          ]
+        },
+        {
+          "data.owner_email": "{{user.email}}"
+        }
       ]
     },
-    "read": { "data.owner_email": "{{user.email}}" },
-    "update": { "data.owner_email": "{{user.email}}" },
-    "delete": { "data.owner_email": "{{user.email}}" }
+    "read": {
+      "data.owner_email": "{{user.email}}"
+    },
+    "update": {
+      "data.owner_email": "{{user.email}}"
+    },
+    "delete": {
+      "data.owner_email": "{{user.email}}"
+    }
   }
 }
