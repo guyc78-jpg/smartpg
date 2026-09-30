@@ -7,6 +7,7 @@ import { applyRemoteBellTimes, resetBellTimes } from '@/lib/periodTimes';
 import { buildStudentPayload, studentDedupeKey } from '@/lib/studentPayload';
 import { canRemoveDefaultDuplicate } from '@/lib/defaultTestSafety';
 import { buildTestDefinitionPayload } from '@/lib/testDefinitionPayload';
+import { validateClassFields } from '@/lib/recordValidation';
 
 function jsonToConversionTable(json) {
   if (!Array.isArray(json)) return [];
@@ -612,6 +613,7 @@ export function AppProvider({ children }) {
     const payloadData = typeof classData === 'object'
       ? classData
       : { name: classData, gradeLevel, genderTrack, status: 'active' };
+    validateClassFields(payloadData, { requireName: true });
     const homeroomContacts = Array.isArray(payloadData.homeroomContacts)
       ? payloadData.homeroomContacts
       : payloadData.homeroomTeacher
@@ -700,6 +702,7 @@ export function AppProvider({ children }) {
     const payloadData = typeof classData === 'object'
       ? classData
       : { name: classData, gradeLevel, genderTrack };
+    validateClassFields(payloadData);
     const existing = data.classes.find(item => item.id === id);
     if (!existing) throw new Error('הכיתה לא נמצאה');
     const hasOwn = key => Object.prototype.hasOwnProperty.call(payloadData, key);
