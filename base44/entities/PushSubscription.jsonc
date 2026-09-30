@@ -9,9 +9,26 @@
       "pattern": "^https://[^\\s]+$",
       "maxLength": 2048,
       "rls": {
-        "create": { "user_condition": { "id": "{{user.id}}" } },
-        "read": { "created_by": "{{user.email}}" },
-        "update": { "created_by": "{{user.email}}" }
+        "create": {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            }
+          ]
+        },
+        "read": {
+          "created_by": "{{user.email}}"
+        },
+        "update": {
+          "created_by": "{{user.email}}"
+        }
       }
     },
     "p256dh": {
@@ -19,9 +36,26 @@
       "minLength": 16,
       "maxLength": 512,
       "rls": {
-        "create": { "user_condition": { "id": "{{user.id}}" } },
-        "read": { "created_by": "{{user.email}}" },
-        "update": { "created_by": "{{user.email}}" }
+        "create": {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            }
+          ]
+        },
+        "read": {
+          "created_by": "{{user.email}}"
+        },
+        "update": {
+          "created_by": "{{user.email}}"
+        }
       }
     },
     "auth": {
@@ -29,9 +63,26 @@
       "minLength": 8,
       "maxLength": 512,
       "rls": {
-        "create": { "user_condition": { "id": "{{user.id}}" } },
-        "read": { "created_by": "{{user.email}}" },
-        "update": { "created_by": "{{user.email}}" }
+        "create": {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            }
+          ]
+        },
+        "read": {
+          "created_by": "{{user.email}}"
+        },
+        "update": {
+          "created_by": "{{user.email}}"
+        }
       }
     },
     "device_label": {
@@ -46,9 +97,28 @@
     "auth"
   ],
   "rls": {
-    "create": { "user_condition": { "id": "{{user.id}}" } },
-    "read": { "created_by": "{{user.email}}" },
-    "update": { "created_by": "{{user.email}}" },
-    "delete": { "created_by": "{{user.email}}" }
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
   }
 }
