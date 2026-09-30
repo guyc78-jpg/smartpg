@@ -272,14 +272,9 @@ export default function ClassPage() {
           description="מחיקת התלמיד תסיר גם את הציונים, המדידות ורשומות ההתנהגות המשויכות אליו. האם למחוק?"
           onConfirm={async () => {
             const target = deleteStudentTarget;
-            try {
-              await deleteStudent(target.id);
-              toast.success('התלמיד נמחק');
-            } catch {
-              toast.error('מחיקת התלמיד נכשלה');
-            } finally {
-              setDeleteStudentTarget(null);
-            }
+            await deleteStudent(target.id);
+            toast.success('התלמיד נמחק');
+            setDeleteStudentTarget(null);
           }}
         />
         <WhatsAppMessageDialog
