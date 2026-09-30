@@ -1,5 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { useAuth } from '@/lib/AuthContext';
+import { useApp } from '@/store/AppProvider';
+import { restoreOwnedRunSession } from '@/lib/liveRunStorage';
+
 const STORAGE_KEY = 'pe_live_run_session_v2';
 const LEGACY_KEY = 'pe_live_run_session_v1';
 const LiveRunContext = createContext(null);
@@ -14,10 +18,10 @@ function studentSnapshot(student) {
   };
 }
 
-function readStoredSession() {
+function readStoredSession(ownerId, students) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY);
-    return raw ? JSON.parse(raw) : null;
+    return raw ? restoreOwnedRunSession(JSON.parse(raw), ownerId, students) : null;
   } catch {
     return null;
   }
@@ -33,17 +37,21 @@ function withHistory(participant, next) {
 }
 
 export function LiveRunProvider({ children }) {
-  const [session, setSession] = useState(readStoredSession);
+  const { user } = useAuth();
+  const { data } = useApp();
+  const ownerId = user?.id;
+  const [session, setSession] = useState(() => readStoredSession(ownerId, data.students));
   const [tick, setTick] = useState(Date.now());
 
   useEffect(() => {
+    if (!ownerId) return;
     if (!session) {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(LEGACY_KEY);
       return;
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  }, [session]);
+  }, [session, ownerId]);
 
   useEffect(() => {
     if (!session?.running) return;
@@ -57,6 +65,7 @@ export function LiveRunProvider({ children }) {
   }, [session, tick]);
 
   const startSession = useCallback((setup, students) => {
+    if (!ownerId) return;
     const unique = [];
     const seen = new Set();
     for (const s of students) {
@@ -69,6 +78,7 @@ export function LiveRunProvider({ children }) {
     ]));
     setSession({
       id: `run_${Date.now()}`,
+      ownerId,
       setup,
       participants,
       selectedIds: unique.map(s => s.id),
@@ -82,7 +92,7 @@ export function LiveRunProvider({ children }) {
       createdAt: new Date().toISOString(),
       saved: false,
     });
-  }, []);
+  }, [ownerId]);
 
   const startTimer = useCallback(() => {
     setSession(prev => prev && !prev.running ? { ...prev, running: true, startedAt: Date.now() } : prev);
