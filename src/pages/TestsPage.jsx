@@ -81,7 +81,10 @@ export default function TestsPage() {
   const handleRawScore = async (studentId, testId, value) => {
     if (value !== '') {
       const numericValue = Number(value);
-      if (!Number.isFinite(numericValue) || numericValue < 0) return false;
+      if (!Number.isFinite(numericValue) || numericValue < 0) {
+        toast.error('יש להזין תוצאה תקינה שאינה שלילית');
+        return false;
+      }
     }
     return runResultMutation(studentId, testId, async () => {
       if (value === '') {
@@ -108,7 +111,7 @@ export default function TestsPage() {
       <div className="max-w-3xl mx-auto space-y-3 p-4" dir="rtl">
         <div className="flex gap-2">
           {['A', 'B'].map(s => (
-            <button key={s} type="button" aria-pressed={semester === s} onClick={() => { setSemester(s); setSelectedTestIdx(0); }} className={`flex-1 h-10 text-sm font-semibold rounded-full liquid-chip ${semester === s ? 'liquid-chip-active' : ''}`}>
+            <button key={s} type="button" aria-pressed={semester === s} onClick={() => { setSemester(s); setSelectedTestIdx(0); }} className={`flex-1 h-11 text-sm font-semibold rounded-full liquid-chip ${semester === s ? 'liquid-chip-active' : ''}`}>
               {SEMESTER_LABELS[s]}
             </button>
           ))}
@@ -197,7 +200,7 @@ export default function TestsPage() {
                               aria-pressed={status === option}
                               disabled={isSaving || (student.peExempt && option !== 'exempt') || (option === 'completed' && rawScore === null)}
                               onClick={() => handleStatus(student.id, currentTest.id, option, rawScore)}
-                              className={`h-7 px-2.5 text-[10px] font-medium rounded-full shrink-0 liquid-chip ${status === option ? 'liquid-chip-active' : ''}`}
+                              className={`h-11 px-2.5 text-[10px] font-medium rounded-full shrink-0 liquid-chip ${status === option ? 'liquid-chip-active' : ''}`}
                             >
                               {TEST_STATUS_LABELS[option]}
                             </button>
@@ -219,7 +222,7 @@ export default function TestsPage() {
                               if (saved) setDraftScores(scores => { const next = { ...scores }; delete next[resultKey]; return next; });
                             }}
                             onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                            className="w-full h-8 text-center text-sm"
+                            className="w-full h-11 text-center text-sm"
                             placeholder={currentTest?.unit || 'תוצאה'}
                           />
                           {isSaving && <Loader2 className="pointer-events-none absolute left-2 top-2 h-4 w-4 animate-spin text-primary" aria-hidden="true" />}
