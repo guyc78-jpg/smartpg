@@ -84,8 +84,7 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                   return (
                     <td
                       key={d}
-                      onClick={() => { if (cellLessons.length <= 1) onCellClick(d, p, cellLessons[0] || null); }}
-                      className={`schedule-cell min-h-14 min-w-[92px] border-b border-l border-border p-1 cursor-pointer transition-colors align-top
+                      className={`schedule-cell min-h-14 min-w-[92px] border-b border-l border-border p-1 transition-colors align-top
                         ${isTodayCol ? 'is-today' : rowIdx % 2 === 1 ? 'is-alternate' : ''}
                         ${isTodayCol && p === currentPeriod ? 'is-current' : ''}
                         hover:brightness-110`}
@@ -132,11 +131,14 @@ export default function WeeklyScheduleGrid({ scheduleLessons, classById, onCellC
                           })}
                         </div>
                       ) : (
-                        <div className="grid h-full min-h-12" style={lessonGridStyle}>
-                          <span className="grid place-items-center" style={{ gridColumn: '1 / -1', gridRow: '1 / -1' }}>
-                            <Plus className="w-4 h-4 text-muted-foreground/40" />
-                          </span>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onCellClick(d, p, null)}
+                          aria-label={`שיבוץ שיעור ביום ${DAY_NAMES[d]}, שעה ${p}`}
+                          className="grid w-full h-full min-h-12 place-items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                        >
+                          <Plus className="w-4 h-4 text-muted-foreground/40" aria-hidden="true" />
+                        </button>
                       )}
                     </td>
                   );
